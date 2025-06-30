@@ -26,17 +26,32 @@ const Dashboard = () => {
       </AppBar>
 
       <Box sx={{ p: 3 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h4" gutterBottom>
-            Welcome to your Dashboard!
+        <Paper elevation={3} sx={{ p: 4, maxWidth: 600, mx: "auto" }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Dashboard
           </Typography>
-          <Typography variant="body1" paragraph>
-            Hello, {user?.username}! This is a protected page that only
-            authenticated users can access.
+          <Typography variant="h6" gutterBottom>
+            Welcome, {user?.full_name || user?.username}!
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Email: {user?.email}
-          </Typography>
+          <Box mt={2}>
+            <Typography variant="body1">
+              <strong>Username:</strong> {user?.username}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Email:</strong> {user?.email}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Full Name:</strong> {user?.full_name}
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={handleLogout}
+            sx={{ mt: 3 }}
+          >
+            Logout
+          </Button>
         </Paper>
       </Box>
     </>

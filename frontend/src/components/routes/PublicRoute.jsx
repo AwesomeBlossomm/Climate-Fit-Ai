@@ -3,9 +3,13 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : children;
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 
 export default PublicRoute;

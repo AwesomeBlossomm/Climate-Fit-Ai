@@ -5,6 +5,7 @@ from models.user import UserRegistration, UserLogin
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from bson import ObjectId
 import os
 
 router = APIRouter()
@@ -37,6 +38,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         return username
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+def serialize_user(user_doc):
+    """Convert MongoDB document to JSON serializable format"""
+    if user_doc:
+        user_doc["_id"] = str(user_doc["_id"])
+        if "created_at" in user_doc:
+            user_doc["created_at"] = user_doc["created_at"].isoformat()
+    return user_doc
 
 @router.post("/register")
 async def register(user: UserRegistration):
@@ -72,4 +81,6 @@ async def get_profile(current_user: str = Depends(verify_token)):
     user = users_collection.find_one({"username": current_user}, {"password": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    
+    # Convert ObjectId to string for JSON serialization
+    return serialize_user(user)

@@ -40,7 +40,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authAPI.login(credentials);
-      const { access_token } = response;
+      const { access_token, token_type } = response;
+
+      if (!access_token) {
+        throw new Error("No access token received");
+      }
 
       // Store token
       localStorage.setItem("access_token", access_token);
@@ -53,7 +57,15 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || "Login failed";
+      console.error("Login error:", error);
+      let errorMessage = "Login failed";
+
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       return { success: false, error: errorMessage };
     }
   };
@@ -63,8 +75,19 @@ export const AuthProvider = ({ children }) => {
       await authAPI.register(userData);
       return { success: true };
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.detail || "Registration failed";
+      let errorMessage = "Registration failed";
+
+      if (error.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          // Handle validation errors
+          errorMessage = error.response.data.detail
+            .map((err) => err.msg)
+            .join(", ");
+        } else {
+          errorMessage = error.response.data.detail;
+        }
+      }
+
       return { success: false, error: errorMessage };
     }
   };

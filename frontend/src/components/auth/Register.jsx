@@ -16,6 +16,7 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    full_name: "",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -43,8 +44,8 @@ const Register = () => {
     }
 
     try {
-      const { username, email, password } = formData;
-      const result = await register({ username, email, password });
+      const { username, email, password, full_name } = formData;
+      const result = await register({ username, email, password, full_name });
 
       if (result.success) {
         setSuccess(
@@ -88,6 +89,15 @@ const Register = () => {
         )}
 
         <form onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            name="full_name"
+            label="Full Name"
+            value={formData.full_name}
+            onChange={handleChange}
+            margin="normal"
+            required
+          />
           <TextField
             fullWidth
             name="username"
