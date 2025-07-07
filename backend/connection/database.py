@@ -15,6 +15,9 @@ try:
     print("MongoDB connection successful!")
     db = client.climateFitAi  
     users_collection = db.users
+    discounts_collection = db.discounts  # Added discounts collection
+    payments_collection = db.payments  # Added payments collection
+    carts_collection = db.carts  # Added carts collection
 except Exception as e:
     print(f"MongoDB connection failed: {e}")
     raise

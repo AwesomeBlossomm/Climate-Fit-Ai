@@ -39,6 +39,23 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+def verify_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify if the current user is an admin"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # Check if user is admin
+        user = users_collection.find_one({"username": username})
+        if not user or user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 def serialize_user(user_doc):
     """Convert MongoDB document to JSON serializable format"""
     if user_doc:

@@ -1,11 +1,18 @@
 from pydantic import BaseModel, EmailStr, validator
+from typing import Optional
+from enum import Enum
 import re
+
+class UserRole(str, Enum):
+    USER = "user"
+    ADMIN = "admin"
 
 class UserRegistration(BaseModel):
     username: str
     password: str
     email: EmailStr
     full_name: str
+    role: UserRole = UserRole.USER
 
     @validator('username')
     def validate_username(cls, v):
@@ -38,3 +45,9 @@ class UserRegistration(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+class UserDiscountAssignment(BaseModel):
+    username: str
+    discount_code: str
+    assigned_by: Optional[str] = None
+    notes: Optional[str] = None

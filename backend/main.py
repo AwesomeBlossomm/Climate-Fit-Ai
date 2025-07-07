@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth
+from routes import auth, api, discounts, payments, cart
 
 app = FastAPI()
 
@@ -14,6 +14,14 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(api.router, prefix="/api")
+app.include_router(discounts.router, prefix="/api")
+app.include_router(payments.router, prefix="/api")
+app.include_router(cart.router, prefix="/api")
+
+@app.get("/")
+async def root():
+    return {"message": "ClimateAI Fashion API", "status": "running"}
 
 if __name__ == "__main__":
     import uvicorn
