@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { motion } from "framer-motion";
 
-
 const Navigator = () => (
   <Box
     component="header"
@@ -43,8 +42,8 @@ const Navigator = () => (
           src="src/assets/logo.png"
           alt="Climate Fit Logo"
           sx={{
-            width: "80%",
-            height: "80%",
+            width: "115px",
+            height: "115px",
             objectFit: "cover",
           }}
         />
@@ -55,7 +54,6 @@ const Navigator = () => (
           fontWeight: 600,
           letterSpacing: 2,
           color: "#46403d",
-          
         }}
       >
         CLIMATE FIT
@@ -108,13 +106,11 @@ const Navigator = () => (
   </Box>
 );
 
-
-
 const Home = () => {
   const { isAuthenticated, user, logout } = useAuth();
 
   return (
-     <Box
+    <Box
       minHeight="100vh"
       sx={{
         p: 0,
@@ -206,8 +202,11 @@ const Home = () => {
                 maxWidth: 500,
               }}
             >
-              SDG 12: Responsible Consumption and Production.<br />
-              Significantly reducing fashion returns, promoting sustainable materials, and encouraging the purchase of climate-appropriate wear,
+              SDG 12: Responsible Consumption and Production.
+              <br />
+              Significantly reducing fashion returns, promoting sustainable
+              materials, and encouraging the purchase of climate-appropriate
+              wear,
             </Typography>
             <Button
               variant="contained"
@@ -240,8 +239,8 @@ const WhyChooseSection = () => (
   <Box
     sx={{
       position: "relative",
-      width: "100%", 
-      minHeight: "100vh", 
+      width: "100%",
+      minHeight: "100vh",
       background: "#c9bba5",
       display: "flex",
       flexDirection: "column",
@@ -271,7 +270,7 @@ const WhyChooseSection = () => (
       justifyContent="center"
       alignItems="stretch"
       sx={{
-        maxWidth: "100%", 
+        maxWidth: "100%",
         px: { xs: 0, md: 4 },
         m: 0,
       }}
@@ -327,7 +326,8 @@ const WhyChooseSection = () => (
             sx={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
+              background:
+                "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
               zIndex: 1,
             }}
           />
@@ -336,7 +336,8 @@ const WhyChooseSection = () => (
               Smart Style, Less Waste
             </Typography>
             <Typography sx={{ color: "#fff", mt: 1 }}>
-              Reduce fashion returns by 68% with AI-driven, climate-aware clothing recommendations tailored to your real-time location
+              Reduce fashion returns by 68% with AI-driven, climate-aware
+              clothing recommendations tailored to your real-time location
             </Typography>
           </Box>
         </Box>
@@ -392,7 +393,8 @@ const WhyChooseSection = () => (
             sx={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
+              background:
+                "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
               zIndex: 1,
             }}
           />
@@ -401,7 +403,9 @@ const WhyChooseSection = () => (
               Support Local, Shop Green
             </Typography>
             <Typography sx={{ color: "#fff", mt: 1 }}>
-              Empower local economies and sustainable practices by exploring a marketplace championing regional brands and eco-friendly materials.
+              Empower local economies and sustainable practices by exploring a
+              marketplace championing regional brands and eco-friendly
+              materials.
             </Typography>
           </Box>
         </Box>
@@ -457,7 +461,8 @@ const WhyChooseSection = () => (
             sx={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
+              background:
+                "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
               zIndex: 1,
             }}
           />
@@ -466,7 +471,9 @@ const WhyChooseSection = () => (
               Perfect Fit, Informed Choices
             </Typography>
             <Typography sx={{ color: "#fff", mt: 1 }}>
-              Minimize waste with precise 3D body scanning, gain valuable sustainable fashion insights, and access real-time AI stylist support.
+              Minimize waste with precise 3D body scanning, gain valuable
+              sustainable fashion insights, and access real-time AI stylist
+              support.
             </Typography>
           </Box>
         </Box>
@@ -486,7 +493,6 @@ const WhyChooseSection = () => (
     />
   </Box>
 );
-
 
 const MeetOurTeamSection = () => (
   <Box
@@ -522,55 +528,129 @@ const MeetOurTeamSection = () => (
         fontSize: { xs: "1rem", md: "1.2rem" },
       }}
     >
-      Meet the innovative team of developers, designers, and climate experts committed to delivering "Climate Fit", your intelligent guide to sustainable and perfectly-suited fashion.
+      Meet the innovative team of developers, designers, and climate experts
+      committed to delivering "Climate Fit", your intelligent guide to
+      sustainable and perfectly-suited fashion.
     </Typography>
     <Grid container spacing={4} justifyContent="center">
-      <Grid item xs={12} sm={6} md={3} display="flex" flexDirection="column" alignItems="center">
+      <Grid
+        item
+        xs={12}
+        sm={6}
+        md={3}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+      >
         <Box
           component="img"
-          src="src/assets/team-raymond.png"
+          src="src/assets/team-raymond.jpg"
           alt="Raymond Lei Nogalo"
-          sx={{ width: 170, height: 170, mb: 2, borderRadius: "50%", objectFit: "cover", background: "#fff" }}
+          sx={{
+            width: 170,
+            height: 170,
+            mb: 2,
+            borderRadius: "50%",
+            objectFit: "cover",
+            background: "#fff",
+          }}
         />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>Raymond Lei Nogalo</Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>Creative Director</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+          Raymond Lei Nogalo
+        </Typography>
+        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
+          Mobile App Developer
+        </Typography>
       </Grid>
-      <Grid item xs={12} sm={6} md={3} display="flex" flexDirection="column" alignItems="center">
+      <Grid
+        item
+        xs={12}
+        sm={6}
+        md={3}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+      >
         <Box
           component="img"
-          src="src/assets/team-justine.png"
+          src="src/assets/team-justine.jpg"
           alt="Justine Julianna Balla"
-          sx={{ width: 170, height: 170, mb: 2, borderRadius: "50%", objectFit: "cover", background: "#fff" }}
+          sx={{
+            width: 170,
+            height: 170,
+            mb: 2,
+            borderRadius: "50%",
+            objectFit: "cover",
+            background: "#fff",
+          }}
         />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>Justine Julianna Balla</Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>Art Director</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+          Justine Julianna Balla
+        </Typography>
+        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
+          Website developer
+        </Typography>
       </Grid>
-      <Grid item xs={12} sm={6} md={3} display="flex" flexDirection="column" alignItems="center">
+      <Grid
+        item
+        xs={12}
+        sm={6}
+        md={3}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+      >
         <Box
           component="img"
-          src="src/assets/team-angel.png"
+          src="src/assets/team-angel.jpg"
           alt="Angel Galapon"
-          sx={{ width: 170, height: 170, mb: 2, borderRadius: "50%", objectFit: "cover", background: "#fff" }}
+          sx={{
+            width: 170,
+            height: 170,
+            mb: 2,
+            borderRadius: "50%",
+            objectFit: "cover",
+            background: "#fff",
+          }}
         />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>Angel Galapon</Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>Graphic Designer</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+          Angel Galapon
+        </Typography>
+        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
+          Tech Writter
+        </Typography>
       </Grid>
-      <Grid item xs={12} sm={6} md={3} display="flex" flexDirection="column" alignItems="center">
+      <Grid
+        item
+        xs={12}
+        sm={6}
+        md={3}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+      >
         <Box
           component="img"
           src="src/assets/km.png"
           alt="Kristine Mae Prado"
-          sx={{ width: 170, height: 170, mb: 2, borderRadius: "50%", objectFit: "cover", background: "#fff" }}
+          sx={{
+            width: 170,
+            height: 170,
+            mb: 2,
+            borderRadius: "50%",
+            objectFit: "cover",
+            background: "#fff",
+          }}
         />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>Kristine Mae Prado</Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>UI/UX Designer</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+          Kristine Mae Prado
+        </Typography>
+        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
+          UI/UX Designer
+        </Typography>
       </Grid>
     </Grid>
   </Box>
 );
 
-
 export default Home;
-
-
-

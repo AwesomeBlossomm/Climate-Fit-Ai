@@ -25,13 +25,14 @@ async def search_clothing_products(
 
 @router.get("/clothes/public")
 async def search_clothing_products_public(
-    query: str = Query(default="clothes", description="Search query for clothing items"),
-    limit: int = Query(default=5, ge=1, le=10, description="Maximum number of results"),
+    query: str = Query(default="", description="Search query for clothing items"),
+    limit: int = Query(default=10, ge=1, le=50, description="Maximum number of results"),
     offset: int = Query(default=0, ge=0, description="Offset for pagination")
 ):
     """
-    Search for limited clothing products for public access
+    Search for clothing products for public access - with proper search filtering
     """
+    # Pass the actual query to the search function
     products = await search_clothes(query=query, limit=limit, offset=offset)
     return {
         "query": query,
@@ -77,7 +78,10 @@ async def get_clothing_item_details(
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Item not found: {str(e)}")
 
-
+@router.get("/clothes/item/public/{item_id}")
+async def get_clothing_item_details_public(
+    item_id: str
+):
     """
     Get limited information about a specific clothing item for public access
     """
@@ -87,5 +91,7 @@ async def get_clothing_item_details(
             "item_id": item_id,
             "data": item_details
         }
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Item not found: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Item not found: {str(e)}")

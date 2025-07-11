@@ -36,4 +36,37 @@ export const authAPI = {
   },
 };
 
+export const clothingAPI = {
+  searchClothes: async (query = "", limit = 10, offset = 0) => {
+    const response = await api.get("/clothes", {
+      params: { query: query || "", limit, offset },
+    });
+    return response.data;
+  },
+
+  searchClothesPublic: async (query = "", limit = 5, offset = 0) => {
+    const response = await api.get("/clothes/public", {
+      params: { query: query || "", limit, offset },
+    });
+    return response.data;
+  },
+
+  searchClothesByCategory: async (category, limit = 10, offset = 0) => {
+    const response = await api.get(`/clothes/category/${category}`, {
+      params: { limit, offset },
+    });
+    return response.data;
+  },
+
+  getItemDetails: async (itemId) => {
+    const response = await api.get(`/clothes/item/${itemId}`);
+    return response.data;
+  },
+
+  getItemDetailsPublic: async (itemId) => {
+    const response = await api.get(`/clothes/item/public/${itemId}`);
+    return response.data;
+  },
+};
+
 export default api;

@@ -40,8 +40,8 @@ const Navigator = () => (
           src="src/assets/logo.png"
           alt="Climate Fit Logo"
           sx={{
-            width: "80%",
-            height: "80%",
+            width: "115px",
+            height: "115px",
             objectFit: "cover",
           }}
         />
@@ -52,7 +52,6 @@ const Navigator = () => (
           fontWeight: 600,
           letterSpacing: 2,
           color: "#46403d",
-          
         }}
       >
         CLIMATE FIT
@@ -104,6 +103,5 @@ const Navigator = () => (
     </Box>
   </Box>
 );
-
 
 export default Navigator;
