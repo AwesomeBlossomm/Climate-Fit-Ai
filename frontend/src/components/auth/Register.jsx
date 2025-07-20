@@ -78,272 +78,352 @@ const Register = () => {
       <Box
         sx={{
           minHeight: "100vh",
-          background: "#f7ecdd",
+          background: "linear-gradient(135deg, #6b8357 0%, #5a7047 100%)", // Dark green gradient matching your image
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           px: 2,
+          pt: 12, // Account for fixed navigator
         }}
       >
-      <Box
-        sx={{
-          display: "flex",
-          width: { xs: "500%", md: "1000px" },
-          boxShadow: "none",
-          borderRadius: 0,
-          background: "transparent",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: { xs: 1, md: 9 },
-        }}
-      >
-        {/* Illustration */}
         <Box
-          sx={{
-            flex: 1,
-            display: { xs: "none", md: "flex" },
-            alignItems: "center",
-            justifyContent: "center",
-            background: "transparent",
-            pr: 0,
-          }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          width="100%"
+          maxWidth={500}
+          sx={{ mx: "auto" }}
         >
-          <img
-            src="/assets/signup-illustration.png" // <-- replace with your actual image path
-            alt="Sign Up Illustration"
-            style={{ width: "100%", maxWidth: 400, height: "auto" }}
-          />
-        </Box>
-
-        {/* Form */}
-        <Paper
-          elevation={0}
-          sx={{
-            flex: 1,
-            borderRadius: "40px",
-            background: "#d1c1ad",
-            p: { xs: 2, md: 3 },
-            width: { xs: "100%", md: 420 },
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            // minWidth: 400,
-            // maxWidth: 320,
-            // width: "100%",
-            minHeight: 550,   // reduced from 500
-            maxHeight: 480,   // add a maxHeight
-            boxShadow: "0 4px 24px 0 rgba(0, 0, 0, 0.06)",
-          }}
-        >
-          <Typography
-            variant="h3"
+          {/* Registration Form Card */}
+          <Paper
+            elevation={8}
             sx={{
-              fontWeight: 700,
-              color: "#4d3b2a",
-              mb: 3,
-              fontSize: { xs: "2rem", md: "2.8rem" },
-              textAlign: "left",
+              borderRadius: "30px",
+              p: { xs: 3, md: 5 },
+              width: "100%",
+              maxWidth: 450,
+              background: "#f5f2ed", // Light cream background matching your image
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              minHeight: 650,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
             }}
           >
-            Sign Up
-          </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 1, fontSize: "0.85rem" }}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mb: 1, fontSize: "0.85rem" }}>
-              {success}
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit} autoComplete="off" style={{ width: "100%" }}>
-            <TextField
-              fullWidth
-              name="full_name"
-              label="Full Name"
-              placeholder="Juan Dela Cruz"
-              value={formData.full_name}
-              onChange={handleChange}
-              margin="normal"
-              required
-              InputProps={{
-                sx: {
-                  borderRadius: "25px",
-                  background: "#ede3d4",
-                  fontStyle: "italic",
-                  fontSize: "1rem",
-                  height: 48,
-                },
-              }}
-              InputLabelProps={{
-                sx: { color: "#4d3b2a", fontWeight: 500, fontSize: "0.95rem" },
-              }}
-            />
-            <TextField
-              fullWidth
-              name="username"
-              label="Username"
-              placeholder="JuanDelaCruz02"
-              value={formData.username}
-              onChange={handleChange}
-              margin="normal"
-              required
-              InputProps={{
-                sx: {
-                  borderRadius: "25px",
-                  background: "#ede3d4",
-                  fontStyle: "italic",
-                  fontSize: "1rem",
-                  height: 48,
-                },
-              }}
-              InputLabelProps={{
-                sx: { color: "#4d3b2a", fontWeight: 500, fontSize: "0.95rem"  },
-              }}
-            />
-            <TextField
-              fullWidth
-              name="email"
-              label="Email Address"
-              placeholder="juan@gmail.com"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              margin="normal"
-              required
-              InputProps={{
-                sx: {
-                  borderRadius: "25px",
-                  background: "#ede3d4",
-                  fontStyle: "italic",
-                  fontSize: "1rem",
-                  height: 48,
-                },
-              }}
-              InputLabelProps={{
-                sx: { color: "#4d3b2a", fontWeight: 500, fontSize: "0.95rem" },
-              }}
-            />
-            <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-              <TextField
-                fullWidth
-                name="password"
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                value={formData.password}
-                onChange={handleChange}
-                margin="normal"
-                required
-                placeholder="********"
-                InputProps={{
-                  sx: {
-                    borderRadius: "25px",
-                    background: "#ede3d4",
-                    fontStyle: "italic",
-                    fontSize: "1rem",
-                    height: 48, 
-                  },
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={() => setShowPassword((show) => !show)}
-                        edge="end"
-                        size="small"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                InputLabelProps={{
-                  sx: { color: "#4d3b2a", fontWeight: 500, fontSize: "0.95rem" },
-                }}
-              />
-              <TextField
-                fullWidth
-                name="confirmPassword"
-                label="Confirm Password"
-                type={showConfirm ? "text" : "password"}
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                margin="normal"
-                required
-                placeholder="********"
-                InputProps={{
-                  sx: {
-                    borderRadius: "25px",
-                    background: "#ede3d4",
-                    fontStyle: "italic",
-                    fontSize: "1rem",
-                    height: 48,
-                  },
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle confirm password visibility"
-                        onClick={() => setShowConfirm((show) => !show)}
-                        edge="end"
-                        size="small"
-                      >
-                        {showConfirm ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                InputLabelProps={{
-                  sx: { color: "#4d3b2a", fontWeight: 500, fontSize: "0.95rem" },
-                }}
-              />
-            </Box>
-             <Button
-              type="submit"
-              fullWidth
-              variant="contained"
+            <Typography
+              variant="h3"
+              align="center"
               sx={{
-                mt: 2,
-                mb: 1,
-                borderRadius: "25px",
-                background: "#181818",
-                color: "#fff",
                 fontWeight: 700,
-                fontSize: "1rem",
-                py: 1,
-                boxShadow: "none",
-                "&:hover": { background: "#333" },
-              }}
-              disabled={loading}
-            >
-              {loading ? "Registering..." : "Create Account"}
-            </Button>
-            <Divider sx={{ my: 1, color: "#b48c5a", fontWeight: 500, fontSiz: "0.95rem" }}>Or</Divider>
-            <Button
-              fullWidth
-              component={Link}
-              to="/login"
-              variant="outlined"
-              sx={{
-                borderRadius: "25px",
-                background: "#ede3d4",
-                color: "#4d3b2a",
-                fontWeight: 600,
-                fontSize: "1rem",
-                py: 1,
-                border: "none",
-                "&:hover": { background: "#e2cfa3" },
+                color: "#2d3d2d", // Dark text matching your image
+                mb: 3,
+                fontSize: { xs: "2.2rem", md: "3rem" },
               }}
             >
-              Log in
-            </Button>
-          </form>
-        </Paper>
+              Sign Up
+            </Typography>
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 2, fontSize: "0.85rem" }}>
+                {error}
+              </Alert>
+            )}
+
+            {success && (
+              <Alert severity="success" sx={{ mb: 2, fontSize: "0.85rem" }}>
+                {success}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit} autoComplete="off" style={{ width: "100%" }}>
+              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, fontSize: "0.9rem" }}>
+                Full Name
+              </Typography>
+              <TextField
+                fullWidth
+                name="full_name"
+                placeholder="Juan Dela Cruz"
+                value={formData.full_name}
+                onChange={handleChange}
+                margin="none"
+                required
+                InputProps={{
+                  sx: {
+                    background: "#e8e4dd", // Light gray background matching your image
+                    borderRadius: "25px",
+                    fontStyle: "italic",
+                    fontSize: "0.95rem",
+                    height: 48,
+                    mb: 2,
+                    "& input": { 
+                      color: "#2d3d2d",
+                      "&::placeholder": {
+                        color: "#8a8a8a",
+                        fontStyle: "italic",
+                      }
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "2px solid #8fa876",
+                    },
+                  },
+                }}
+              />
+              
+              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, mt: 2, fontSize: "0.9rem" }}>
+                Username
+              </Typography>
+              <TextField
+                fullWidth
+                name="username"
+                placeholder="JuanDelaCruz02"
+                value={formData.username}
+                onChange={handleChange}
+                margin="none"
+                required
+                InputProps={{
+                  sx: {
+                    background: "#e8e4dd",
+                    borderRadius: "25px",
+                    fontStyle: "italic",
+                    fontSize: "0.95rem",
+                    height: 48,
+                    mb: 2,
+                    "& input": { 
+                      color: "#2d3d2d",
+                      "&::placeholder": {
+                        color: "#8a8a8a",
+                        fontStyle: "italic",
+                      }
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "2px solid #8fa876",
+                    },
+                  },
+                }}
+              />
+              
+              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, mt: 2, fontSize: "0.9rem" }}>
+                Email Address
+              </Typography>
+              <TextField
+                fullWidth
+                name="email"
+                placeholder="juan@google.com"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                margin="none"
+                required
+                InputProps={{
+                  sx: {
+                    background: "#e8e4dd",
+                    borderRadius: "25px",
+                    fontStyle: "italic",
+                    fontSize: "0.95rem",
+                    height: 48,
+                    mb: 2,
+                    "& input": { 
+                      color: "#2d3d2d",
+                      "&::placeholder": {
+                        color: "#8a8a8a",
+                        fontStyle: "italic",
+                      }
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "2px solid #8fa876",
+                    },
+                  },
+                }}
+              />
+              
+              <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, fontSize: "0.9rem" }}>
+                    Password
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    margin="none"
+                    required
+                    placeholder="**********"
+                    InputProps={{
+                      sx: {
+                        background: "#e8e4dd",
+                        borderRadius: "25px",
+                        fontStyle: "italic",
+                        fontSize: "0.95rem",
+                        height: 48,
+                        "& input": { 
+                          color: "#2d3d2d",
+                          "&::placeholder": {
+                            color: "#8a8a8a",
+                            fontStyle: "italic",
+                          }
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          border: "none",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          border: "none",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          border: "2px solid #8fa876",
+                        },
+                      },
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={() => setShowPassword((show) => !show)}
+                            edge="end"
+                            size="small"
+                            sx={{ color: "#6d7d6d" }}
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+                
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, fontSize: "0.9rem" }}>
+                    Confirm Password
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    name="confirmPassword"
+                    type={showConfirm ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    margin="none"
+                    required
+                    placeholder="**********"
+                    InputProps={{
+                      sx: {
+                        background: "#e8e4dd",
+                        borderRadius: "25px",
+                        fontStyle: "italic",
+                        fontSize: "0.95rem",
+                        height: 48,
+                        "& input": { 
+                          color: "#2d3d2d",
+                          "&::placeholder": {
+                            color: "#8a8a8a",
+                            fontStyle: "italic",
+                          }
+                        },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          border: "none",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          border: "none",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          border: "2px solid #8fa876",
+                        },
+                      },
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle confirm password visibility"
+                            onClick={() => setShowConfirm((show) => !show)}
+                            edge="end"
+                            size="small"
+                            sx={{ color: "#6d7d6d" }}
+                          >
+                            {showConfirm ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Box>
+              
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  mt: 3,
+                  mb: 2,
+                  backgroundColor: "#4a5d3a", // Dark green matching your image
+                  color: "#fff",
+                  borderRadius: "25px",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  py: 1.8,
+                  boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                  textTransform: "none",
+                  "&:hover": {
+                    backgroundColor: "#3a4d2a",
+                    boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                  },
+                  "&:disabled": {
+                    backgroundColor: "#a5a5a5",
+                  },
+                }}
+                disabled={loading}
+              >
+                {loading ? "Creating Account..." : "Create Account"}
+              </Button>
+              
+              <Box sx={{ textAlign: "center", mb: 2 }}>
+                <Typography sx={{ color: "#8a8a8a", fontSize: 14, fontStyle: "italic" }}>
+                  Or
+                </Typography>
+              </Box>
+              
+              <Button
+                fullWidth
+                component={Link}
+                to="/login"
+                variant="contained"
+                sx={{
+                  backgroundColor: "#e8e4dd", // Light background matching your image
+                  color: "#2d3d2d",
+                  borderRadius: "25px",
+                  fontWeight: 600,
+                  fontSize: 16,
+                  py: 1.8,
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                  textTransform: "none",
+                  "&:hover": {
+                    backgroundColor: "#d8d4cd",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                  },
+                }}
+              >
+                Log in
+              </Button>
+            </form>
+          </Paper>
+        </Box>
       </Box>
-    </Box>
     </>
   );
 };
