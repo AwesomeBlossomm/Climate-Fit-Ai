@@ -11,71 +11,73 @@ const Navigator = () => (
     width="100%"
     sx={{
       px: 4,
-      py: 1.5,
-      backgroundColor: "#c9b190",
+      py: 2,
+      backgroundColor: "#4a5d3a", // Dark green matching the image
       position: "fixed",
       top: 0,
       left: 0,
       zIndex: 1100,
-      boxShadow: 1,
+      boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
     }}
   >
     {/* Logo and Title */}
     <Box display="flex" alignItems="center">
       <Box
+        component={Link}
+        to="/"
+        display="flex"
+        alignItems="center"
         sx={{
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          background: "#fff",
-          mr: 2,
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          textDecoration: "none",
+          cursor: "pointer",
+          "&:hover": {
+            opacity: 0.9,
+          },
+          transition: "opacity 0.2s ease",
         }}
       >
         <Box
           component="img"
-          src="src/assets/logo.png"
+          src="src/assets/ClimateFitLogo.png"
           alt="Climate Fit Logo"
           sx={{
-            width: "115px",
-            height: "115px",
-            objectFit: "cover",
+              width: "90px",
+              height: "50px",
+              objectFit: "cover",
           }}
         />
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            color: "#ffffff",
+            fontSize: "1.5rem",
+          }}
+        >
+          CLIMATE FIT
+        </Typography>
       </Box>
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 600,
-          letterSpacing: 2,
-          color: "#46403d",
-        }}
-      >
-        CLIMATE FIT
-      </Typography>
     </Box>
     {/* Buttons */}
-    <Box display="flex" alignItems="center">
+    <Box display="flex" alignItems="center" gap={2}>
       <Button
         component={Link}
         to="/login"
         variant="outlined"
         sx={{
-          backgroundColor: "#f5f5dc",
-          color: "#46403d",
-          border: "2px solid #46403d",
-          borderRadius: "20px",
-          px: 3,
+          backgroundColor: "transparent",
+          color: "#ffffff",
+          border: "2px solid #ffffff",
+          borderRadius: "25px",
+          px: 4,
           py: 1,
           fontWeight: 600,
           textTransform: "none",
-          mr: 1, // less margin between buttons
+          fontSize: "0.95rem",
           "&:hover": {
-            backgroundColor: "#e9e4d0",
-            borderColor: "#46403d",
+            backgroundColor: "rgba(255,255,255,0.1)",
+            borderColor: "#ffffff",
           },
         }}
       >
@@ -86,15 +88,16 @@ const Navigator = () => (
         to="/register"
         variant="contained"
         sx={{
-          backgroundColor: "#46403d",
-          color: "#fff",
-          borderRadius: "20px",
-          px: 3,
+          backgroundColor: "#8fa876", // Light green matching the image
+          color: "#ffffff",
+          borderRadius: "25px",
+          px: 4,
           py: 1,
           fontWeight: 600,
           textTransform: "none",
+          fontSize: "0.95rem",
           "&:hover": {
-            backgroundColor: "#2d2926",
+            backgroundColor: "#7a956a",
           },
         }}
       >

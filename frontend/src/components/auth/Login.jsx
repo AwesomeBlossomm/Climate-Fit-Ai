@@ -63,11 +63,12 @@ const Login = () => {
       minHeight="100vh"
       width="100vw"
       sx={{
-        background: "#c9bba5",
+        background: "linear-gradient(135deg, #8fa876 0%, #7a956a 100%)", // Green gradient matching your image
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        p: 0,
+        p: 2,
+        pt: 12, // Account for fixed navigator
       }}
     >
       <Box
@@ -75,20 +76,20 @@ const Login = () => {
         alignItems="center"
         justifyContent="center"
         width="100%"
-        maxWidth={1100}
+        maxWidth={500}
         sx={{ mx: "auto" }}
       >
-        {/* Left: Login Form */}
+        {/* Login Form Card */}
         <Paper
-          elevation={0}
+          elevation={8}
           sx={{
-            borderRadius: "40px",
-            p: { xs: 2, md: 3 },
-            width: { xs: "100%", md: 420 },
-            background: "#f7ebdd",
-            mr: { md: 4 },
-            boxShadow: "none",
-            minHeight: 450,
+            borderRadius: "30px",
+            p: { xs: 3, md: 5 },
+            width: "100%",
+            maxWidth: 450,
+            background: "#f5f2ed", // Light cream background matching your image
+            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            minHeight: 550,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -96,11 +97,12 @@ const Login = () => {
         >
           <Typography
             variant="h3"
+            align="center"
             sx={{
               fontWeight: 700,
-              color: "#3a2e25",
-              mb: 3,
-              fontSize: { xs: "2rem", md: "2.8rem" },
+              color: "#2d3d2d", // Dark text matching your image
+              mb: 4,
+              fontSize: { xs: "2.2rem", md: "3rem" },
             }}
           >
             Welcome Back!
@@ -117,16 +119,32 @@ const Login = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Person sx={{ color: "#3a2e25" }} />
+                    <Person sx={{ color: "#6d7d6d" }} />
                   </InputAdornment>
                 ),
                 sx: {
-                  background: "#e6dfd5",
-                  borderRadius: "24px",
+                  background: "#e8e4dd", // Light gray background matching your image
+                  borderRadius: "25px",
                   fontStyle: "italic",
                   fontWeight: 500,
-                  color: "#3a2e25",
-                  "& input": { color: "#3a2e25" },
+                  color: "#2d3d2d",
+                  "& input": { 
+                    color: "#2d3d2d",
+                    "&::placeholder": {
+                      color: "#8a8a8a",
+                      fontStyle: "italic",
+                    }
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    border: "2px solid #8fa876",
+                  },
+                  mb: 2,
                 },
               }}
               />
@@ -142,7 +160,7 @@ const Login = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Lock sx={{ color: "#3a2e25" }} />
+                    <Lock sx={{ color: "#6d7d6d" }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -151,18 +169,35 @@ const Login = () => {
                       onClick={() => setShowPassword((show) => !show)}
                       edge="end"
                       size="small"
+                      sx={{ color: "#6d7d6d" }}
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
                 sx: {
-                  background: "#e6dfd5",
-                  borderRadius: "24px",
+                  background: "#e8e4dd", // Light gray background matching your image
+                  borderRadius: "25px",
                   fontStyle: "italic",
                   fontWeight: 500,
-                  color: "#3a2e25",
-                  "& input": { color: "#3a2e25" },
+                  color: "#2d3d2d",
+                  "& input": { 
+                    color: "#2d3d2d",
+                    "&::placeholder": {
+                      color: "#8a8a8a",
+                      fontStyle: "italic",
+                    }
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    border: "2px solid #8fa876",
+                  },
+                  mb: 2,
                 },
               }}
             />
@@ -171,19 +206,19 @@ const Login = () => {
               alignItems="center"
               justifyContent="space-between"
               mt={1}
-              mb={2}
+              mb={3}
             >
               <FormControlLabel
                 control={
                   <Checkbox
                     sx={{
-                      color: "#3a2e25",
-                      "&.Mui-checked": { color: "#3a2e25" },
+                      color: "#6d7d6d",
+                      "&.Mui-checked": { color: "#8fa876" },
                     }}
                   />
                 }
                 label={
-                  <Typography sx={{ fontSize: 15, color: "#3a2e25" }}>
+                  <Typography sx={{ fontSize: 14, color: "#6d7d6d", fontStyle: "italic" }}>
                     Remember Me
                   </Typography>
                 }
@@ -192,11 +227,14 @@ const Login = () => {
                 component={Link}
                 to="/forgot-password"
                 sx={{
-                  color: "#8b7c6a",
+                  color: "#6d7d6d",
                   fontStyle: "italic",
-                  fontSize: 15,
+                  fontSize: 14,
                   textDecoration: "none",
-                  "&:hover": { textDecoration: "underline" },
+                  "&:hover": { 
+                    textDecoration: "underline",
+                    color: "#8fa876",
+                  },
                 }}
               >
                 Forgot Password?
@@ -207,41 +245,52 @@ const Login = () => {
               fullWidth
               variant="contained"
               sx={{
-                mt: 1,
-                mb: 2,
-                backgroundColor: "#23211d",
+                mt: 2,
+                mb: 3,
+                backgroundColor: "#4a5d3a", // Dark green matching your image
                 color: "#fff",
-                borderRadius: "28px",
-                fontWeight: 600,
-                fontSize: 18,
-                py: 1.5,
-                boxShadow: "none",
+                borderRadius: "25px",
+                fontWeight: 700,
+                fontSize: 16,
+                py: 1.8,
+                boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
                 textTransform: "none",
                 "&:hover": {
-                  backgroundColor: "#3a2e25",
+                  backgroundColor: "#3a4d2a",
+                  boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                },
+                "&:disabled": {
+                  backgroundColor: "#a5a5a5",
                 },
               }}
               disabled={loading}
             >
               {loading ? "Logging in..." : "Log in"}
             </Button>
-            <Divider sx={{ my: 2, color: "#bdbdbd" }}>Or</Divider>
+            
+            <Box sx={{ textAlign: "center", mb: 2 }}>
+              <Typography sx={{ color: "#8a8a8a", fontSize: 14, fontStyle: "italic" }}>
+                Or
+              </Typography>
+            </Box>
+            
             <Button
               component={Link}
               to="/register"
               fullWidth
               variant="contained"
               sx={{
-                backgroundColor: "#e6dfd5",
-                color: "#23211d",
-                borderRadius: "28px",
+                backgroundColor: "#e8e4dd", // Light background matching your image
+                color: "#2d3d2d",
+                borderRadius: "25px",
                 fontWeight: 600,
-                fontSize: 18,
-                py: 1.5,
-                boxShadow: "none",
+                fontSize: 16,
+                py: 1.8,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
                 textTransform: "none",
                 "&:hover": {
-                  backgroundColor: "#d6cfc2",
+                  backgroundColor: "#d8d4cd",
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
                 },
               }}
             >
@@ -249,27 +298,6 @@ const Login = () => {
             </Button>
           </form>
         </Paper>
-        {/* Right: Illustration */}
-        <Box
-          sx={{
-            display: { xs: "none", md: "block" },
-            flex: 1,
-            minWidth: 400,
-            pl: 4,
-          }}
-        >
-           <Box
-            component="img"
-            src="/assets/login-illustration.png" // <-- Replace with your illustration path
-            alt="Login Illustration"
-            sx={{
-              width: "100%",
-              height: "auto",
-              maxWidth: 520,
-              display: "block",
-            }}
-          />
-        </Box>
       </Box>
     </Box>
     </>

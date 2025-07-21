@@ -13,71 +13,73 @@ const Navigator = () => (
     width="100%"
     sx={{
       px: 4,
-      py: 1.5,
-      backgroundColor: "#c9b190",
+      py: 2,
+      backgroundColor: "#4a5d3a", // Dark green matching the image
       position: "fixed",
       top: 0,
       left: 0,
       zIndex: 1100,
-      boxShadow: 1,
+      boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
     }}
   >
     {/* Logo and Title */}
     <Box display="flex" alignItems="center">
       <Box
+        component={Link}
+        to="/"
+        display="flex"
+        alignItems="center"
         sx={{
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          background: "#fff",
-          mr: 2,
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          textDecoration: "none",
+          cursor: "pointer",
+          "&:hover": {
+            opacity: 0.9,
+          },
+          transition: "opacity 0.2s ease",
         }}
       >
         <Box
           component="img"
-          src="src/assets/logo.png"
+          src="src/assets/ClimateFitLogo.png"
           alt="Climate Fit Logo"
           sx={{
-            width: "115px",
-            height: "115px",
-            objectFit: "cover",
+              width: "90px",
+              height: "50px",
+              objectFit: "cover",
           }}
         />
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            color: "#ffffff",
+            fontSize: "1.5rem",
+          }}
+        >
+          CLIMATE FIT
+        </Typography>
       </Box>
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 600,
-          letterSpacing: 2,
-          color: "#46403d",
-        }}
-      >
-        CLIMATE FIT
-      </Typography>
     </Box>
     {/* Buttons */}
-    <Box display="flex" alignItems="center">
+    <Box display="flex" alignItems="center" gap={2}>
       <Button
         component={Link}
         to="/login"
         variant="outlined"
         sx={{
-          backgroundColor: "#f5f5dc",
-          color: "#46403d",
-          border: "2px solid #46403d",
-          borderRadius: "20px",
-          px: 3,
+          backgroundColor: "transparent",
+          color: "#ffffff",
+          border: "2px solid #ffffff",
+          borderRadius: "25px",
+          px: 4,
           py: 1,
           fontWeight: 600,
           textTransform: "none",
-          mr: 1, // less margin between buttons
+          fontSize: "0.95rem",
           "&:hover": {
-            backgroundColor: "#e9e4d0",
-            borderColor: "#46403d",
+            backgroundColor: "rgba(255,255,255,0.1)",
+            borderColor: "#ffffff",
           },
         }}
       >
@@ -88,15 +90,16 @@ const Navigator = () => (
         to="/register"
         variant="contained"
         sx={{
-          backgroundColor: "#46403d",
-          color: "#fff",
-          borderRadius: "20px",
-          px: 3,
+          backgroundColor: "#8fa876", // Light green matching the image
+          color: "#ffffff",
+          borderRadius: "25px",
+          px: 4,
           py: 1,
           fontWeight: 600,
           textTransform: "none",
+          fontSize: "0.95rem",
           "&:hover": {
-            backgroundColor: "#2d2926",
+            backgroundColor: "#7a956a",
           },
         }}
       >
@@ -114,120 +117,143 @@ const Home = () => {
       minHeight="100vh"
       sx={{
         p: 0,
-        backgroundColor: "#f7ebdd",
+        backgroundColor: "#f0f8f0", // Light green background matching the image
         overflowX: "hidden",
       }}
     >
+      {/* Add keyframes for animation */}
+      <style>
+        {`
+          @keyframes floatY {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0); }
+          }
+        `}
+      </style>
       <Navigator />
       <Box
         display="flex"
         alignItems="center"
-        justifyContent="center"
+        justifyContent="space-between"
         minHeight="100vh"
         sx={{
-          pt: 10, // padding for fixed header
+          pt: 10,
+          px: { xs: 4, md: 8 },
+          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)", // Light green gradient matching the image
         }}
       >
-        <Paper
-          elevation={0}
+        {/* Main Content Container */}
+        <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            borderRadius: "32px",
-            background: "#f3e5cb",
-            px: 6,
-            py: 4,
-            boxShadow: "none",
-            maxWidth: 1000,
+            justifyContent: "center",
+            maxWidth: 1400,
             width: "100%",
-            gap: 6,
+            mx: "auto",
+            position: "relative",
+            minHeight: "80vh",
           }}
         >
-          {/* Illustration */}
+          {/* Left Content - Hero Image */}
           <Box
             sx={{
-              minWidth: 420,
-              maxWidth: 500,
-              display: { xs: "none", md: "block" },
-              // border: "3px solid #7e6b5a",
-              borderRadius: "16px",
-              p: 2,
-              background: "transparent",
-              overflow: "hidden",
-              animation: "floatY 3s ease-in-out infinite",
+              position: "absolute",
+              left: { xs: "50%", md: "5%" },
+              top: "50%",
+              transform: { xs: "translate(-50%, -50%)", md: "translateY(-50%)" },
+              width: { xs: "80%", md: "55%" },
+              maxWidth: 650,
+              zIndex: 1,
             }}
           >
             <Box
               component="img"
-              src="src/assets/landing-illustration.png"
-              alt="Landing Illustration"
+              src="src/assets/ClimateFitLogo.png"
+              alt="Climate Fit Illustration"
               sx={{
                 width: "100%",
                 height: "auto",
-                borderRadius: "12px",
-                background: "transparent",
-                display: "block",
+                animation: "floatY 3s ease-in-out infinite",
+                filter: "drop-shadow(0 20px 40px rgba(74, 93, 58, 0.2))",
               }}
             />
           </Box>
-          {/* Add keyframes for animation */}
-          <style>
-            {`
-              @keyframes floatY {
-                0% { transform: translateY(0); }
-                50% { transform: translateY(-20px); }
-                100% { transform: translateY(0); }
-              }
-            `}
-          </style>
-          {/* Main Text */}
-          <Box flex={1} textAlign="left">
+
+          {/* Right Content - Description with Green Background (Overlapping) */}
+          <Box 
+            sx={{ 
+              position: "absolute",
+              right: { xs: "50%", md: "5%" },
+              top: "50%",
+              transform: { xs: "translate(50%, -50%)", md: "translateY(-50%)" },
+              width: { xs: "90%", md: "50%" },
+              maxWidth: 550,
+              background: "#4a5d3a",
+              borderRadius: "32px",
+              p: { xs: 4, md: 5 },
+              boxShadow: "0 20px 60px rgba(74, 93, 58, 0.4)",
+              zIndex: 3,
+              textAlign: { xs: "center", md: "left" },
+              ml: { xs: 0, md: "-100px" }, // Negative margin to create overlap
+            }}
+          >
             <Typography
-              variant="h2"
+              variant="h1"
               sx={{
-                fontWeight: 700,
-                color: "#46403d",
-                fontSize: { xs: "2rem", md: "3rem" },
-                mb: 2,
+                fontWeight: 800,
+                color: "#ffffff",
+                fontSize: { xs: "2.5rem", md: "4rem" },
+                mb: 3,
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
               }}
             >
               Climate Fit
             </Typography>
+            
             <Typography
-              variant="h6"
+              variant="h5"
               sx={{
-                color: "#6d5c4d",
-                mb: 3,
+                color: "rgba(255, 255, 255, 0.9)",
+                mb: 4,
                 fontWeight: 400,
-                maxWidth: 500,
+                fontSize: { xs: "1rem", md: "1.2rem" },
+                lineHeight: 1.5,
               }}
             >
               SDG 12: Responsible Consumption and Production.
-              <br />
               Significantly reducing fashion returns, promoting sustainable
-              materials, and encouraging the purchase of climate-appropriate
-              wear,
+              materials and encouraging the purchase
+              of climate-appropriate wear,
             </Typography>
+            
             <Button
               variant="contained"
               sx={{
-                backgroundColor: "#3a2e25",
-                color: "#fff",
-                borderRadius: "20px",
-                px: 4,
-                py: 1.5,
+                backgroundColor: "#8fa876",
+                color: "#ffffff",
+                borderRadius: "30px",
+                px: 6,
+                py: 2,
                 fontWeight: 600,
                 textTransform: "none",
+                fontSize: "1.1rem",
+                boxShadow: "0 4px 20px rgba(143, 168, 118, 0.3)",
                 "&:hover": {
-                  backgroundColor: "#2d221a",
+                  backgroundColor: "#7a956a",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 25px rgba(143, 168, 118, 0.4)",
                 },
+                transition: "all 0.3s ease",
               }}
-              endIcon={<span style={{ fontWeight: "bold" }}>{">"}</span>}
+              endIcon={<span style={{ fontSize: "1.2rem" }}>{">"}</span>}
             >
-              Learn More
+              LEARN MORE
             </Button>
           </Box>
-        </Paper>
+        </Box>
       </Box>
       <WhyChooseSection />
       <MeetOurTeamSection />
@@ -241,65 +267,67 @@ const WhyChooseSection = () => (
       position: "relative",
       width: "100%",
       minHeight: "100vh",
-      background: "#c9bba5",
+      background: "linear-gradient(135deg, #8fa876 0%, #7a956a 100%)", // Clean green gradient matching the image
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
-      overflow: "hidden",
-      pb: { xs: 10, md: 16 },
+      py: { xs: 8, md: 12 },
+      px: { xs: 2, md: 4 },
     }}
   >
     <Typography
-      variant="h3"
+      variant="h2"
       align="center"
       sx={{
         fontWeight: 800,
-        color: "#f7ebdd",
-        mb: 6,
-        fontSize: { xs: "2rem", md: "3rem" },
+        color: "#ffffff",
+        mb: 8,
+        fontSize: { xs: "2.5rem", md: "3.5rem" },
         letterSpacing: 2,
-        textShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        textShadow: "0 2px 10px rgba(0,0,0,0.2)",
       }}
     >
       WHY CHOOSE OUR SITE?
     </Typography>
+    
     <Grid
       container
-      spacing={4}
+      spacing={3}
       justifyContent="center"
       alignItems="stretch"
       sx={{
-        maxWidth: "100%",
-        px: { xs: 0, md: 4 },
-        m: 0,
+        maxWidth: 1200,
+        width: "100%",
+        flexWrap: "nowrap", // Prevent wrapping to keep all cards in one line
       }}
     >
       {/* Card 1 */}
-      <Grid item xs={12} md={4} sx={{ maxWidth: 380 }}>
+      <Grid item xs={4} sx={{ minWidth: 0 }}>
         <Box
           component={motion.div}
           initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.07 }}
-          whileFocus={{ scale: 1.05 }}
+          whileHover={{ scale: 1.03 }}
+          whileFocus={{ scale: 1.02 }}
           viewport={{ once: false, amount: 0.3 }}
-          transition={{ duration: 1.0, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.1 }}
           tabIndex={0}
           sx={{
-            borderRadius: "32px",
+            borderRadius: "20px",
             overflow: "hidden",
             position: "relative",
-            minHeight: 260,
+            height: 250,
             background: `url('src/assets/01.png') center/cover no-repeat`,
-            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+            boxShadow: "0 6px 24px rgba(0,0,0,0.15)",
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
-            p: 3,
-            height: "100%",
             cursor: "pointer",
             outline: "none",
+            "&:hover": {
+              boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+            },
           }}
         >
           <Box
@@ -307,7 +335,7 @@ const WhyChooseSection = () => (
               position: "absolute",
               top: 16,
               left: 16,
-              background: "rgba(0,0,0,0.4)",
+              background: "rgba(0,0,0,0.6)",
               color: "#fff",
               borderRadius: "50%",
               width: 36,
@@ -316,7 +344,7 @@ const WhyChooseSection = () => (
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 700,
-              fontSize: 18,
+              fontSize: 14,
               zIndex: 2,
             }}
           >
@@ -327,46 +355,62 @@ const WhyChooseSection = () => (
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
+                "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%)",
               zIndex: 1,
             }}
           />
-          <Box sx={{ position: "relative", zIndex: 2 }}>
-            <Typography variant="h5" sx={{ color: "#fff", fontWeight: 700 }}>
+          <Box sx={{ position: "relative", zIndex: 2, p: 2.5 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: "#fff", 
+                fontWeight: 700,
+                mb: 1,
+                fontSize: "1.1rem",
+              }}
+            >
               Smart Style, Less Waste
             </Typography>
-            <Typography sx={{ color: "#fff", mt: 1 }}>
+            <Typography 
+              sx={{ 
+                color: "rgba(255,255,255,0.9)", 
+                fontSize: "0.85rem",
+                lineHeight: 1.4,
+              }}
+            >
               Reduce fashion returns by 68% with AI-driven, climate-aware
               clothing recommendations tailored to your real-time location
             </Typography>
           </Box>
         </Box>
       </Grid>
+
       {/* Card 2 */}
-      <Grid item xs={12} md={4} sx={{ maxWidth: 380 }}>
+      <Grid item xs={4} sx={{ minWidth: 0 }}>
         <Box
           component={motion.div}
           initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.07 }}
-          whileFocus={{ scale: 1.05 }}
+          whileHover={{ scale: 1.03 }}
+          whileFocus={{ scale: 1.02 }}
           viewport={{ once: false, amount: 0.3 }}
-          transition={{ duration: 1.0, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
           tabIndex={0}
           sx={{
-            borderRadius: "32px",
+            borderRadius: "20px",
             overflow: "hidden",
             position: "relative",
-            minHeight: 260,
+            height: 250,
             background: `url('src/assets/02.png') center/cover no-repeat`,
-            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+            boxShadow: "0 6px 24px rgba(0,0,0,0.15)",
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
-            p: 3,
-            height: "100%",
             cursor: "pointer",
             outline: "none",
+            "&:hover": {
+              boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+            },
           }}
         >
           <Box
@@ -374,7 +418,7 @@ const WhyChooseSection = () => (
               position: "absolute",
               top: 16,
               left: 16,
-              background: "rgba(0,0,0,0.4)",
+              background: "rgba(0,0,0,0.6)",
               color: "#fff",
               borderRadius: "50%",
               width: 36,
@@ -383,7 +427,7 @@ const WhyChooseSection = () => (
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 700,
-              fontSize: 18,
+              fontSize: 14,
               zIndex: 2,
             }}
           >
@@ -394,15 +438,29 @@ const WhyChooseSection = () => (
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
+                "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%)",
               zIndex: 1,
             }}
           />
-          <Box sx={{ position: "relative", zIndex: 2 }}>
-            <Typography variant="h5" sx={{ color: "#fff", fontWeight: 700 }}>
+          <Box sx={{ position: "relative", zIndex: 2, p: 2.5 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: "#fff", 
+                fontWeight: 700,
+                mb: 1,
+                fontSize: "1.1rem",
+              }}
+            >
               Support Local, Shop Green
             </Typography>
-            <Typography sx={{ color: "#fff", mt: 1 }}>
+            <Typography 
+              sx={{ 
+                color: "rgba(255,255,255,0.9)", 
+                fontSize: "0.85rem",
+                lineHeight: 1.4,
+              }}
+            >
               Empower local economies and sustainable practices by exploring a
               marketplace championing regional brands and eco-friendly
               materials.
@@ -410,31 +468,33 @@ const WhyChooseSection = () => (
           </Box>
         </Box>
       </Grid>
+
       {/* Card 3 */}
-      <Grid item xs={12} md={4} sx={{ maxWidth: 380 }}>
+      <Grid item xs={4} sx={{ minWidth: 0 }}>
         <Box
           component={motion.div}
           initial={{ opacity: 0, y: 60 }}
           whileInView={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.06 }}
-          whileFocus={{ scale: 1.06 }}
+          whileHover={{ scale: 1.03 }}
+          whileFocus={{ scale: 1.02 }}
           viewport={{ once: false, amount: 0.3 }}
-          transition={{ duration: 1.0, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
           tabIndex={0}
           sx={{
-            borderRadius: "32px",
+            borderRadius: "20px",
             overflow: "hidden",
             position: "relative",
-            minHeight: 260,
+            height: 250,
             background: `url('src/assets/03.png') center/cover no-repeat`,
-            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.10)",
+            boxShadow: "0 6px 24px rgba(0,0,0,0.15)",
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
-            p: 3,
-            height: "100%",
             cursor: "pointer",
             outline: "none",
+            "&:hover": {
+              boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+            },
           }}
         >
           <Box
@@ -442,7 +502,7 @@ const WhyChooseSection = () => (
               position: "absolute",
               top: 16,
               left: 16,
-              background: "rgba(0,0,0,0.4)",
+              background: "rgba(0,0,0,0.6)",
               color: "#fff",
               borderRadius: "50%",
               width: 36,
@@ -451,7 +511,7 @@ const WhyChooseSection = () => (
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 700,
-              fontSize: 18,
+              fontSize: 14,
               zIndex: 2,
             }}
           >
@@ -462,15 +522,29 @@ const WhyChooseSection = () => (
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(180deg,rgba(0,0,0,0.15) 40%,rgba(0,0,0,0.7) 100%)",
+                "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%)",
               zIndex: 1,
             }}
           />
-          <Box sx={{ position: "relative", zIndex: 2 }}>
-            <Typography variant="h5" sx={{ color: "#fff", fontWeight: 700 }}>
+          <Box sx={{ position: "relative", zIndex: 2, p: 2.5 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: "#fff", 
+                fontWeight: 700,
+                mb: 1,
+                fontSize: "1.1rem",
+              }}
+            >
               Perfect Fit, Informed Choices
             </Typography>
-            <Typography sx={{ color: "#fff", mt: 1 }}>
+            <Typography 
+              sx={{ 
+                color: "rgba(255,255,255,0.9)", 
+                fontSize: "0.85rem",
+                lineHeight: 1.4,
+              }}
+            >
               Minimize waste with precise 3D body scanning, gain valuable
               sustainable fashion insights, and access real-time AI stylist
               support.
@@ -479,18 +553,6 @@ const WhyChooseSection = () => (
         </Box>
       </Grid>
     </Grid>
-    <Box
-      sx={{
-        position: "absolute",
-        left: 0,
-        bottom: 0,
-        width: "100%",
-        height: { xs: 80, md: 120 },
-        background: "#c9b190",
-        zIndex: 10,
-        pointerEvents: "none",
-      }}
-    />
   </Box>
 );
 
@@ -499,21 +561,23 @@ const MeetOurTeamSection = () => (
     sx={{
       width: "100%",
       minHeight: "100vh",
-      background: "#f7ebdd",
+      background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)", // Light green gradient matching the image
       display: "flex",
       flexDirection: "column",
+      justifyContent: "center",
       alignItems: "center",
       py: { xs: 8, md: 12 },
+      px: { xs: 2, md: 4 },
     }}
   >
     <Typography
-      variant="h3"
+      variant="h2"
       align="center"
       sx={{
         fontWeight: 800,
-        color: "#d1a86c",
-        mb: 2,
-        fontSize: { xs: "2rem", md: "2.8rem" },
+        color: "#2d3d2d", // Dark green/black text matching the image
+        mb: 3,
+        fontSize: { xs: "2.5rem", md: "3.5rem" },
         letterSpacing: 2,
       }}
     >
@@ -522,17 +586,29 @@ const MeetOurTeamSection = () => (
     <Typography
       align="center"
       sx={{
-        color: "#b48c5a",
-        mb: 6,
-        maxWidth: 700,
-        fontSize: { xs: "1rem", md: "1.2rem" },
+        color: "#4a5d4a", // Darker green for subtitle
+        mb: 8,
+        maxWidth: 800,
+        fontSize: { xs: "1.1rem", md: "1.3rem" },
+        lineHeight: 1.6,
+        fontWeight: 400,
       }}
     >
       Meet the innovative team of developers, designers, and climate experts
-      committed to delivering "Climate Fit", your intelligent guide to
+      committed to delivering "Climate Fit," your intelligent guide to
       sustainable and perfectly-suited fashion.
     </Typography>
-    <Grid container spacing={4} justifyContent="center">
+    
+    <Grid 
+      container 
+      spacing={6} 
+      justifyContent="center"
+      alignItems="center"
+      sx={{
+        maxWidth: 1200,
+        width: "100%",
+      }}
+    >
       <Grid
         item
         xs={12}
@@ -543,25 +619,54 @@ const MeetOurTeamSection = () => (
         alignItems="center"
       >
         <Box
-          component="img"
-          src="src/assets/team-raymond.jpg"
-          alt="Raymond Lei Nogalo"
+          component={motion.div}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
           sx={{
-            width: 170,
-            height: 170,
-            mb: 2,
-            borderRadius: "50%",
-            objectFit: "cover",
-            background: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
           }}
-        />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-          Raymond Lei Nogalo
-        </Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
-          Mobile App Developer
-        </Typography>
+        >
+          <Box
+            component="img"
+            src="src/assets/team-raymond.jpg"
+            alt="Raymond Lei Nogalo"
+            sx={{
+              width: 180,
+              height: 180,
+              mb: 3,
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "4px solid #ffffff",
+              boxShadow: "0 8px 24px rgba(74, 93, 58, 0.15)",
+            }}
+          />
+          <Typography 
+            sx={{ 
+              fontWeight: 700, 
+              fontSize: "1.3rem",
+              color: "#2d3d2d",
+              mb: 0.5,
+            }}
+          >
+            Raymond Lei Nogalo
+          </Typography>
+          <Typography 
+            sx={{ 
+              fontStyle: "italic", 
+              color: "#6d7d6d",
+              fontSize: "1rem",
+            }}
+          >
+            Mobile App Developer
+          </Typography>
+        </Box>
       </Grid>
+
       <Grid
         item
         xs={12}
@@ -572,25 +677,54 @@ const MeetOurTeamSection = () => (
         alignItems="center"
       >
         <Box
-          component="img"
-          src="src/assets/team-justine.jpg"
-          alt="Justine Julianna Balla"
+          component={motion.div}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
           sx={{
-            width: 170,
-            height: 170,
-            mb: 2,
-            borderRadius: "50%",
-            objectFit: "cover",
-            background: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
           }}
-        />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-          Justine Julianna Balla
-        </Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
-          Website developer
-        </Typography>
+        >
+          <Box
+            component="img"
+            src="src/assets/team-justine.jpg"
+            alt="Justine Julianna Balla"
+            sx={{
+              width: 180,
+              height: 180,
+              mb: 3,
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "4px solid #ffffff",
+              boxShadow: "0 8px 24px rgba(74, 93, 58, 0.15)",
+            }}
+          />
+          <Typography 
+            sx={{ 
+              fontWeight: 700, 
+              fontSize: "1.3rem",
+              color: "#2d3d2d",
+              mb: 0.5,
+            }}
+          >
+            Justine Julianna Balla
+          </Typography>
+          <Typography 
+            sx={{ 
+              fontStyle: "italic", 
+              color: "#6d7d6d",
+              fontSize: "1rem",
+            }}
+          >
+            Website developer
+          </Typography>
+        </Box>
       </Grid>
+
       <Grid
         item
         xs={12}
@@ -601,25 +735,54 @@ const MeetOurTeamSection = () => (
         alignItems="center"
       >
         <Box
-          component="img"
-          src="src/assets/team-angel.jpg"
-          alt="Angel Galapon"
+          component={motion.div}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
           sx={{
-            width: 170,
-            height: 170,
-            mb: 2,
-            borderRadius: "50%",
-            objectFit: "cover",
-            background: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
           }}
-        />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-          Angel Galapon
-        </Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
-          Tech Writter
-        </Typography>
+        >
+          <Box
+            component="img"
+            src="src/assets/team-angel.jpg"
+            alt="Angel Galapon"
+            sx={{
+              width: 180,
+              height: 180,
+              mb: 3,
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "4px solid #ffffff",
+              boxShadow: "0 8px 24px rgba(74, 93, 58, 0.15)",
+            }}
+          />
+          <Typography 
+            sx={{ 
+              fontWeight: 700, 
+              fontSize: "1.3rem",
+              color: "#2d3d2d",
+              mb: 0.5,
+            }}
+          >
+            Angel Galapon
+          </Typography>
+          <Typography 
+            sx={{ 
+              fontStyle: "italic", 
+              color: "#6d7d6d",
+              fontSize: "1rem",
+            }}
+          >
+            Tech Writter
+          </Typography>
+        </Box>
       </Grid>
+
       <Grid
         item
         xs={12}
@@ -630,24 +793,52 @@ const MeetOurTeamSection = () => (
         alignItems="center"
       >
         <Box
-          component="img"
-          src="src/assets/km.png"
-          alt="Kristine Mae Prado"
+          component={motion.div}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
           sx={{
-            width: 170,
-            height: 170,
-            mb: 2,
-            borderRadius: "50%",
-            objectFit: "cover",
-            background: "#fff",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
           }}
-        />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-          Kristine Mae Prado
-        </Typography>
-        <Typography sx={{ fontStyle: "italic", color: "#6d5c4d" }}>
-          UI/UX Designer
-        </Typography>
+        >
+          <Box
+            component="img"
+            src="src/assets/km.png"
+            alt="Kristine Mae Prado"
+            sx={{
+              width: 180,
+              height: 180,
+              mb: 3,
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "4px solid #ffffff",
+              boxShadow: "0 8px 24px rgba(74, 93, 58, 0.15)",
+            }}
+          />
+          <Typography 
+            sx={{ 
+              fontWeight: 700, 
+              fontSize: "1.3rem",
+              color: "#2d3d2d",
+              mb: 0.5,
+            }}
+          >
+            Kristine Mae Prado
+          </Typography>
+          <Typography 
+            sx={{ 
+              fontStyle: "italic", 
+              color: "#6d7d6d",
+              fontSize: "1rem",
+            }}
+          >
+            UI/UX Designer
+          </Typography>
+        </Box>
       </Grid>
     </Grid>
   </Box>
