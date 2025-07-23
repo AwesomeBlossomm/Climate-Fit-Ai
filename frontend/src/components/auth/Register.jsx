@@ -10,6 +10,8 @@ import {
   Divider,
   InputAdornment,
   IconButton,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -23,6 +25,7 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     full_name: "",
+    gender: "male",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -52,8 +55,8 @@ const Register = () => {
     }
 
     try {
-      const { username, email, password, full_name } = formData;
-      const result = await register({ username, email, password, full_name });
+      const { username, email, password, full_name, gender } = formData;
+      const result = await register({ username, email, password, full_name, gender });
 
       if (result.success) {
         setSuccess(
@@ -280,6 +283,36 @@ const Register = () => {
                   },
                 }}
               />
+
+              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, mt: 2, fontSize: "0.9rem" }}>
+                Gender
+              </Typography>
+              <Select
+                fullWidth
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                sx={{
+                  background: "#e8e4dd",
+                  borderRadius: "25px",
+                  fontStyle: "italic",
+                  fontSize: "0.95rem",
+                  height: 48,
+                  mb: 2,
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    border: "2px solid #8fa876",
+                  },
+                }}
+              >
+                <MenuItem value="male">Male</MenuItem>
+                <MenuItem value="female">Female</MenuItem>
+              </Select>
 
               <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
                 <Box sx={{ flex: 1 }}>

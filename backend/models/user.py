@@ -12,6 +12,7 @@ class UserRegistration(BaseModel):
     password: str
     email: EmailStr
     full_name: str
+    gender: str
     role: UserRole = UserRole.USER
 
     @validator('username')
