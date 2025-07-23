@@ -73,6 +73,7 @@ async def register(user: UserRegistration):
     
     hashed_password = hash_password(user.password)
     user_data = user.dict()
+    user_data["gender"] = user.gender
     user_data["password"] = hashed_password
     user_data["created_at"] = datetime.utcnow()
     user_data["is_active"] = True

@@ -20,6 +20,7 @@ import {
   Payment,
 } from "@mui/icons-material";
 import WeatherMapSection from "../components/WeatherMapSection";
+import SensorOccupiedIcon from '@mui/icons-material/SensorOccupied';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -50,6 +51,13 @@ const Dashboard = () => {
       description: "Review items in your cart",
       icon: <ShoppingCart sx={{ fontSize: 40, color: "#1976d2" }} />,
       action: () => navigate("/cart"),
+      color: "#e3f2fd",
+    },
+    {
+      title: "3D Body Scan",
+      description: "Explore the Modern way of Shopping",
+      icon: <SensorOccupiedIcon sx={{ fontSize: 40, color: "#8e24aa " }} />,
+      action: () => navigate("/bodyscan"),
       color: "#e3f2fd",
     },
   ];

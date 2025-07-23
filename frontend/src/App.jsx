@@ -16,6 +16,7 @@ import PaymentPage from "./pages/PaymentPage";
 import DiscountsPage from "./pages/DiscountsPage";
 import ProductDetail from "./pages/ProductDetail";
 import SellerProfile from "./pages/SellerProfile";
+import BodyScan from "./pages/BodyScan";
 
 const theme = createTheme();
 
@@ -81,6 +82,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <DiscountsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bodyscan"
+                element={
+                  <ProtectedRoute>
+                    <BodyScan />
                   </ProtectedRoute>
                 }
               />
