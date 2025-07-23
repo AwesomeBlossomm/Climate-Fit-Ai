@@ -14,6 +14,8 @@ import Products from "./pages/Products";
 import Cart from "./pages/Cart";
 import PaymentPage from "./pages/PaymentPage";
 import DiscountsPage from "./pages/DiscountsPage";
+import ProductDetail from "./pages/ProductDetail";
+import SellerProfile from "./pages/SellerProfile";
 
 const theme = createTheme();
 
@@ -81,7 +83,9 @@ function App() {
                     <DiscountsPage />
                   </ProtectedRoute>
                 }
-              />{" "}
+              />
+              <Route path="/products/:productId" element={<ProductDetail />} />
+              <Route path="/seller/:sellerId" element={<SellerProfile />} />
             </Routes>
           </Router>
         </CartProvider>

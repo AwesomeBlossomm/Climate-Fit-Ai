@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from bson import ObjectId
 import os
+import httpx
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -75,6 +76,7 @@ async def register(user: UserRegistration):
     user_data["password"] = hashed_password
     user_data["created_at"] = datetime.utcnow()
     user_data["is_active"] = True
+    user_data["welcome_vouchers_assigned"] = False  # Track if welcome vouchers have been assigned
     
     result = users_collection.insert_one(user_data)
     if result.inserted_id:
@@ -91,7 +93,36 @@ async def login(user: UserLogin):
         raise HTTPException(status_code=401, detail="Account deactivated")
     
     access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    # Check if this is the first login and assign welcome vouchers
+    if not db_user.get("welcome_vouchers_assigned", False):
+        try:
+            async with httpx.AsyncClient() as client:
+                voucher_response = await client.post(f"http://localhost:8000/discounts/auto-assign-vouchers/{user.username}")
+                if voucher_response.status_code == 200:
+                    # Mark welcome vouchers as assigned
+                    users_collection.update_one(
+                        {"username": user.username},
+                        {"$set": {"welcome_vouchers_assigned": True}}
+                    )
+                    
+                    voucher_data = voucher_response.json()
+                    return {
+                        "access_token": access_token,
+                        "token_type": "bearer",
+                        "vouchers_assigned": voucher_data.get("assigned_count", 0),
+                        "voucher_message": "Welcome! 20 vouchers assigned for your first login!",
+                        "first_login": True
+                    }
+        except Exception as e:
+            # If voucher assignment fails, still return login success but don't mark as assigned
+            pass
+    
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "first_login": False
+    }
 
 @router.get("/profile")
 async def get_profile(current_user: str = Depends(verify_token)):

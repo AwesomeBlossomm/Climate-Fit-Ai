@@ -19,6 +19,7 @@ import {
   Storefront,
   Payment,
 } from "@mui/icons-material";
+import WeatherMapSection from "../components/WeatherMapSection";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -85,6 +86,9 @@ const Dashboard = () => {
           <Typography variant="h6" gutterBottom color="text.secondary">
             Hello, {user?.full_name || user?.username}!
           </Typography>
+
+          {/* Weather and Map Section */}
+          <WeatherMapSection />
 
           <Box mt={3} mb={4}>
             <Typography variant="body1" sx={{ mb: 2 }}>

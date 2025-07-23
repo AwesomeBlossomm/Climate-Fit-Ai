@@ -3,464 +3,247 @@ import {
   Box,
   Typography,
   Container,
-  Card,
-  CardContent,
-  CardMedia,
-  Button,
-  IconButton,
-  Grid,
   Paper,
-  Divider,
   TextField,
-  Chip,
-  AppBar,
-  Toolbar,
-  List,
-  ListItem,
-  ListItemText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Snackbar,
+  Button,
+  Divider,
   Alert,
+  CircularProgress,
+  Chip,
+  IconButton,
 } from "@mui/material";
-import {
-  Add,
-  Remove,
-  Delete,
-  ShoppingCart,
-  LocalOffer,
-  ArrowBack,
-} from "@mui/icons-material";
-import { useAuth } from "../contexts/AuthContext";
+import { LocalOffer, Close } from "@mui/icons-material";
 import { useCart } from "../contexts/CartContext";
-import { useNavigate } from "react-router-dom";
+import { useDiscount } from "../contexts/DiscountContext";
 import { motion } from "framer-motion";
 
 const Cart = () => {
-  const { user, logout } = useAuth();
+  const { cartItems, updateQuantity, removeFromCart, getTotalPrice } =
+    useCart();
   const {
-    cartItems,
-    updateQuantity,
-    removeFromCart,
     appliedDiscount,
+    isApplying,
     applyDiscount,
     removeDiscount,
-    getCartTotal,
-    getDiscountAmount,
-    getFinalTotal,
-    getCartItemsCount,
-  } = useCart();
-  const navigate = useNavigate();
+    calculateDiscountedTotal,
+  } = useDiscount();
   const [discountCode, setDiscountCode] = useState("");
-  const [confirmRemove, setConfirmRemove] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const [discountError, setDiscountError] = useState("");
+  const [discountSuccess, setDiscountSuccess] = useState("");
 
-  // Mock cart data (in real app, this would come from context/state management)
-  const mockCartItems = [];
+  const originalTotal = getTotalPrice();
+  const finalTotal = calculateDiscountedTotal(originalTotal);
 
-  const discountCodes = {
-    SUMMER50: { discount: 0.5, description: "50% off Summer Sale" },
-    ECO33: { discount: 0.33, description: "33% off Eco Special" },
-    SAVE20: { discount: 0.2, description: "20% off Everything" },
-  };
-
-  const handleUpdateQuantity = (id, newQuantity) => {
-    if (newQuantity <= 0) {
-      setConfirmRemove(id);
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      setDiscountError("Please enter a discount code");
       return;
     }
-    updateQuantity(id, newQuantity);
-  };
 
-  const handleRemoveItem = (id) => {
-    removeFromCart(id);
-    setConfirmRemove(null);
-    setSnackbar({
-      open: true,
-      message: "Item removed from cart",
-      severity: "info",
-    });
-  };
+    try {
+      setDiscountError("");
+      setDiscountSuccess("");
 
-  const handleApplyDiscount = () => {
-    const discount = discountCodes[discountCode.toUpperCase()];
-    if (discount) {
-      applyDiscount(discount);
-      setSnackbar({
-        open: true,
-        message: `Discount applied: ${discount.description}`,
-        severity: "success",
-      });
-    } else {
-      setSnackbar({
-        open: true,
-        message: "Invalid discount code",
-        severity: "error",
-      });
+      await applyDiscount(discountCode.trim(), originalTotal);
+
+      setDiscountSuccess(`Discount "${discountCode}" applied successfully!`);
+      setDiscountCode("");
+    } catch (error) {
+      setDiscountError(error.message || "Invalid discount code");
     }
   };
 
   const handleRemoveDiscount = () => {
     removeDiscount();
-    setDiscountCode("");
-    setSnackbar({
-      open: true,
-      message: "Discount removed",
-      severity: "info",
-    });
+    setDiscountSuccess("");
+    setDiscountError("");
   };
-
-  const getSubtotal = () => {
-    return getCartTotal();
-  };
-
-  const getDiscountAmountDisplay = () => {
-    return getDiscountAmount();
-  };
-
-  const getTotal = () => {
-    return getFinalTotal();
-  };
-
-  const getTotalItems = () => {
-    return getCartItemsCount();
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  const proceedToPayment = () => {
-    navigate("/payment", {
-      state: {
-        cartItems,
-        subtotal: getSubtotal(),
-        discount: getDiscountAmountDisplay(),
-        total: getTotal(),
-        appliedDiscount,
-      },
-    });
-  };
-
-  if (cartItems.length === 0) {
-    return (
-      <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-        <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-          <Toolbar>
-            <IconButton color="inherit" onClick={() => navigate("/products")}>
-              <ArrowBack />
-            </IconButton>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Shopping Cart
-            </Typography>
-            <Button color="inherit" onClick={() => navigate("/products")}>
-              Products
-            </Button>
-            <Button color="inherit" onClick={handleLogout}>
-              Logout
-            </Button>
-          </Toolbar>
-        </AppBar>
-
-        <Container maxWidth="md" sx={{ py: 8 }}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Paper
-              elevation={3}
-              sx={{ p: 6, textAlign: "center", borderRadius: 3 }}
-            >
-              <ShoppingCart sx={{ fontSize: 80, color: "#bdbdbd", mb: 2 }} />
-              <Typography variant="h4" gutterBottom color="text.secondary">
-                Your cart is empty
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Start shopping to add items to your cart
-              </Typography>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={() => navigate("/products")}
-                sx={{ bgcolor: "#2e7d32", "&:hover": { bgcolor: "#1b5e20" } }}
-              >
-                Continue Shopping
-              </Button>
-            </Paper>
-          </motion.div>
-        </Container>
-      </Box>
-    );
-  }
 
   return (
-    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-      <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={() => navigate("/products")}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Shopping Cart ({getTotalItems()} items)
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ fontWeight: "bold", color: "#2e7d32" }}
+      >
+        🛒 Shopping Cart
+      </Typography>
+
+      {cartItems.length === 0 ? (
+        <Paper
+          elevation={2}
+          sx={{ p: 4, textAlign: "center", borderRadius: 3 }}
+        >
+          <Typography variant="h6" color="text.secondary">
+            Your cart is empty
           </Typography>
-          <Button color="inherit" onClick={() => navigate("/products")}>
-            Products
-          </Button>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Grid container spacing={4}>
+        </Paper>
+      ) : (
+        <>
           {/* Cart Items */}
-          <Grid item xs={12} md={8}>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold" }}>
-                Cart Items
-              </Typography>
-
-              {cartItems.map((item) => (
-                <Card key={item.id} sx={{ mb: 2, borderRadius: 2 }}>
-                  <CardContent>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={3} md={2}>
-                        <CardMedia
-                          component="img"
-                          height="80"
-                          image={item.image}
-                          alt={item.name}
-                          sx={{ borderRadius: 1, objectFit: "cover" }}
-                        />
-                      </Grid>
-                      <Grid item xs={5} md={6}>
-                        <Typography variant="h6" gutterBottom>
-                          {item.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          ${item.price} each
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={2} md={2}>
-                        <Box
-                          display="flex"
-                          alignItems="center"
-                          flexDirection="column"
-                        >
-                          <Box display="flex" alignItems="center">
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                handleUpdateQuantity(item.id, item.quantity - 1)
-                              }
-                            >
-                              <Remove />
-                            </IconButton>
-                            <Typography
-                              sx={{ mx: 1, minWidth: 20, textAlign: "center" }}
-                            >
-                              {item.quantity}
-                            </Typography>
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                handleUpdateQuantity(item.id, item.quantity + 1)
-                              }
-                            >
-                              <Add />
-                            </IconButton>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={2} md={2}>
-                        <Box textAlign="right">
-                          <Typography
-                            variant="h6"
-                            color="primary"
-                            fontWeight="bold"
-                          >
-                            ${(item.price * item.quantity).toFixed(2)}
-                          </Typography>
-                          <IconButton
-                            color="error"
-                            onClick={() => setConfirmRemove(item.id)}
-                            size="small"
-                          >
-                            <Delete />
-                          </IconButton>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              ))}
-            </motion.div>
-          </Grid>
-
-          {/* Order Summary */}
-          <Grid item xs={12} md={4}>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Paper
-                elevation={3}
-                sx={{ p: 3, borderRadius: 3, position: "sticky", top: 20 }}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+            {cartItems.map((item) => (
+              <Box
+                key={item.id}
+                sx={{ mb: 2, pb: 2, borderBottom: "1px solid #eee" }}
               >
-                <Typography
-                  variant="h5"
-                  gutterBottom
-                  sx={{ fontWeight: "bold" }}
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
                 >
-                  Order Summary
-                </Typography>
-
-                {/* Discount Code Section */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    <LocalOffer sx={{ verticalAlign: "middle", mr: 1 }} />
-                    Discount Code
-                  </Typography>
-                  {appliedDiscount ? (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Chip
-                        label={appliedDiscount.description}
-                        color="success"
-                        onDelete={handleRemoveDiscount}
-                      />
-                    </Box>
-                  ) : (
-                    <Box display="flex" gap={1}>
-                      <TextField
-                        size="small"
-                        placeholder="Enter code"
-                        value={discountCode}
-                        onChange={(e) => setDiscountCode(e.target.value)}
-                        sx={{ flexGrow: 1 }}
-                      />
-                      <Button
-                        variant="outlined"
-                        onClick={handleApplyDiscount}
-                        disabled={!discountCode}
-                      >
-                        Apply
-                      </Button>
-                    </Box>
-                  )}
+                  <Box>
+                    <Typography variant="h6">{item.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      ${item.price} × {item.quantity}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Button
+                      size="small"
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                    >
+                      -
+                    </Button>
+                    <Typography component="span" sx={{ mx: 2 }}>
+                      {item.quantity}
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    >
+                      +
+                    </Button>
+                    <Button
+                      color="error"
+                      onClick={() => removeFromCart(item.id)}
+                      sx={{ ml: 2 }}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
                 </Box>
+              </Box>
+            ))}
+          </Paper>
 
-                <Divider sx={{ my: 2 }} />
+          {/* Discount Section */}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                fontWeight: "medium",
+              }}
+            >
+              <LocalOffer sx={{ mr: 1, color: "#2e7d32" }} />
+              Discount Code
+            </Typography>
 
-                {/* Price Breakdown */}
-                <List dense>
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemText primary="Subtotal" />
-                    <Typography>${getSubtotal().toFixed(2)}</Typography>
-                  </ListItem>
-
-                  {appliedDiscount && (
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemText
-                        primary={`Discount (${(
-                          appliedDiscount.discount * 100
-                        ).toFixed(0)}%)`}
-                        sx={{ color: "success.main" }}
-                      />
-                      <Typography color="success.main">
-                        -${getDiscountAmountDisplay().toFixed(2)}
-                      </Typography>
-                    </ListItem>
-                  )}
-
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemText primary="Shipping" />
-                    <Typography color="success.main">FREE</Typography>
-                  </ListItem>
-                </List>
-
-                <Divider sx={{ my: 2 }} />
-
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemText
-                    primary={
-                      <Typography variant="h6" fontWeight="bold">
-                        Total
-                      </Typography>
-                    }
-                  />
-                  <Typography variant="h6" fontWeight="bold" color="primary">
-                    ${getTotal().toFixed(2)}
-                  </Typography>
-                </ListItem>
-
+            {!appliedDiscount ? (
+              <Box display="flex" gap={2} alignItems="flex-start">
+                <TextField
+                  label="Enter discount code"
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value)}
+                  size="small"
+                  sx={{ flexGrow: 1 }}
+                  onKeyPress={(e) => e.key === "Enter" && handleApplyDiscount()}
+                />
                 <Button
                   variant="contained"
-                  fullWidth
-                  size="large"
-                  onClick={proceedToPayment}
+                  onClick={handleApplyDiscount}
+                  disabled={isApplying}
                   sx={{
-                    mt: 2,
                     bgcolor: "#2e7d32",
                     "&:hover": { bgcolor: "#1b5e20" },
-                    py: 1.5,
                   }}
                 >
-                  Proceed to Payment
+                  {isApplying ? <CircularProgress size={20} /> : "Apply"}
                 </Button>
+              </Box>
+            ) : (
+              <Box>
+                <Chip
+                  label={`${appliedDiscount.code} - ${appliedDiscount.percentage}% OFF`}
+                  color="success"
+                  deleteIcon={<Close />}
+                  onDelete={handleRemoveDiscount}
+                  sx={{ mb: 1 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  {appliedDiscount.description}
+                </Typography>
+              </Box>
+            )}
 
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate("/products")}
-                  sx={{ mt: 1 }}
-                >
-                  Continue Shopping
-                </Button>
-              </Paper>
+            {discountError && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {discountError}
+              </Alert>
+            )}
+
+            {discountSuccess && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                {discountSuccess}
+              </Alert>
+            )}
+          </Paper>
+
+          {/* Order Summary */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Order Summary
+            </Typography>
+
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography>Subtotal:</Typography>
+              <Typography>${originalTotal.toFixed(2)}</Typography>
+            </Box>
+
+            {appliedDiscount && (
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography color="success.main">
+                  Discount ({appliedDiscount.percentage}%):
+                </Typography>
+                <Typography color="success.main">
+                  -${appliedDiscount.discountAmount.toFixed(2)}
+                </Typography>
+              </Box>
+            )}
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box display="flex" justifyContent="space-between" mb={3}>
+              <Typography variant="h6" fontWeight="bold">
+                Total:
+              </Typography>
+              <Typography variant="h6" fontWeight="bold" color="primary">
+                ${finalTotal.toFixed(2)}
+              </Typography>
+            </Box>
+
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                sx={{
+                  bgcolor: "#2e7d32",
+                  "&:hover": { bgcolor: "#1b5e20" },
+                  py: 1.5,
+                }}
+              >
+                Proceed to Checkout
+              </Button>
             </motion.div>
-          </Grid>
-        </Grid>
-      </Container>
-
-      {/* Confirm Remove Dialog */}
-      <Dialog open={!!confirmRemove} onClose={() => setConfirmRemove(null)}>
-        <DialogTitle>Remove Item</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove this item from your cart?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmRemove(null)}>Cancel</Button>
-          <Button onClick={() => handleRemoveItem(confirmRemove)} color="error">
-            Remove
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
-      </Snackbar>
-    </Box>
+          </Paper>
+        </>
+      )}
+    </Container>
   );
 };
 

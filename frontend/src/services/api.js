@@ -1,6 +1,44 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = "http://localhost:8000/api/v1";
+
+// Helper function to ensure image URLs are properly formatted
+const processImageUrl = (imagePath) => {
+  if (!imagePath) {
+    return "https://via.placeholder.com/300x400?text=Fashion+Item";
+  }
+
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+
+  // Extract just the filename from any path format
+  let filename = imagePath;
+  if (imagePath.includes("\\") || imagePath.includes("/")) {
+    filename = imagePath.split(/[\\/]/).pop();
+  }
+
+  // Clean the filename
+  filename = filename.trim();
+
+  // If no filename, return placeholder
+  if (!filename) {
+    return "https://via.placeholder.com/300x400?text=Fashion+Item";
+  }
+
+  // Use the new comprehensive image endpoint
+  return `http://localhost:8000/api/v1/image/${filename}`;
+};
+
+// Helper function to process products and ensure image URLs are correct
+const processProducts = (products) => {
+  return products.map((product) => ({
+    ...product,
+    image_path: processImageUrl(product.image_path),
+    images: product.images ? product.images.map(processImageUrl) : [],
+  }));
+};
 
 // Create axios instance
 const api = axios.create({
@@ -36,37 +74,359 @@ export const authAPI = {
   },
 };
 
-export const clothingAPI = {
-  searchClothes: async (query = "", limit = 10, offset = 0) => {
-    const response = await api.get("/clothes", {
-      params: { query: query || "", limit, offset },
+class ClothingAPI {
+  constructor() {
+    this.baseURL = API_BASE_URL;
+  }
+
+  async makeRequest(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem("token");
+
+    const defaultOptions = {
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    };
+
+    const config = { ...defaultOptions, ...options };
+
+    try {
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  // Get all products without pagination
+  async getAllProductsUnlimited() {
+    try {
+      const token = localStorage.getItem("token");
+      const url = token
+        ? "/clothes/all/unlimited"
+        : "/clothes/all/unlimited/public";
+
+      const config = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      };
+
+      const response = await fetch(`${API_BASE_URL}${url}`, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Process image URLs in the response
+      if (data.data && Array.isArray(data.data)) {
+        data.data = processProducts(data.data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching all products:", error);
+      throw error;
+    }
+  }
+
+  // Search products without pagination
+  async searchProductsUnlimited(query = "") {
+    const token = localStorage.getItem("token");
+    const endpoint = token
+      ? "/clothes/search/unlimited"
+      : "/clothes/search/unlimited/public";
+    const params = query ? `?query=${encodeURIComponent(query)}` : "";
+    return this.makeRequest(`${endpoint}${params}`);
+  }
+
+  // Get product details
+  async getProductDetails(productId) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/products/${productId}/details`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Process image URL for single product
+      if (data.data) {
+        data.data.image_path = processImageUrl(data.data.image_path);
+        if (data.data.images) {
+          data.data.images = data.data.images.map(processImageUrl);
+        }
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      throw error;
+    }
+  }
+
+  // Get categories
+  async getCategories() {
+    return this.makeRequest("/categories");
+  }
+
+  // Create product comment
+  async createProductComment(productId, commentData) {
+    return this.makeRequest(`/products/${productId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(commentData),
     });
-    return response.data;
-  },
+  }
 
-  searchClothesPublic: async (query = "", limit = 5, offset = 0) => {
-    const response = await api.get("/clothes/public", {
-      params: { query: query || "", limit, offset },
-    });
-    return response.data;
-  },
+  // Get product comments
+  async getProductComments(productId, limit = 50, offset = 0) {
+    return this.makeRequest(
+      `/products/${productId}/comments?limit=${limit}&offset=${offset}`
+    );
+  }
 
-  searchClothesByCategory: async (category, limit = 10, offset = 0) => {
-    const response = await api.get(`/clothes/category/${category}`, {
-      params: { limit, offset },
-    });
-    return response.data;
-  },
+  // Infinite scroll methods
+  async getProductsInfiniteScroll(page = 0, limit = 20, query = "") {
+    try {
+      const token = localStorage.getItem("token");
+      const endpoint = token
+        ? "/clothes/infinite-scroll"
+        : "/clothes/infinite-scroll/public";
 
-  getItemDetails: async (itemId) => {
-    const response = await api.get(`/clothes/item/${itemId}`);
-    return response.data;
-  },
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(query && { query }),
+      });
 
-  getItemDetailsPublic: async (itemId) => {
-    const response = await api.get(`/clothes/item/public/${itemId}`);
-    return response.data;
-  },
-};
+      const config = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      };
 
-export default api;
+      const response = await fetch(
+        `${API_BASE_URL}${endpoint}?${params}`,
+        config
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Process image URLs in the response
+      if (data.data && Array.isArray(data.data)) {
+        data.data = processProducts(data.data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching products with infinite scroll:", error);
+      throw error;
+    }
+  }
+
+  // Infinite scroll methods with filters
+  async getProductsInfiniteScroll(
+    page = 0,
+    limit = 20,
+    query = "",
+    filters = {}
+  ) {
+    try {
+      const token = localStorage.getItem("token");
+      const endpoint = token
+        ? "/clothes/infinite-scroll"
+        : "/clothes/infinite-scroll/public";
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(query && { query }),
+        // Add filter parameters
+        ...(filters.priceMin && { price_min: filters.priceMin }),
+        ...(filters.priceMax && { price_max: filters.priceMax }),
+        ...(filters.category && { category: filters.category }),
+        ...(filters.weather && { weather_suitable: filters.weather }),
+        ...(filters.rating && { min_rating: filters.rating }),
+      });
+
+      const config = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      };
+
+      const response = await fetch(
+        `${API_BASE_URL}${endpoint}?${params}`,
+        config
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Process image URLs in the response
+      if (data.data && Array.isArray(data.data)) {
+        data.data = processProducts(data.data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching products with infinite scroll:", error);
+      throw error;
+    }
+  }
+
+  // Infinite scroll methods with filters - enhanced to get all products
+  async getProductsInfiniteScroll(
+    page = 0,
+    limit = 50,
+    query = "",
+    filters = {},
+    getAllProducts = false
+  ) {
+    try {
+      const token = localStorage.getItem("token");
+      const endpoint = token
+        ? "/clothes/infinite-scroll"
+        : "/clothes/infinite-scroll/public";
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(query && { query }),
+        // Add filter parameters
+        ...(filters.priceMin && { price_min: filters.priceMin }),
+        ...(filters.priceMax && { price_max: filters.priceMax }),
+        ...(filters.category && { category: filters.category }),
+        ...(filters.weather && { weather_suitable: filters.weather }),
+        ...(filters.rating && { min_rating: filters.rating }),
+        // Add get_all parameter to fetch everything at once
+        ...(getAllProducts && { get_all: "true", limit: "10000" }),
+      });
+
+      const config = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      };
+
+      const response = await fetch(
+        `${API_BASE_URL}${endpoint}?${params}`,
+        config
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Process image URLs in the response
+      if (data.data && Array.isArray(data.data)) {
+        data.data = processProducts(data.data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching products with infinite scroll:", error);
+      throw error;
+    }
+  }
+
+  // New method to get all products at once
+  async getAllProductsAtOnce(query = "", filters = {}) {
+    return this.getProductsInfiniteScroll(0, 10000, query, filters, true);
+  }
+
+  // Get seller profile
+  async getSellerProfile(sellerId) {
+    try {
+      const token = localStorage.getItem("token");
+      const endpoint = token
+        ? `/clothes/seller/${sellerId}`
+        : `/clothes/seller/public/${sellerId}`;
+
+      const config = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      };
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching seller profile:", error);
+      throw error;
+    }
+  }
+
+  // Get seller products
+  async getSellerProducts(sellerId, limit = 50, offset = 0) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/sellers/${sellerId}/products?limit=${limit}&offset=${offset}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Process image URLs in the response
+      if (data.data && Array.isArray(data.data)) {
+        data.data = processProducts(data.data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching seller products:", error);
+      throw error;
+    }
+  }
+
+  // Legacy methods for backward compatibility
+  async searchClothesWithSellers(query, limit, offset) {
+    return this.searchProductsUnlimited(query);
+  }
+
+  async searchClothesWithSellersPublic(query, limit, offset) {
+    return this.searchProductsUnlimited(query);
+  }
+}
+
+export const clothingAPI = new ClothingAPI();

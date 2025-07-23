@@ -42,11 +42,40 @@ def serialize_payment(payment_doc):
             payment_doc["completed_at"] = payment_doc["completed_at"].isoformat()
     return payment_doc
 
-async def apply_discount_to_payment(discount_code: str, subtotal: float) -> tuple[float, str]:
-    """Apply discount code and return discount amount and description"""
+async def apply_discount_to_payment(discount_code: str, subtotal: float, username: str) -> tuple[float, str, dict]:
+    """Apply discount code and return discount amount, description, and discount info"""
     if not discount_code:
-        return 0.0, ""
+        return 0.0, "", {}
     
+    # First check for user-assigned discounts
+    user_discount = discounts_collection.find_one({
+        "code": discount_code.upper(),
+        "is_active": True,
+        "user_assignments.username": username,
+        "user_assignments.is_used": False
+    })
+    
+    if user_discount:
+        # Find the specific assignment for this user
+        user_assignment = None
+        for assignment in user_discount.get("user_assignments", []):
+            if assignment["username"] == username and not assignment["is_used"]:
+                user_assignment = assignment
+                break
+        
+        if user_assignment:
+            # Check if discount has expired
+            if user_discount.get("expires_at") and user_discount["expires_at"] < datetime.utcnow():
+                raise HTTPException(status_code=400, detail="Discount code has expired")
+            
+            discount_amount = (subtotal * user_discount["percentage"]) / 100
+            return round(discount_amount, 2), user_discount["description"], {
+                "type": "user_assigned",
+                "discount_id": str(user_discount["_id"]),
+                "assignment": user_assignment
+            }
+    
+    # Check for general public discounts
     discount = discounts_collection.find_one({
         "code": discount_code.upper(),
         "is_active": True
@@ -62,33 +91,32 @@ async def apply_discount_to_payment(discount_code: str, subtotal: float) -> tupl
         raise HTTPException(status_code=400, detail="Discount usage limit exceeded")
     
     discount_amount = (subtotal * discount["percentage"]) / 100
-    return round(discount_amount, 2), discount["description"]
-
-def simulate_payment_processing(payment_method: PaymentMethod) -> Dict[str, Any]:
-    """Simulate payment processing with different providers"""
-    
-    # Simulate processing time and success rates
-    success_rates = {
-        PaymentMethod.CREDIT_CARD: 0.95,
-        PaymentMethod.DEBIT_CARD: 0.93,
-        PaymentMethod.PAYPAL: 0.97,
-        PaymentMethod.STRIPE: 0.96,
-        PaymentMethod.GCASH: 0.94,
-        PaymentMethod.PAYMAYA: 0.92,
-        PaymentMethod.BANK_TRANSFER: 0.99,
-        PaymentMethod.CASH_ON_DELIVERY: 1.0
+    return round(discount_amount, 2), discount["description"], {
+        "type": "public",
+        "discount_id": str(discount["_id"])
     }
+
+def simulate_payment_processing(payment_method: PaymentMethod):
+    """Simulate payment processing with different providers"""
+    # Simulate processing time
+    import time
+    import random
     
-    is_successful = random.random() < success_rates.get(payment_method, 0.95)
+    time.sleep(1)  # Simulate processing delay
     
-    if is_successful:
+    # 95% success rate for simulation
+    success = random.random() < 0.95
+    
+    if success:
+        transaction_id = generate_transaction_id()
         return {
             "status": "success",
-            "transaction_id": generate_transaction_id(),
+            "transaction_id": transaction_id,
             "provider_response": {
-                "code": "00",
-                "message": "Transaction approved",
-                "authorization_code": f"AUTH_{uuid.uuid4().hex[:8].upper()}"
+                "payment_method": payment_method,
+                "processed_at": datetime.utcnow().isoformat(),
+                "provider_transaction_id": transaction_id,
+                "provider_status": "completed"
             }
         }
     else:
@@ -96,9 +124,10 @@ def simulate_payment_processing(payment_method: PaymentMethod) -> Dict[str, Any]
             "status": "failed",
             "transaction_id": None,
             "provider_response": {
-                "code": "05",
-                "message": "Transaction declined",
-                "reason": "Insufficient funds or invalid card"
+                "payment_method": payment_method,
+                "processed_at": datetime.utcnow().isoformat(),
+                "error_code": "PAYMENT_DECLINED",
+                "error_message": "Payment was declined by the provider"
             }
         }
 
@@ -117,9 +146,10 @@ async def create_payment(payment_data: PaymentCreate, current_user: str = Depend
         # Apply discount if provided
         discount_amount = 0.0
         discount_description = ""
+        discount_info = {}
         if payment_data.discount_code:
-            discount_amount, discount_description = await apply_discount_to_payment(
-                payment_data.discount_code, subtotal
+            discount_amount, discount_description, discount_info = await apply_discount_to_payment(
+                payment_data.discount_code, subtotal, current_user
             )
         
         # Calculate tax and shipping
@@ -147,6 +177,7 @@ async def create_payment(payment_data: PaymentCreate, current_user: str = Depend
             "payment_status": PaymentStatus.PENDING,
             "billing_address": payment_data.billing_address.dict(),
             "discount_code": payment_data.discount_code,
+            "discount_info": discount_info,  # Store discount type and details
             "created_at": datetime.utcnow(),
             "updated_at": None,
             "completed_at": None,
@@ -213,12 +244,31 @@ async def process_payment(payment_id: str, current_user: str = Depends(verify_to
                 "payment_details": payment_result["provider_response"]
             }
             
-            # Update discount usage if discount was applied
-            if payment.get("discount_code"):
-                discounts_collection.update_one(
-                    {"code": payment["discount_code"].upper()},
-                    {"$inc": {"used_count": 1}}
-                )
+            # Handle discount usage based on type
+            if payment.get("discount_code") and payment.get("discount_info"):
+                discount_info = payment["discount_info"]
+                
+                if discount_info.get("type") == "user_assigned":
+                    # Mark user-assigned discount as used
+                    discounts_collection.update_one(
+                        {
+                            "_id": ObjectId(discount_info["discount_id"]),
+                            "user_assignments.username": current_user,
+                            "user_assignments.discount_code": payment["discount_code"].upper()
+                        },
+                        {
+                            "$set": {
+                                "user_assignments.$.is_used": True,
+                                "user_assignments.$.used_at": datetime.utcnow()
+                            }
+                        }
+                    )
+                elif discount_info.get("type") == "public":
+                    # Increment usage count for public discount
+                    discounts_collection.update_one(
+                        {"_id": ObjectId(discount_info["discount_id"])},
+                        {"$inc": {"used_count": 1}}
+                    )
         else:
             # Payment failed
             update_data = {
@@ -253,11 +303,11 @@ async def process_payment(payment_id: str, current_user: str = Depends(verify_to
 
 @router.get("/payments")
 async def get_user_payments(current_user: str = Depends(verify_token)):
-    """Get all payments for the current user"""
+    """Get all payments for the current user, sorted by newest first"""
     try:
         payments = list(payments_collection.find(
             {"username": current_user}
-        ).sort("created_at", -1))
+        ).sort("created_at", -1))  # Sort by newest first
         
         return {
             "count": len(payments),

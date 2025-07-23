@@ -17,21 +17,35 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in and fetch profile
     const checkAuth = async () => {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        try {
-          const userData = await authAPI.getProfile();
-          setUser(userData);
-          setIsAuthenticated(true);
-        } catch (error) {
-          // Token might be expired or invalid
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("user");
+      try {
+        const token = localStorage.getItem("access_token");
+        const userData = localStorage.getItem("user");
+
+        if (token && userData) {
+          try {
+            // Verify token is still valid
+            const profile = await authAPI.getProfile();
+            setUser(profile);
+            setIsAuthenticated(true);
+          } catch (error) {
+            // Token is invalid, clear it
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("user");
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false); // Ensure loading is always set to false
       }
-      setLoading(false);
     };
 
     checkAuth();

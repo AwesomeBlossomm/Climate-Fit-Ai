@@ -43,6 +43,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { discountAPI } from "../services/discountApi";
 
 const PaymentPage = () => {
   const { user, logout } = useAuth();
@@ -59,7 +60,7 @@ const PaymentPage = () => {
   } = location.state || {};
 
   const [activeStep, setActiveStep] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [billingInfo, setBillingInfo] = useState({
     fullName: user?.full_name || "",
     email: user?.email || "",
@@ -78,6 +79,10 @@ const PaymentPage = () => {
   const [processing, setProcessing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
+  const [paymentId, setPaymentId] = useState("");
+  const [error, setError] = useState("");
+  const [appliedDiscountInfo, setAppliedDiscountInfo] = useState(null);
+  const [discountError, setDiscountError] = useState("");
 
   const steps = ["Billing Information", "Payment Method", "Review Order"];
 
@@ -101,7 +106,7 @@ const PaymentPage = () => {
           billingInfo.zipCode
         );
       case 1:
-        if (paymentMethod === "card") {
+        if (paymentMethod === "credit_card" || paymentMethod === "debit_card") {
           return (
             cardInfo.cardNumber &&
             cardInfo.expiryDate &&
@@ -127,22 +132,171 @@ const PaymentPage = () => {
     setActiveStep((prev) => prev - 1);
   };
 
+  const createPayment = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const paymentItems = cartItems.map((item) => ({
+        product_id: item.id.toString(),
+        product_name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.price * item.quantity,
+      }));
+
+      const paymentData = {
+        items: paymentItems,
+        payment_method: paymentMethod,
+        billing_address: {
+          full_name: billingInfo.fullName,
+          address_line1: billingInfo.address,
+          city: billingInfo.city,
+          state: billingInfo.state,
+          postal_code: billingInfo.zipCode,
+          country: billingInfo.country,
+        },
+        discount_code: appliedDiscount?.code || null,
+        currency: "USD",
+        notes: `Payment for ${cartItems.length} items`,
+      };
+
+      const response = await fetch(
+        "http://localhost:8000/payments/create-payment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(paymentData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create payment");
+      }
+
+      const result = await response.json();
+      return result.payment_id;
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      throw error;
+    }
+  };
+
+  const processPaymentTransaction = async (paymentId) => {
+    try {
+      const token = localStorage.getItem("access_token");
+
+      const response = await fetch(
+        `http://localhost:8000/payments/process-payment/${paymentId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Payment processing failed");
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      throw error;
+    }
+  };
+
   const processPayment = async () => {
     setProcessing(true);
+    setError("");
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      // Step 1: Create payment
+      const createdPaymentId = await createPayment();
+      setPaymentId(createdPaymentId);
 
-    const orderNum = `CF${Date.now().toString().slice(-6)}`;
-    setOrderNumber(orderNum);
-    setProcessing(false);
-    setOrderSuccess(true);
+      // Step 2: Process payment
+      const paymentResult = await processPaymentTransaction(createdPaymentId);
+
+      if (paymentResult.status === "completed") {
+        setOrderNumber(paymentResult.transaction_id || createdPaymentId);
+        setProcessing(false);
+        setOrderSuccess(true);
+
+        // Refresh user discounts if discount was used
+        if (appliedDiscount?.code) {
+          // The discount usage is automatically handled by the backend
+          console.log("Discount used successfully:", appliedDiscount.code);
+        }
+      } else {
+        throw new Error(paymentResult.message || "Payment failed");
+      }
+    } catch (error) {
+      setError(error.message);
+      setProcessing(false);
+    }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  // Add discount validation
+  const validateDiscountCode = async (code) => {
+    if (!code.trim()) {
+      setDiscountError("Please enter a discount code");
+      return false;
+    }
+
+    try {
+      setDiscountError("");
+      // Try to apply the discount to validate it
+      const discountResult = await discountAPI.applyDiscount(
+        code.trim(),
+        subtotal
+      );
+
+      setAppliedDiscountInfo({
+        code: discountResult.discount_code,
+        percentage: discountResult.discount_percentage,
+        discountAmount: discountResult.discount_amount,
+        originalAmount: discountResult.original_amount,
+        finalAmount: discountResult.final_amount,
+        description: discountResult.description,
+      });
+
+      return true;
+    } catch (error) {
+      // Try assigned discount if regular discount fails
+      try {
+        const assignedDiscountResult = await discountAPI.applyAssignedDiscount(
+          code.trim(),
+          subtotal
+        );
+
+        setAppliedDiscountInfo({
+          code: assignedDiscountResult.discount_code,
+          percentage: assignedDiscountResult.discount_percentage,
+          discountAmount: assignedDiscountResult.discount_amount,
+          originalAmount: assignedDiscountResult.original_amount,
+          finalAmount: assignedDiscountResult.final_amount,
+          description: assignedDiscountResult.description,
+        });
+
+        return true;
+      } catch (assignedError) {
+        setDiscountError(error.message || "Invalid discount code");
+        return false;
+      }
+    }
   };
+
+  // Calculate totals based on applied discount
+  const calculatedDiscount =
+    appliedDiscountInfo?.discountAmount || discount || 0;
+  const calculatedTotal =
+    appliedDiscountInfo?.finalAmount || total || subtotal - calculatedDiscount;
 
   if (orderSuccess) {
     return (
@@ -154,6 +308,12 @@ const PaymentPage = () => {
             </Typography>
             <Button color="inherit" onClick={() => navigate("/products")}>
               Continue Shopping
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => navigate("/payment-history")}
+            >
+              Payment History
             </Button>
             <Button color="inherit" onClick={handleLogout}>
               Logout
@@ -178,23 +338,27 @@ const PaymentPage = () => {
                 color="success.main"
                 fontWeight="bold"
               >
-                Order Successful!
+                Payment Successful!
               </Typography>
               <Typography variant="h6" gutterBottom>
                 Order Number: {orderNumber}
               </Typography>
+              <Typography variant="h6" gutterBottom>
+                Payment ID: {paymentId}
+              </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Thank you for your purchase! Your order has been confirmed and
-                will be shipped soon.
+                Thank you for your purchase! Your payment has been processed
+                successfully.
               </Typography>
 
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" gutterBottom>
-                  Order Total: ${total.toFixed(2)}
+                  Total Paid: ${total.toFixed(2)}
                 </Typography>
                 {appliedDiscount && (
                   <Typography color="success.main">
-                    You saved ${discount.toFixed(2)} with discount!
+                    You saved ${discount.toFixed(2)} with discount code:
+                    {appliedDiscount.code}
                   </Typography>
                 )}
               </Box>
@@ -215,9 +379,9 @@ const PaymentPage = () => {
                 <Grid item>
                   <Button
                     variant="outlined"
-                    onClick={() => navigate("/dashboard")}
+                    onClick={() => navigate("/payment-history")}
                   >
-                    Go to Dashboard
+                    View Payment History
                   </Button>
                 </Grid>
               </Grid>
@@ -244,6 +408,18 @@ const PaymentPage = () => {
       </AppBar>
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {discountError && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {discountError}
+          </Alert>
+        )}
+
         <Grid container spacing={4}>
           {/* Checkout Form */}
           <Grid item xs={12} md={8}>
@@ -353,12 +529,22 @@ const PaymentPage = () => {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                     >
                       <FormControlLabel
-                        value="card"
+                        value="credit_card"
                         control={<Radio />}
                         label={
                           <Box display="flex" alignItems="center" gap={1}>
                             <CreditCard />
-                            <Typography>Credit/Debit Card</Typography>
+                            <Typography>Credit Card</Typography>
+                          </Box>
+                        }
+                      />
+                      <FormControlLabel
+                        value="debit_card"
+                        control={<Radio />}
+                        label={
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <CreditCard />
+                            <Typography>Debit Card</Typography>
                           </Box>
                         }
                       />
@@ -373,7 +559,17 @@ const PaymentPage = () => {
                         }
                       />
                       <FormControlLabel
-                        value="bank"
+                        value="gcash"
+                        control={<Radio />}
+                        label={
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Payment />
+                            <Typography>GCash</Typography>
+                          </Box>
+                        }
+                      />
+                      <FormControlLabel
+                        value="bank_transfer"
                         control={<Radio />}
                         label={
                           <Box display="flex" alignItems="center" gap={1}>
@@ -385,7 +581,8 @@ const PaymentPage = () => {
                     </RadioGroup>
                   </FormControl>
 
-                  {paymentMethod === "card" && (
+                  {(paymentMethod === "credit_card" ||
+                    paymentMethod === "debit_card") && (
                     <Grid container spacing={3}>
                       <Grid item xs={12}>
                         <TextField
@@ -443,7 +640,13 @@ const PaymentPage = () => {
                     </Alert>
                   )}
 
-                  {paymentMethod === "bank" && (
+                  {paymentMethod === "gcash" && (
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                      You will be redirected to GCash to complete your payment.
+                    </Alert>
+                  )}
+
+                  {paymentMethod === "bank_transfer" && (
                     <Alert severity="info" sx={{ mt: 2 }}>
                       Bank transfer details will be provided after order
                       confirmation.
@@ -484,14 +687,21 @@ const PaymentPage = () => {
                         Payment Method
                       </Typography>
                       <Box display="flex" alignItems="center" gap={1}>
-                        {paymentMethod === "card" && <CreditCard />}
+                        {paymentMethod === "credit_card" && <CreditCard />}
+                        {paymentMethod === "debit_card" && <CreditCard />}
                         {paymentMethod === "paypal" && <Payment />}
-                        {paymentMethod === "bank" && <AccountBalance />}
+                        {paymentMethod === "gcash" && <Payment />}
+                        {paymentMethod === "bank_transfer" && (
+                          <AccountBalance />
+                        )}
                         <Typography>
-                          {paymentMethod === "card" &&
+                          {paymentMethod === "credit_card" &&
+                            `Card ending in ${cardInfo.cardNumber.slice(-4)}`}
+                          {paymentMethod === "debit_card" &&
                             `Card ending in ${cardInfo.cardNumber.slice(-4)}`}
                           {paymentMethod === "paypal" && "PayPal"}
-                          {paymentMethod === "bank" && "Bank Transfer"}
+                          {paymentMethod === "gcash" && "GCash"}
+                          {paymentMethod === "bank_transfer" && "Bank Transfer"}
                         </Typography>
                       </Box>
                     </CardContent>
@@ -518,10 +728,10 @@ const PaymentPage = () => {
                     {processing ? (
                       <>
                         <CircularProgress size={20} sx={{ mr: 1 }} />
-                        Processing...
+                        Processing Payment...
                       </>
                     ) : (
-                      "Complete Order"
+                      "Complete Payment"
                     )}
                   </Button>
                 ) : (
@@ -576,14 +786,14 @@ const PaymentPage = () => {
                   <Typography>${subtotal.toFixed(2)}</Typography>
                 </ListItem>
 
-                {appliedDiscount && (
+                {appliedDiscountInfo && (
                   <ListItem sx={{ px: 0 }}>
                     <ListItemText
-                      primary={`Discount`}
+                      primary={`Discount (${appliedDiscountInfo.code})`}
                       sx={{ color: "success.main" }}
                     />
                     <Typography color="success.main">
-                      -${discount.toFixed(2)}
+                      -${appliedDiscountInfo.discountAmount.toFixed(2)}
                     </Typography>
                   </ListItem>
                 )}
@@ -605,17 +815,28 @@ const PaymentPage = () => {
                   }
                 />
                 <Typography variant="h6" fontWeight="bold" color="primary">
-                  ${total.toFixed(2)}
+                  ${calculatedTotal.toFixed(2)}
                 </Typography>
               </ListItem>
 
-              {appliedDiscount && (
-                <Chip
-                  label={appliedDiscount.description}
-                  color="success"
-                  size="small"
-                  sx={{ mt: 1 }}
-                />
+              {appliedDiscountInfo && (
+                <Box sx={{ mt: 2 }}>
+                  <Chip
+                    label={`${appliedDiscountInfo.code} - ${appliedDiscountInfo.percentage}% OFF`}
+                    color="success"
+                    size="small"
+                  />
+                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                    {appliedDiscountInfo.description}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="success.main"
+                    display="block"
+                  >
+                    You saved ${appliedDiscountInfo.discountAmount.toFixed(2)}!
+                  </Typography>
+                </Box>
               )}
             </Paper>
           </Grid>

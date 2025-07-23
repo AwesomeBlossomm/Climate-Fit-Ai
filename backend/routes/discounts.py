@@ -27,139 +27,94 @@ def serialize_discount(discount_doc):
     return discount_doc
 
 @router.post("/generate-discounts")
-async def generate_random_discounts(current_user: str = Depends(verify_token)):
-    """Generate 40 random discount codes with percentages from 5% to 50%"""
+async def generate_random_discounts():
+    """Generate 20 random discount codes with percentages from 5% to 50% and assign to all users"""
     try:
-        # Clear existing discounts (optional)
-        # discounts_collection.delete_many({})
+        # Get all existing users
+        all_users = list(users_collection.find({}, {"username": 1}))
         
         valid_percentages = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
         
-        # Enhanced discount types with detailed descriptions
-        discount_templates = [
+        # Enhanced discount types with voucher categories
+        clothes_templates = [
             {
                 "type": "Summer Sale",
                 "description": "Beat the heat with summer savings",
-                "detailed": "Get amazing discounts on summer collection including light fabrics, swimwear, and casual outfits. Perfect for vacation and beach activities."
+                "detailed": "Get amazing discounts on summer collection including light fabrics, swimwear, and casual outfits."
             },
             {
-                "type": "Winter Clearance",
+                "type": "Winter Clearance", 
                 "description": "Warm up with winter deals",
-                "detailed": "Stay cozy with discounts on winter essentials including jackets, sweaters, boots, and thermal wear. Limited time clearance sale."
+                "detailed": "Stay cozy with discounts on winter essentials including jackets, sweaters, boots, and thermal wear."
             },
             {
                 "type": "Flash Sale",
-                "description": "Lightning fast savings",
-                "detailed": "Limited time flash sale with incredible discounts. Grab your favorite items before they're gone. Sale ends in 24 hours!"
+                "description": "Lightning fast clothing savings",
+                "detailed": "Limited time flash sale on trending fashion items. Grab your favorite clothes before they're gone!"
             },
             {
-                "type": "Weekend Special",
-                "description": "Weekend warrior discounts",
-                "detailed": "Special weekend deals for casual and weekend wear. Perfect for relaxed outings and comfortable home attire."
+                "type": "New Arrival",
+                "description": "Fresh fashion discounts", 
+                "detailed": "Be the first to wear the latest fashion trends with special discounts on new arrivals."
+            }
+        ]
+        
+        shipping_templates = [
+            {
+                "type": "Free Shipping",
+                "description": "Free delivery on your order",
+                "detailed": "Enjoy free shipping on your clothing purchases. No minimum order required."
             },
             {
-                "type": "New Customer",
-                "description": "Welcome bonus for new shoppers",
-                "detailed": "Exclusive discount for first-time customers. Start your fashion journey with us and enjoy special savings on your first purchase."
+                "type": "Express Delivery",
+                "description": "Discounted express shipping",
+                "detailed": "Get your fashion items faster with discounted express delivery options."
             },
             {
-                "type": "VIP Member",
-                "description": "Exclusive VIP member benefits",
-                "detailed": "Premium discounts for our valued VIP members. Enjoy exclusive access to designer collections and luxury items."
-            },
-            {
-                "type": "Holiday Special",
-                "description": "Celebrate with holiday savings",
-                "detailed": "Festive discounts for holiday shopping. Perfect for gifts, party wear, and special occasion outfits."
-            },
-            {
-                "type": "Back to School",
-                "description": "Gear up for the new semester",
-                "detailed": "Student-friendly discounts on casual wear, backpacks, and everyday essentials. Start the school year in style."
-            },
-            {
-                "type": "Black Friday",
-                "description": "Black Friday mega deals",
-                "detailed": "Biggest savings of the year! Massive discounts across all categories including designer brands and premium collections."
-            },
-            {
-                "type": "Cyber Monday",
-                "description": "Digital deals extravaganza",
-                "detailed": "Online exclusive discounts for tech-savvy shoppers. Special pricing on trending fashion and accessories."
-            },
-            {
-                "type": "Mother's Day",
-                "description": "Celebrate mom with special savings",
-                "detailed": "Honor the special women in your life with discounts on elegant wear, accessories, and gift sets perfect for mothers."
-            },
-            {
-                "type": "Father's Day",
-                "description": "Dad deserves the best deals",
-                "detailed": "Show appreciation for fathers with discounts on men's fashion, accessories, and classic wardrobe essentials."
-            },
-            {
-                "type": "Easter Sale",
-                "description": "Spring into savings this Easter",
-                "detailed": "Fresh spring discounts on colorful outfits, pastels, and seasonal fashion perfect for Easter celebrations."
-            },
-            {
-                "type": "Spring Collection",
-                "description": "Bloom with spring fashion",
-                "detailed": "Refresh your wardrobe with spring essentials. Discounts on light fabrics, floral patterns, and fresh seasonal styles."
-            },
-            {
-                "type": "Fall Fashion",
-                "description": "Autumn style at its finest",
-                "detailed": "Embrace fall fashion with discounts on layering pieces, warm colors, and transitional wear for the season."
-            },
-            {
-                "type": "Student Discount",
-                "description": "Student budget-friendly deals",
-                "detailed": "Special pricing for students on trendy and affordable fashion. Valid with student ID verification."
-            },
-            {
-                "type": "Senior Discount",
-                "description": "Respectful savings for seniors",
-                "detailed": "Exclusive discounts for senior customers on comfortable and classic fashion choices. Age 60+ eligible."
-            },
-            {
-                "type": "First Purchase",
-                "description": "First-time buyer special",
-                "detailed": "Welcome discount for new customers making their first purchase. Start your fashion journey with instant savings."
-            },
-            {
-                "type": "Loyalty Reward",
-                "description": "Thank you for your loyalty",
-                "detailed": "Reward points converted to instant savings. Exclusive discount for our most loyal and frequent customers."
+                "type": "Shipping Special",
+                "description": "Special shipping discount",
+                "detailed": "Save on shipping costs for your fashion purchases with this special voucher."
             }
         ]
         
         discounts_created = []
+        total_assignments = 0
         
-        for i in range(40):
-            # Generate random discount code
+        # Generate exactly 20 vouchers
+        for i in range(20):
             code = generate_discount_code()
-            
-            # Ensure unique code
             while discounts_collection.find_one({"code": code}):
                 code = generate_discount_code()
             
-            # Random percentage from valid options
             percentage = random.choice(valid_percentages)
             
-            # Random discount template
-            template = random.choice(discount_templates)
+            # 70% clothes vouchers (14), 30% shipping vouchers (6)
+            voucher_type = "clothes" if i < 14 else "shipping"
+            templates = clothes_templates if voucher_type == "clothes" else shipping_templates
+            template = random.choice(templates)
             
-            # Create comprehensive description
             short_description = f"{template['type']} - {percentage}% off"
             detailed_description = f"{template['description']} - {percentage}% discount. {template['detailed']}"
             
-            # Random expiry date (30 to 90 days from now)
             expires_days = random.randint(30, 90)
             expires_at = datetime.utcnow() + timedelta(days=expires_days)
-            
-            # Random usage limit
             usage_limit = random.choice([None, 50, 100, 200, 500])
+            
+            # Create user assignments for all existing users
+            user_assignments = []
+            for user in all_users:
+                user_assignment = {
+                    "username": user["username"],
+                    "discount_code": code,
+                    "collected_at": datetime.utcnow(),
+                    "assigned_at": datetime.utcnow(),
+                    "assigned_by": "system_auto_assign",
+                    "is_used": False,
+                    "used_at": None,
+                    "assignment_type": "global_distribution"
+                }
+                user_assignments.append(user_assignment)
+                total_assignments += 1
             
             discount_data = {
                 "code": code,
@@ -170,7 +125,9 @@ async def generate_random_discounts(current_user: str = Depends(verify_token)):
                 "created_at": datetime.utcnow(),
                 "expires_at": expires_at,
                 "usage_limit": usage_limit,
-                "used_count": 0
+                "used_count": 0,
+                "voucher_type": voucher_type,
+                "user_assignments": user_assignments
             }
             
             result = discounts_collection.insert_one(discount_data)
@@ -179,24 +136,172 @@ async def generate_random_discounts(current_user: str = Depends(verify_token)):
                 discounts_created.append(serialize_discount(discount_data))
         
         return {
-            "message": f"Successfully created {len(discounts_created)} discount codes",
+            "message": f"Successfully created {len(discounts_created)} discount codes and assigned to {len(all_users)} users",
+            "discounts_created": len(discounts_created),
+            "total_users": len(all_users),
+            "total_assignments": total_assignments,
             "discounts": discounts_created
         }
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate discounts: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate and assign discounts: {str(e)}")
 
-@router.get("/discounts")
-async def get_all_discounts(current_user: str = Depends(verify_token)):
-    """Get all available discounts"""
+@router.post("/collect-voucher")
+async def collect_voucher(voucher_data: dict, current_user: str = Depends(verify_token)):
+    """Collect a voucher and add it to user's collection"""
     try:
-        discounts = list(discounts_collection.find({"is_active": True}))
-        return {
-            "count": len(discounts),
-            "discounts": [serialize_discount(discount) for discount in discounts]
+        voucher_id = voucher_data.get("voucher_id")
+        if not voucher_id:
+            raise HTTPException(status_code=400, detail="Voucher ID is required")
+        
+        # Find the voucher
+        voucher = discounts_collection.find_one({
+            "_id": ObjectId(voucher_id),
+            "is_active": True
+        })
+        
+        if not voucher:
+            raise HTTPException(status_code=404, detail="Voucher not found or inactive")
+        
+        # Check if user already collected this voucher
+        existing_assignment = discounts_collection.find_one({
+            "_id": ObjectId(voucher_id),
+            "user_assignments.username": current_user
+        })
+        
+        if existing_assignment:
+            raise HTTPException(status_code=400, detail="You have already collected this voucher")
+        
+        # Check if voucher has expired
+        if voucher.get("expires_at") and voucher["expires_at"] < datetime.utcnow():
+            raise HTTPException(status_code=400, detail="This voucher has expired")
+        
+        # Add user assignment
+        user_assignment = {
+            "username": current_user,
+            "discount_code": voucher["code"],
+            "collected_at": datetime.utcnow(),
+            "is_used": False,
+            "used_at": None
         }
+        
+        discounts_collection.update_one(
+            {"_id": ObjectId(voucher_id)},
+            {"$push": {"user_assignments": user_assignment}}
+        )
+        
+        return {
+            "message": f"Voucher {voucher['code']} collected successfully!",
+            "voucher": {
+                "code": voucher["code"],
+                "percentage": voucher["percentage"],
+                "description": voucher["description"],
+                "voucher_type": voucher.get("voucher_type", "clothes")
+            }
+        }
+    
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch discounts: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to collect voucher: {str(e)}")
+
+@router.post("/collect-all-vouchers")
+async def collect_all_vouchers(current_user: str = Depends(verify_token)):
+    """Collect all available vouchers for the user"""
+    try:
+        # Find all active vouchers that user hasn't collected yet
+        available_vouchers = list(discounts_collection.find({
+            "is_active": True,
+            "expires_at": {"$gt": datetime.utcnow()},
+            "user_assignments.username": {"$ne": current_user}
+        }))
+        
+        collected_count = 0
+        collected_vouchers = []
+        
+        for voucher in available_vouchers:
+            # Check if user already has this voucher (double check)
+            has_voucher = any(
+                assignment.get("username") == current_user 
+                for assignment in voucher.get("user_assignments", [])
+            )
+            
+            if not has_voucher:
+                user_assignment = {
+                    "username": current_user,
+                    "discount_code": voucher["code"],
+                    "collected_at": datetime.utcnow(),
+                    "is_used": False,
+                    "used_at": None
+                }
+                
+                discounts_collection.update_one(
+                    {"_id": voucher["_id"]},
+                    {"$push": {"user_assignments": user_assignment}}
+                )
+                
+                collected_count += 1
+                collected_vouchers.append({
+                    "code": voucher["code"],
+                    "percentage": voucher["percentage"],
+                    "description": voucher["description"],
+                    "voucher_type": voucher.get("voucher_type", "clothes")
+                })
+        
+        return {
+            "message": f"Successfully collected {collected_count} vouchers!",
+            "collected_count": collected_count,
+            "vouchers": collected_vouchers
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to collect all vouchers: {str(e)}")
+
+@router.get("/available-vouchers")
+async def get_available_vouchers(current_user: str = Depends(verify_token)):
+    """Get all vouchers available for collection (not yet collected by user)"""
+    try:
+        # Find all active vouchers
+        all_vouchers = list(discounts_collection.find({
+            "is_active": True,
+            "expires_at": {"$gt": datetime.utcnow()}
+        }))
+        
+        available_vouchers = []
+        
+        for voucher in all_vouchers:
+            # Check if user has already collected this voucher
+            user_has_voucher = any(
+                assignment.get("username") == current_user 
+                for assignment in voucher.get("user_assignments", [])
+            )
+            
+            if not user_has_voucher:
+                available_vouchers.append({
+                    "_id": str(voucher["_id"]),
+                    "code": voucher["code"],
+                    "percentage": voucher["percentage"],
+                    "description": voucher["description"],
+                    "detailed_description": voucher.get("detailed_description"),
+                    "expires_at": voucher["expires_at"].isoformat(),
+                    "usage_limit": voucher.get("usage_limit"),
+                    "used_count": voucher.get("used_count", 0),
+                    "voucher_type": voucher.get("voucher_type", "clothes")
+                })
+        
+        # Separate by type
+        clothes_vouchers = [v for v in available_vouchers if v["voucher_type"] == "clothes"]
+        shipping_vouchers = [v for v in available_vouchers if v["voucher_type"] == "shipping"]
+        
+        return {
+            "total_available": len(available_vouchers),
+            "clothes_vouchers": clothes_vouchers,
+            "shipping_vouchers": shipping_vouchers,
+            "all_vouchers": available_vouchers
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch available vouchers: {str(e)}")
 
 @router.post("/apply-discount")
 async def apply_discount(discount_apply: DiscountApply, current_user: str = Depends(verify_token)):
@@ -408,6 +513,7 @@ async def get_my_assigned_discounts(current_user: str = Depends(verify_token)):
                         "used_at": assignment["used_at"].isoformat() if assignment["used_at"] else None,
                         "expires_at": discount["expires_at"].isoformat() if discount.get("expires_at") else None,
                         "is_expired": is_expired,
+                        "voucher_type": discount.get("voucher_type"),
                         "notes": assignment.get("notes")
                     })
         
@@ -485,4 +591,76 @@ async def apply_assigned_discount(discount_apply: DiscountApply, current_user: s
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to apply assigned discount: {str(e)}")
+
+@router.post("/auto-assign-vouchers/{username}")
+async def auto_assign_vouchers(username: str):
+    """Auto-assign 20 mixed vouchers to a user (called during first login only)"""
+    try:
+        # Check if user exists
+        user = users_collection.find_one({"username": username})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if user already has welcome vouchers assigned
+        if user.get("welcome_vouchers_assigned", False):
+            return {
+                "message": f"User {username} has already received their welcome vouchers",
+                "assigned_count": 0,
+                "vouchers": []
+            }
+        
+        # Check if user already has any vouchers assigned (extra safety check)
+        existing_vouchers = list(discounts_collection.find({
+            "user_assignments.username": username
+        }))
+        
+        if existing_vouchers:
+            return {
+                "message": f"User {username} already has vouchers assigned",
+                "existing_vouchers_count": len(existing_vouchers),
+                "assigned_count": 0,
+                "vouchers": []
+            }
+        
+        # Generate 20 new vouchers for this user
+        voucher_response = await generate_random_discounts()
+        generated_vouchers = voucher_response["discounts"]
+        
+        # Auto-assign all generated vouchers to the user
+        assigned_count = 0
+        assigned_vouchers = []
+        
+        for voucher in generated_vouchers:
+            user_assignment = {
+                "username": username,
+                "discount_code": voucher["code"],
+                "collected_at": datetime.utcnow(),
+                "assigned_at": datetime.utcnow(),
+                "assigned_by": "system",
+                "is_used": False,
+                "used_at": None,
+                "assignment_type": "welcome_bonus"
+            }
+            
+            discounts_collection.update_one(
+                {"_id": ObjectId(voucher["_id"])},
+                {"$push": {"user_assignments": user_assignment}}
+            )
+            
+            assigned_count += 1
+            assigned_vouchers.append({
+                "code": voucher["code"],
+                "percentage": voucher["percentage"],
+                "description": voucher["description"],
+                "voucher_type": voucher.get("voucher_type", "clothes")
+            })
+        
+        return {
+            "message": f"Successfully auto-assigned {assigned_count} welcome vouchers to user {username}",
+            "assigned_count": assigned_count,
+            "vouchers": assigned_vouchers
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to auto-assign vouchers: {str(e)}")
 

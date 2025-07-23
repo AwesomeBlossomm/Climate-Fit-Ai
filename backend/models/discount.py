@@ -1,25 +1,25 @@
 from pydantic import BaseModel, validator
 from datetime import datetime
-from typing import Optional
-import random
-import string
+from typing import Optional, List
+from enum import Enum
 
-class Discount(BaseModel):
+class DiscountType(str, Enum):
+    PERCENTAGE = "percentage"
+    FIXED_AMOUNT = "fixed_amount"
+
+class VoucherType(str, Enum):
+    CLOTHES = "clothes"
+    SHIPPING = "shipping"
+
+class DiscountCreate(BaseModel):
     code: str
-    percentage: int
+    percentage: float
     description: str
-    is_active: bool = True
-    created_at: Optional[datetime] = None
+    detailed_description: Optional[str] = None
     expires_at: Optional[datetime] = None
     usage_limit: Optional[int] = None
-    used_count: int = 0
-
-    @validator('percentage')
-    def validate_percentage(cls, v):
-        valid_percentages = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-        if v not in valid_percentages:
-            raise ValueError(f'Percentage must be one of: {valid_percentages}')
-        return v
+    is_active: bool = True
+    voucher_type: VoucherType = VoucherType.CLOTHES
 
     @validator('code')
     def validate_code(cls, v):
@@ -27,12 +27,34 @@ class Discount(BaseModel):
             raise ValueError('Discount code must be between 3 and 20 characters')
         return v.upper()
 
-class DiscountCreate(BaseModel):
-    percentage: int
-    description: Optional[str] = None
-    usage_limit: Optional[int] = None
-    expires_at: Optional[datetime] = None
+    @validator('percentage')
+    def validate_percentage(cls, v):
+        if v <= 0 or v > 100:
+            raise ValueError('Percentage must be between 1 and 100')
+        return v
 
 class DiscountApply(BaseModel):
     code: str
     total_amount: float
+
+    @validator('total_amount')
+    def validate_amount(cls, v):
+        if v <= 0:
+            raise ValueError('Total amount must be greater than 0')
+        return v
+
+class VoucherCollect(BaseModel):
+    voucher_id: str
+
+class Discount(BaseModel):
+    code: str
+    percentage: float
+    description: str
+    detailed_description: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    usage_limit: Optional[int] = None
+    used_count: int = 0
+    user_assignments: Optional[List[dict]] = []
+    voucher_type: VoucherType = VoucherType.CLOTHES
