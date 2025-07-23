@@ -556,6 +556,291 @@ class ProductModel:
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_filtered_count)
 
+    async def search_products_unlimited(self, query: str) -> List[Dict[str, Any]]:
+        """
+        Search products without pagination limits with seller information
+        """
+        def _search_unlimited():
+            try:
+                search_filter = {
+                    "$or": [
+                        {"name": {"$regex": query, "$options": "i"}},
+                        {"description": {"$regex": query, "$options": "i"}},
+                        {"category": {"$regex": query, "$options": "i"}},
+                        {"brand_style": {"$regex": query, "$options": "i"}},
+                        {"material": {"$regex": query, "$options": "i"}},
+                        {"color": {"$regex": query, "$options": "i"}}
+                    ]
+                }
+                
+                pipeline = [
+                    {"$match": search_filter},
+                    {
+                        "$lookup": {
+                            "from": "sellers",
+                            "localField": "seller_id",
+                            "foreignField": "_id",
+                            "as": "seller_info"
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "comments",
+                            "localField": "_id",
+                            "foreignField": "product_id",
+                            "as": "comments"
+                        }
+                    },
+                    {
+                        "$addFields": {
+                            "seller": {"$arrayElemAt": ["$seller_info", 0]},
+                            "average_rating": {
+                                "$cond": {
+                                    "if": {"$gt": [{"$size": "$comments"}, 0]},
+                                    "then": {"$avg": "$comments.rating"},
+                                    "else": 4.0
+                                }
+                            },
+                            "total_comments": {"$size": "$comments"}
+                        }
+                    },
+                    {
+                        "$project": {
+                            "seller_info": 0,
+                            "comments": 0
+                        }
+                    }
+                ]
+                
+                cursor = self.collection.aggregate(pipeline, allowDiskUse=True)
+                products = []
+                
+                for product in cursor:
+                    product["_id"] = str(product["_id"])
+                    if product.get("seller") and product["seller"].get("_id"):
+                        product["seller"]["_id"] = str(product["seller"]["_id"])
+                    products.append(product)
+                
+                logger.info(f"Search found {len(products)} products for query: {query}")
+                return products
+            except Exception as e:
+                logger.error(f"Error searching products unlimited: {str(e)}")
+                return []
+        
+        return await asyncio.get_event_loop().run_in_executor(None, _search_unlimited)
+
+    async def search_products_paginated_with_filters(self, query: str, limit: int = 50, offset: int = 0, filters: dict = None) -> List[Dict[str, Any]]:
+        """
+        Search products with pagination and filters
+        """
+        def _search_paginated_with_filters():
+            try:
+                # Build search filter
+                search_filter = {
+                    "$or": [
+                        {"name": {"$regex": query, "$options": "i"}},
+                        {"description": {"$regex": query, "$options": "i"}},
+                        {"category": {"$regex": query, "$options": "i"}},
+                        {"brand_style": {"$regex": query, "$options": "i"}},
+                        {"material": {"$regex": query, "$options": "i"}},
+                        {"color": {"$regex": query, "$options": "i"}}
+                    ]
+                }
+                
+                # Add additional filters
+                if filters:
+                    if filters.get('price_min') is not None:
+                        search_filter['price_php'] = search_filter.get('price_php', {})
+                        search_filter['price_php']['$gte'] = float(filters['price_min'])
+                    
+                    if filters.get('price_max') is not None:
+                        search_filter['price_php'] = search_filter.get('price_php', {})
+                        search_filter['price_php']['$lte'] = float(filters['price_max'])
+                    
+                    if filters.get('category'):
+                        # Override the OR condition for category if specific category filter is applied
+                        search_filter['category'] = {"$regex": filters['category'], "$options": "i"}
+                    
+                    if filters.get('weather_suitable') is not None:
+                        search_filter['weather_suitable'] = filters['weather_suitable']
+
+                pipeline = [
+                    {"$match": search_filter},
+                    {"$skip": offset},
+                    {"$limit": limit * 2},  # Get more to account for rating filter
+                    {
+                        "$lookup": {
+                            "from": "sellers",
+                            "localField": "seller_id",
+                            "foreignField": "_id",
+                            "as": "seller_info"
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "comments",
+                            "localField": "_id",
+                            "foreignField": "product_id",
+                            "as": "comments"
+                        }
+                    },
+                    {
+                        "$addFields": {
+                            "seller": {"$arrayElemAt": ["$seller_info", 0]},
+                            "average_rating": {
+                                "$cond": {
+                                    "if": {"$gt": [{"$size": "$comments"}, 0]},
+                                    "then": {"$avg": "$comments.rating"},
+                                    "else": 4.0
+                                }
+                            },
+                            "total_comments": {"$size": "$comments"}
+                        }
+                    },
+                    {
+                        "$project": {
+                            "seller_info": 0,
+                            "comments": 0
+                        }
+                    }
+                ]
+                
+                cursor = self.collection.aggregate(pipeline, allowDiskUse=True)
+                products = []
+                
+                for product in cursor:
+                    product["_id"] = str(product["_id"])
+                    if product.get("seller") and product["seller"].get("_id"):
+                        product["seller"]["_id"] = str(product["seller"]["_id"])
+                    
+                    # Apply rating filter if specified
+                    if filters and filters.get('min_rating') is not None:
+                        if product.get('average_rating', 0) < float(filters['min_rating']):
+                            continue
+                    
+                    products.append(product)
+                
+                # Apply final limit after rating filter
+                products = products[:limit]
+                
+                logger.info(f"Search with filters found {len(products)} products for query: {query}")
+                return products
+            except Exception as e:
+                logger.error(f"Error searching products with filters: {str(e)}")
+                return []
+        
+        return await asyncio.get_event_loop().run_in_executor(None, _search_paginated_with_filters)
+
+    async def get_search_results_count_with_filters(self, query: str, filters: dict = None) -> int:
+        """
+        Get total count of search results with filters
+        """
+        def _get_search_count():
+            try:
+                search_filter = {
+                    "$or": [
+                        {"name": {"$regex": query, "$options": "i"}},
+                        {"description": {"$regex": query, "$options": "i"}},
+                        {"category": {"$regex": query, "$options": "i"}},
+                        {"brand_style": {"$regex": query, "$options": "i"}},
+                        {"material": {"$regex": query, "$options": "i"}},
+                        {"color": {"$regex": query, "$options": "i"}}
+                    ]
+                }
+                
+                if filters:
+                    if filters.get('price_min') is not None:
+                        search_filter['price_php'] = search_filter.get('price_php', {})
+                        search_filter['price_php']['$gte'] = float(filters['price_min'])
+                    
+                    if filters.get('price_max') is not None:
+                        search_filter['price_php'] = search_filter.get('price_php', {})
+                        search_filter['price_php']['$lte'] = float(filters['price_max'])
+                    
+                    if filters.get('category'):
+                        search_filter['category'] = {"$regex": filters['category'], "$options": "i"}
+                    
+                    if filters.get('weather_suitable') is not None:
+                        search_filter['weather_suitable'] = filters['weather_suitable']
+                
+                return self.collection.count_documents(search_filter)
+            except Exception as e:
+                logger.error(f"Error getting search count: {str(e)}")
+                return 0
+        
+        return await asyncio.get_event_loop().run_in_executor(None, _get_search_count)
+
+    async def get_products_by_seller(self, seller_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+        """
+        Get all products for a specific seller
+        """
+        def _get_products_by_seller():
+            try:
+                # Convert seller_id to ObjectId for lookup
+                try:
+                    seller_object_id = ObjectId(seller_id)
+                except:
+                    # If seller_id is stored as string, search by string
+                    seller_object_id = seller_id
+                
+                pipeline = [
+                    {"$match": {"seller_id": seller_object_id}},
+                    {"$skip": offset},
+                    {"$limit": limit},
+                    {
+                        "$lookup": {
+                            "from": "sellers",
+                            "localField": "seller_id",
+                            "foreignField": "_id",
+                            "as": "seller_info"
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "comments",
+                            "localField": "_id",
+                            "foreignField": "product_id",
+                            "as": "comments"
+                        }
+                    },
+                    {
+                        "$addFields": {
+                            "seller": {"$arrayElemAt": ["$seller_info", 0]},
+                            "average_rating": {
+                                "$cond": {
+                                    "if": {"$gt": [{"$size": "$comments"}, 0]},
+                                    "then": {"$avg": "$comments.rating"},
+                                    "else": 4.0
+                                }
+                            },
+                            "total_comments": {"$size": "$comments"}
+                        }
+                    },
+                    {
+                        "$project": {
+                            "seller_info": 0,
+                            "comments": 0
+                        }
+                    }
+                ]
+                
+                cursor = self.collection.aggregate(pipeline)
+                products = []
+                
+                for product in cursor:
+                    product["_id"] = str(product["_id"])
+                    if product.get("seller") and product["seller"].get("_id"):
+                        product["seller"]["_id"] = str(product["seller"]["_id"])
+                    products.append(product)
+                
+                logger.info(f"Retrieved {len(products)} products for seller {seller_id}")
+                return products
+            except Exception as e:
+                logger.error(f"Error getting products by seller: {str(e)}")
+                return []
+        
+        return await asyncio.get_event_loop().run_in_executor(None, _get_products_by_seller)
+
 class SellerModel:
     def __init__(self, db_connection: MongoDBConnection):
         self.collection = db_connection.sellers_collection

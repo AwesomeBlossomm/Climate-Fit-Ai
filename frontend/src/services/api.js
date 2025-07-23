@@ -253,6 +253,13 @@ class ClothingAPI {
     filters = {}
   ) {
     try {
+      console.log("API: Searching with params:", {
+        page,
+        limit,
+        query,
+        filters,
+      });
+
       const token = localStorage.getItem("token");
       const endpoint = token
         ? "/clothes/infinite-scroll"
@@ -261,14 +268,29 @@ class ClothingAPI {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-        ...(query && { query }),
-        // Add filter parameters
-        ...(filters.priceMin && { price_min: filters.priceMin }),
-        ...(filters.priceMax && { price_max: filters.priceMax }),
-        ...(filters.category && { category: filters.category }),
-        ...(filters.weather && { weather_suitable: filters.weather }),
-        ...(filters.rating && { min_rating: filters.rating }),
       });
+
+      // Add query parameter
+      if (query && query.trim()) {
+        params.append("query", query.trim());
+      }
+
+      // Add filter parameters
+      if (filters.priceMin !== undefined && filters.priceMin !== "") {
+        params.append("price_min", filters.priceMin);
+      }
+      if (filters.priceMax !== undefined && filters.priceMax !== "") {
+        params.append("price_max", filters.priceMax);
+      }
+      if (filters.category && filters.category !== "") {
+        params.append("category", filters.category);
+      }
+      if (filters.weather && filters.weather !== "") {
+        params.append("weather_suitable", filters.weather);
+      }
+      if (filters.rating && filters.rating !== "") {
+        params.append("min_rating", filters.rating);
+      }
 
       const config = {
         method: "GET",
@@ -278,16 +300,25 @@ class ClothingAPI {
         },
       };
 
-      const response = await fetch(
-        `${API_BASE_URL}${endpoint}?${params}`,
-        config
-      );
+      const url = `${API_BASE_URL}${endpoint}?${params}`;
+      console.log("API: Making request to:", url);
+
+      const response = await fetch(url, config);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorText}`
+        );
       }
 
       const data = await response.json();
+      console.log("API: Received response:", {
+        success: data.success,
+        dataLength: data.data?.length || 0,
+        totalCount: data.pagination?.total_count || 0,
+      });
 
       // Process image URLs in the response
       if (data.data && Array.isArray(data.data)) {
@@ -306,10 +337,16 @@ class ClothingAPI {
     page = 0,
     limit = 50,
     query = "",
-    filters = {},
-    getAllProducts = false
+    filters = {}
   ) {
     try {
+      console.log("API: Searching with params:", {
+        page,
+        limit,
+        query,
+        filters,
+      });
+
       const token = localStorage.getItem("token");
       const endpoint = token
         ? "/clothes/infinite-scroll"
@@ -318,16 +355,29 @@ class ClothingAPI {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-        ...(query && { query }),
-        // Add filter parameters
-        ...(filters.priceMin && { price_min: filters.priceMin }),
-        ...(filters.priceMax && { price_max: filters.priceMax }),
-        ...(filters.category && { category: filters.category }),
-        ...(filters.weather && { weather_suitable: filters.weather }),
-        ...(filters.rating && { min_rating: filters.rating }),
-        // Add get_all parameter to fetch everything at once
-        ...(getAllProducts && { get_all: "true", limit: "10000" }),
       });
+
+      // Add query parameter
+      if (query && query.trim()) {
+        params.append("query", query.trim());
+      }
+
+      // Add filter parameters
+      if (filters.priceMin !== undefined && filters.priceMin !== "") {
+        params.append("price_min", filters.priceMin);
+      }
+      if (filters.priceMax !== undefined && filters.priceMax !== "") {
+        params.append("price_max", filters.priceMax);
+      }
+      if (filters.category && filters.category !== "") {
+        params.append("category", filters.category);
+      }
+      if (filters.weather && filters.weather !== "") {
+        params.append("weather_suitable", filters.weather);
+      }
+      if (filters.rating && filters.rating !== "") {
+        params.append("min_rating", filters.rating);
+      }
 
       const config = {
         method: "GET",
@@ -337,16 +387,25 @@ class ClothingAPI {
         },
       };
 
-      const response = await fetch(
-        `${API_BASE_URL}${endpoint}?${params}`,
-        config
-      );
+      const url = `${API_BASE_URL}${endpoint}?${params}`;
+      console.log("API: Making request to:", url);
+
+      const response = await fetch(url, config);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorText}`
+        );
       }
 
       const data = await response.json();
+      console.log("API: Received response:", {
+        success: data.success,
+        dataLength: data.data?.length || 0,
+        totalCount: data.pagination?.total_count || 0,
+      });
 
       // Process image URLs in the response
       if (data.data && Array.isArray(data.data)) {
@@ -362,7 +421,85 @@ class ClothingAPI {
 
   // New method to get all products at once
   async getAllProductsAtOnce(query = "", filters = {}) {
-    return this.getProductsInfiniteScroll(0, 10000, query, filters, true);
+    console.log(
+      "API: Getting all products at once with query:",
+      query,
+      "and filters:",
+      filters
+    );
+
+    try {
+      const token = localStorage.getItem("token");
+      const endpoint = token
+        ? "/clothes/infinite-scroll"
+        : "/clothes/infinite-scroll/public";
+
+      const params = new URLSearchParams({
+        page: "0",
+        limit: "10000",
+        get_all: "true",
+      });
+
+      // Add query parameter
+      if (query && query.trim()) {
+        params.append("query", query.trim());
+      }
+
+      // Add filter parameters
+      if (filters.priceMin !== undefined && filters.priceMin !== "") {
+        params.append("price_min", filters.priceMin);
+      }
+      if (filters.priceMax !== undefined && filters.priceMax !== "") {
+        params.append("price_max", filters.priceMax);
+      }
+      if (filters.category && filters.category !== "") {
+        params.append("category", filters.category);
+      }
+      if (filters.weather && filters.weather !== "") {
+        params.append("weather_suitable", filters.weather);
+      }
+      if (filters.rating && filters.rating !== "") {
+        params.append("min_rating", filters.rating);
+      }
+
+      const config = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      };
+
+      const url = `${API_BASE_URL}${endpoint}?${params}`;
+      console.log("API: Making get all request to:", url);
+
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API: Get all response:", {
+        success: data.success,
+        dataLength: data.data?.length || 0,
+        totalCount: data.pagination?.total_count || 0,
+      });
+
+      // Process image URLs in the response
+      if (data.data && Array.isArray(data.data)) {
+        data.data = processProducts(data.data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error getting all products at once:", error);
+      throw error;
+    }
   }
 
   // Get seller profile
