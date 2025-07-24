@@ -115,9 +115,12 @@ async def serve_image(filename: str):
         # Define possible image folders relative to backend
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get backend folder
         image_folders = [
+            os.path.join(base_path, "routes", "images", "images_original", "images_original"),
+            os.path.join(base_path, "routes", "images", "test_image", "test_image"),
             os.path.join(base_path, "routes", "images", "images_original"),
             os.path.join(base_path, "routes", "images", "test_image"),
-            os.path.join(base_path, "routes", "images")
+            os.path.join(base_path, "routes", "images"),
+            os.path.join(base_path, "uploads")
         ]
         
         # Search for the image in all possible folders
@@ -136,6 +139,13 @@ async def serve_image(filename: str):
     except Exception as e:
         logger.error(f"Error serving image {filename}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error serving image")
+
+@router.get("/image/{filename}")
+async def serve_image_alt(filename: str):
+    """
+    Alternative image serving endpoint
+    """
+    return await serve_image(filename)
 
 @router.get("/clothes")
 async def search_clothing_products(

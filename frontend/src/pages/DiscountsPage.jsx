@@ -7,9 +7,6 @@ import {
   Card,
   CardContent,
   Button,
-  AppBar,
-  Toolbar,
-  IconButton,
   Chip,
   Paper,
   List,
@@ -24,7 +21,6 @@ import {
   Divider,
 } from "@mui/material";
 import {
-  ArrowBack,
   LocalOffer,
   ContentCopy,
   ShoppingCart,
@@ -183,12 +179,16 @@ const DiscountsPage = () => {
         elevation={3}
         sx={{
           height: "100%",
-          borderRadius: 2,
+          borderRadius: 3,
           opacity:
             isMyVoucher && (voucher.is_used || voucher.is_expired) ? 0.7 : 1,
           borderLeft: `4px solid ${
-            voucher.voucher_type === "shipping" ? "#2196f3" : "#2e7d32"
+            voucher.voucher_type === "shipping" ? "#4a5d3a" : "#4a5d3a"
           }`,
+          boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)",
+          "&:hover": {
+            boxShadow: "0 8px 25px rgba(74, 93, 58, 0.2)",
+          },
         }}
       >
         <CardContent>
@@ -200,7 +200,14 @@ const DiscountsPage = () => {
           >
             <Box display="flex" alignItems="center" gap={1}>
               {getVoucherIcon(voucher.voucher_type)}
-              <Typography variant="h6" fontWeight="bold">
+              <Typography 
+                variant="h6" 
+                fontWeight="bold"
+                sx={{ 
+                  color: "#4a5d3a",
+                  fontSize: "1.1rem",
+                }}
+              >
                 {voucher.percentage}% OFF
               </Typography>
             </Box>
@@ -208,8 +215,13 @@ const DiscountsPage = () => {
               label={
                 voucher.voucher_type === "shipping" ? "SHIPPING" : "CLOTHES"
               }
-              color={getVoucherColor(voucher.voucher_type)}
               size="small"
+              sx={{
+                backgroundColor: voucher.voucher_type === "shipping" ? "#4a5d3a" : "#8fa876",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "0.7rem",
+              }}
             />
           </Box>
 
@@ -251,13 +263,40 @@ const DiscountsPage = () => {
           {isMyVoucher && (
             <Box display="flex" gap={1} mb={2}>
               {voucher.is_used && (
-                <Chip label="USED" color="success" size="small" />
+                <Chip 
+                  label="USED" 
+                  size="small" 
+                  sx={{
+                    backgroundColor: "#4a5d3a",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                  }}
+                />
               )}
               {voucher.is_expired && !voucher.is_used && (
-                <Chip label="EXPIRED" color="error" size="small" />
+                <Chip 
+                  label="EXPIRED" 
+                  size="small" 
+                  sx={{
+                    backgroundColor: "#d32f2f",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                  }}
+                />
               )}
               {!voucher.is_used && !voucher.is_expired && (
-                <Chip label="ACTIVE" color="primary" size="small" />
+                <Chip 
+                  label="ACTIVE" 
+                  size="small" 
+                  sx={{
+                    backgroundColor: "#8fa876",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                  }}
+                />
               )}
             </Box>
           )}
@@ -270,13 +309,15 @@ const DiscountsPage = () => {
                 startIcon={<CollectionsBookmark />}
                 onClick={() => collectVoucher(voucher._id)}
                 sx={{
-                  bgcolor:
-                    voucher.voucher_type === "shipping" ? "#2196f3" : "#2e7d32",
-                  "&:hover": {
-                    bgcolor:
-                      voucher.voucher_type === "shipping"
-                        ? "#1976d2"
-                        : "#1b5e20",
+                  bgcolor: "#4a5d3a",
+                  borderRadius: "25px",
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                  "&:hover": { 
+                    bgcolor: "#3a4d2a",
+                    boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
                   },
                 }}
               >
@@ -291,7 +332,23 @@ const DiscountsPage = () => {
                   disabled={
                     isMyVoucher && (voucher.is_used || voucher.is_expired)
                   }
-                  sx={{ flex: 1 }}
+                  sx={{ 
+                    flex: 1,
+                    color: "#4a5d3a",
+                    borderColor: "#4a5d3a",
+                    borderRadius: "25px",
+                    px: 3,
+                    py: 1,
+                    fontWeight: 600,
+                    "&:hover": {
+                      backgroundColor: "rgba(74, 93, 58, 0.1)",
+                      borderColor: "#4a5d3a",
+                    },
+                    "&:disabled": {
+                      color: "#ccc",
+                      borderColor: "#ccc",
+                    },
+                  }}
                 >
                   Copy Code
                 </Button>
@@ -317,28 +374,133 @@ const DiscountsPage = () => {
   ).length;
 
   return (
-    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-      <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={() => navigate("/products")}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Voucher Collection
-          </Typography>
-          <Button color="inherit" onClick={() => navigate("/products")}>
+    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f0f8f0", background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)" }}>
+      {/* Header with Home.jsx styling */}
+      <Box
+        component="header"
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        width="100%"
+        sx={{
+          px: 4,
+          py: 2,
+          backgroundColor: "#4a5d3a",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 1100,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+        }}
+      >
+        {/* Logo and Title */}
+        <Box display="flex" alignItems="center">
+          <Box
+            onClick={() => navigate("/products")}
+            display="flex"
+            alignItems="center"
+            sx={{
+              textDecoration: "none",
+              cursor: "pointer",
+              "&:hover": {
+                opacity: 0.9,
+              },
+              transition: "opacity 0.2s ease",
+            }}
+          >
+            <Box
+              component="img"
+              src="src/assets/ClimateFitLogo.png"
+              alt="Climate Fit Logo"
+              sx={{
+                width: "50px",
+                height: "30px",
+                objectFit: "cover",
+                mr: 2,
+              }}
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: "#ffffff",
+                fontSize: "1.2rem",
+              }}
+            >
+              CLIMATEFIT FASHION STORE
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Header Actions */}
+        <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            onClick={() => navigate("/products")}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
             Products
           </Button>
-          <Button color="inherit" onClick={() => navigate("/cart")}>
-            <ShoppingCart />
+          <Button
+            onClick={() => navigate("/cart")}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
+            <ShoppingCart sx={{ mr: 1 }} />
+            Cart
           </Button>
-          <Button color="inherit" onClick={handleLogout}>
+          <Button
+            onClick={handleLogout}
+            variant="contained"
+            sx={{
+              backgroundColor: "#8fa876",
+              color: "#ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "#7a956a",
+              },
+            }}
+          >
             Logout
           </Button>
-        </Toolbar>
-      </AppBar>
+        </Box>
+      </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: 4, pt: 12, mt: 8 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -347,7 +509,7 @@ const DiscountsPage = () => {
           <Typography
             variant="h4"
             gutterBottom
-            sx={{ fontWeight: "bold", color: "#2e7d32", mb: 1 }}
+            sx={{ fontWeight: 800, color: "#4a5d3a", fontSize: "2rem", letterSpacing: 1, mb: 1 }}
           >
             🎟️ Voucher Collection
           </Typography>
@@ -357,7 +519,7 @@ const DiscountsPage = () => {
             clothes and shipping.
           </Typography>
 
-          <Paper elevation={2} sx={{ borderRadius: 2 }}>
+          <Paper elevation={3} sx={{ borderRadius: 4, background: "#ffffff", boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)" }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
               <Tabs
                 value={tabValue}
@@ -436,8 +598,16 @@ const DiscountsPage = () => {
                             onClick={collectAllVouchers}
                             disabled={collectingAll || totalAvailable === 0}
                             sx={{
-                              bgcolor: "#2e7d32",
-                              "&:hover": { bgcolor: "#1b5e20" },
+                              bgcolor: "#4a5d3a",
+                              borderRadius: "25px",
+                              px: 3,
+                              py: 1,
+                              fontWeight: 600,
+                              boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                              "&:hover": { 
+                                bgcolor: "#3a4d2a",
+                                boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                              },
                             }}
                           >
                             {collectingAll ? (
@@ -484,7 +654,19 @@ const DiscountsPage = () => {
                             <Button
                               variant="outlined"
                               onClick={() => navigate("/products")}
-                              sx={{ mt: 1 }}
+                              sx={{ 
+                                mt: 1,
+                                color: "#4a5d3a",
+                                borderColor: "#4a5d3a",
+                                borderRadius: "25px",
+                                px: 3,
+                                py: 1,
+                                fontWeight: 600,
+                                "&:hover": {
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  borderColor: "#4a5d3a",
+                                },
+                              }}
                             >
                               Continue Shopping
                             </Button>
@@ -537,8 +719,16 @@ const DiscountsPage = () => {
                             onClick={collectAllVouchers}
                             disabled={collectingAll || totalAvailable === 0}
                             sx={{
-                              bgcolor: "#2e7d32",
-                              "&:hover": { bgcolor: "#1b5e20" },
+                              bgcolor: "#4a5d3a",
+                              borderRadius: "25px",
+                              px: 3,
+                              py: 1,
+                              fontWeight: 600,
+                              boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                              "&:hover": { 
+                                bgcolor: "#3a4d2a",
+                                boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                              },
                             }}
                           >
                             {collectingAll ? (
@@ -586,7 +776,19 @@ const DiscountsPage = () => {
                             <Button
                               variant="outlined"
                               onClick={() => navigate("/products")}
-                              sx={{ mt: 1 }}
+                              sx={{ 
+                                mt: 1,
+                                color: "#4a5d3a",
+                                borderColor: "#4a5d3a",
+                                borderRadius: "25px",
+                                px: 3,
+                                py: 1,
+                                fontWeight: 600,
+                                "&:hover": {
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  borderColor: "#4a5d3a",
+                                },
+                              }}
                             >
                               Continue Shopping
                             </Button>
@@ -643,8 +845,16 @@ const DiscountsPage = () => {
                       variant="contained"
                       onClick={() => setTabValue(0)}
                       sx={{
-                        bgcolor: "#2e7d32",
-                        "&:hover": { bgcolor: "#1b5e20" },
+                        bgcolor: "#4a5d3a",
+                        borderRadius: "25px",
+                        px: 3,
+                        py: 1,
+                        fontWeight: 600,
+                        boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                        "&:hover": { 
+                          bgcolor: "#3a4d2a",
+                          boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                        },
                       }}
                     >
                       Browse Vouchers
