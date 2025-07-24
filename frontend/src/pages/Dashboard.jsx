@@ -347,28 +347,6 @@ const Dashboard = () => {
             <WeatherMapSection />
           </Box>
         </Box>
-        <Box mt={3} mb={4}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>Account Information:</strong>
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <Typography variant="body2">
-                <strong>Username:</strong> {user?.username}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Typography variant="body2">
-                <strong>Email:</strong> {user?.email}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Typography variant="body2">
-                <strong>Full Name:</strong> {user?.full_name}
-              </Typography>
-            </Grid>
-          </Grid>
-        </Box>
         <AddressForm onAddressSelect={handleAddressSelect} />
         {/* Quick Actions Section */}
         <Box sx={{ mt: 6, maxWidth: 1400, mx: "auto" }}>
