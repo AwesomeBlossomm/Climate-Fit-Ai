@@ -270,7 +270,14 @@ const ProductDetail = () => {
 
   if (loading) {
     return (
-      <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f0f8f0", background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)" }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          minHeight: "100vh",
+          bgcolor: "#f0f8f0",
+          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)",
+        }}
+      >
         <Box
           component="header"
           display="flex"
@@ -319,7 +326,14 @@ const ProductDetail = () => {
 
   if (!product) {
     return (
-      <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f0f8f0", background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)" }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          minHeight: "100vh",
+          bgcolor: "#f0f8f0",
+          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)",
+        }}
+      >
         <Box
           component="header"
           display="flex"
@@ -366,7 +380,11 @@ const ProductDetail = () => {
           </Box>
         </Box>
         <Container maxWidth="xl" sx={{ py: 4, pt: 12, mt: 8 }}>
-          <Typography variant="h5" align="center" sx={{ color: "#4a5d3a", fontWeight: 700 }}>
+          <Typography
+            variant="h5"
+            align="center"
+            sx={{ color: "#4a5d3a", fontWeight: 700 }}
+          >
             Product not found
           </Typography>
           <Button
@@ -381,7 +399,7 @@ const ProductDetail = () => {
               px: 3,
               py: 1,
               fontWeight: 600,
-              "&:hover": { 
+              "&:hover": {
                 bgcolor: "#3a4d2a",
               },
             }}
@@ -394,7 +412,14 @@ const ProductDetail = () => {
   }
 
   return (
-    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f0f8f0", background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)" }}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        minHeight: "100vh",
+        bgcolor: "#f0f8f0",
+        background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)",
+      }}
+    >
       {/* Header with Home.jsx styling */}
       <Box
         component="header"
@@ -544,7 +569,10 @@ const ProductDetail = () => {
         </Box>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4, pt: 12, mt: 8, display: "flex", justifyContent: "center" }}>
+      <Container
+        maxWidth="lg"
+        sx={{ py: 4, pt: 12, mt: 8, display: "flex", justifyContent: "center" }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -555,7 +583,16 @@ const ProductDetail = () => {
           <Grid container spacing={3} mb={3} justifyContent="center">
             {/* Product Image - Same Height */}
             <Grid item xs={12} md={6}>
-              <Card elevation={3} sx={{ borderRadius: 3, boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)", maxWidth: "400px", mx: "auto", height: "450px" }}>
+              <Card
+                elevation={3}
+                sx={{
+                  borderRadius: 3,
+                  boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
+                  maxWidth: "400px",
+                  mx: "auto",
+                  height: "450px",
+                }}
+              >
                 <CardMedia
                   component="img"
                   height="460"
@@ -602,16 +639,16 @@ const ProductDetail = () => {
             <Grid item xs={12} md={6}>
               <Paper
                 elevation={3}
-                sx={{ 
-                  p: 3, 
-                  borderRadius: 3, 
-                  background: "#ffffff", 
-                  boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)", 
-                  maxWidth: "600px", 
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  background: "#ffffff",
+                  boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
+                  maxWidth: "600px",
                   mx: "auto",
                   height: "460px",
                   display: "flex",
-                  flexDirection: "column"
+                  flexDirection: "column",
                 }}
               >
                 {/* Header */}
@@ -619,23 +656,32 @@ const ProductDetail = () => {
                   <Chip
                     label={product.category || "Fashion"}
                     size="small"
-                    sx={{ 
-                      bgcolor: "#4a5d3a", 
+                    sx={{
+                      bgcolor: "#4a5d3a",
                       color: "#ffffff",
                       fontWeight: 600,
                       mb: 1,
-                      fontSize: "0.75rem"
+                      fontSize: "0.75rem",
                     }}
                   />
-                  <Typography 
-                    variant="h5" 
-                    fontWeight="bold" 
+                  <Typography
+                    variant="h5"
+                    fontWeight="bold"
                     gutterBottom
-                    sx={{ color: "#4a5d3a", fontSize: "1.5rem", lineHeight: 1.2, mb: 1 }}
+                    sx={{
+                      color: "#4a5d3a",
+                      fontSize: "1.5rem",
+                      lineHeight: 1.2,
+                      mb: 1,
+                    }}
                   >
                     {product.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.9rem", lineHeight: 1.4 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.9rem", lineHeight: 1.4 }}
+                  >
                     {product.description}
                   </Typography>
                 </Box>
@@ -650,7 +696,8 @@ const ProductDetail = () => {
                       size="small"
                     />
                     <Typography variant="caption" color="text.secondary">
-                      ({product.average_rating.toFixed(1)} - {product.total_comments} reviews)
+                      ({product.average_rating.toFixed(1)} -{" "}
+                      {product.total_comments} reviews)
                     </Typography>
                   </Box>
                 )}
@@ -714,7 +761,12 @@ const ProductDetail = () => {
                 {product.sizes_available &&
                   product.sizes_available.length > 0 && (
                     <Box mb={1.5}>
-                      <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        gutterBottom
+                        display="block"
+                      >
                         <strong>Available Sizes:</strong>
                       </Typography>
                       <Box display="flex" gap={0.5} flexWrap="wrap">
@@ -732,7 +784,12 @@ const ProductDetail = () => {
                   )}
 
                 {/* Stock */}
-                <Typography variant="caption" color="text.secondary" mb={1.5} display="block">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  mb={1.5}
+                  display="block"
+                >
                   <strong>Stock:</strong> {product.quantity || 0} available
                 </Typography>
 
@@ -749,11 +806,11 @@ const ProductDetail = () => {
                       bgcolor: "#4a5d3a",
                       borderRadius: "25px",
                       px: 3,
-                      py: .8,
+                      py: 0.8,
                       fontWeight: 600,
                       fontSize: "0.9rem",
                       boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
-                      "&:hover": { 
+                      "&:hover": {
                         bgcolor: "#3a4d2a",
                         boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
                         transform: "translateY(-2px)",
@@ -761,7 +818,7 @@ const ProductDetail = () => {
                       transition: "all 0.3s ease",
                     }}
                   >
-                      Add to Cart
+                    Add to Cart
                   </Button>
                 </Box>
               </Paper>
@@ -771,23 +828,43 @@ const ProductDetail = () => {
           {/* Seller Information - Compact and Centered */}
           {product.seller && (
             <Box display="flex" justifyContent="center" mb={3}>
-              <Paper elevation={3} sx={{ p: 3, borderRadius: 3, background: "#ffffff", boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)", maxWidth: "800px", width: "100%" }}>
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  background: "#ffffff",
+                  boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
+                  maxWidth: "800px",
+                  width: "100%",
+                }}
+              >
                 <Box
                   display="flex"
                   justifyContent="space-between"
                   alignItems="center"
                   mb={2}
                 >
-                  <Typography variant="h6" fontWeight="bold" sx={{ color: "#4a5d3a", fontSize: "1.2rem" }}>
-                    <Store sx={{ mr: 1, verticalAlign: "middle", fontSize: "1.3rem" }} />
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{ color: "#4a5d3a", fontSize: "1.2rem" }}
+                  >
+                    <Store
+                      sx={{
+                        mr: 1,
+                        verticalAlign: "middle",
+                        fontSize: "1.3rem",
+                      }}
+                    />
                     Seller Information
                   </Typography>
                   <Button
                     variant="outlined"
                     size="small"
                     onClick={() => navigate(`/seller/${product.seller._id}`)}
-                    sx={{ 
-                      color: "#4a5d3a", 
+                    sx={{
+                      color: "#4a5d3a",
                       borderColor: "#4a5d3a",
                       borderRadius: "20px",
                       px: 2,
@@ -831,7 +908,11 @@ const ProductDetail = () => {
                       </Avatar>
                       <Box>
                         <Box display="flex" alignItems="center" gap={1}>
-                          <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: "0.95rem" }}>
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight="bold"
+                            sx={{ fontSize: "0.95rem" }}
+                          >
                             {product.seller.store_name}
                           </Typography>
                           {product.seller.is_verified && (
@@ -842,8 +923,15 @@ const ProductDetail = () => {
                           Owner: {product.seller.owner_full_name}
                         </Typography>
                         {product.seller.established_date && (
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            Est. {new Date(product.seller.established_date).getFullYear()}
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                          >
+                            Est.{" "}
+                            {new Date(
+                              product.seller.established_date
+                            ).getFullYear()}
                           </Typography>
                         )}
                       </Box>
@@ -932,7 +1020,7 @@ const ProductDetail = () => {
                         fontWeight: 600,
                         fontSize: "0.8rem",
                         boxShadow: "0 3px 12px rgba(74, 93, 58, 0.3)",
-                        "&:hover": { 
+                        "&:hover": {
                           bgcolor: "#3a4d2a",
                           boxShadow: "0 4px 15px rgba(74, 93, 58, 0.4)",
                         },
@@ -948,26 +1036,41 @@ const ProductDetail = () => {
 
           {/* Comments Section - Compact and Centered */}
           <Box display="flex" justifyContent="center">
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 3, background: "#ffffff", boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)", maxWidth: "800px", width: "100%" }}>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                background: "#ffffff",
+                boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
+                maxWidth: "800px",
+                width: "100%",
+              }}
+            >
               <Box
                 display="flex"
                 justifyContent="space-between"
                 alignItems="center"
                 mb={2}
               >
-                <Typography variant="h6" fontWeight="bold" sx={{ color: "#4a5d3a", fontSize: "1.2rem" }}>
-                  <Comment sx={{ mr: 1, verticalAlign: "middle", fontSize: "1.3rem" }} />
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{ color: "#4a5d3a", fontSize: "1.2rem" }}
+                >
+                  <Comment
+                    sx={{ mr: 1, verticalAlign: "middle", fontSize: "1.3rem" }}
+                  />
                   Customer Reviews ({comments.length})
                 </Typography>
-<<<<<<< HEAD
                 {user && (
                   <Button
                     variant="outlined"
                     size="small"
                     startIcon={<Add />}
                     onClick={() => setOpenCommentDialog(true)}
-                    sx={{ 
-                      color: "#4a5d3a", 
+                    sx={{
+                      color: "#4a5d3a",
                       borderColor: "#4a5d3a",
                       borderRadius: "20px",
                       px: 2,
@@ -983,7 +1086,6 @@ const ProductDetail = () => {
                     Write Review
                   </Button>
                 )}
-=======
                 <Button
                   variant="outlined"
                   onClick={() => navigate(`/seller/${product.seller._id}`)}
@@ -1110,7 +1212,7 @@ const ProductDetail = () => {
                 </Grid>
               </Grid>
             </Paper>
-          )}
+          </Box>
 
           {/* Comments Section */}
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3, mt: 4 }}>
@@ -1137,86 +1239,88 @@ const ProductDetail = () => {
             </Box>
 
             {commentsLoading ? (
-              <Box display="flex" justifyContent="center" py={4}>
-                <CircularProgress />
->>>>>>> cf7914bf3a2bb8df10269ec4b5a60dc25e8d142e
+              <Box display="flex" justifyContent="center" py={2}>
+                <CircularProgress size={30} />
               </Box>
-
-              {commentsLoading ? (
-                <Box display="flex" justifyContent="center" py={2}>
-                  <CircularProgress size={30} />
-                </Box>
-              ) : comments.length > 0 ? (
-                <List sx={{ py: 0 }}>
-                  {comments.slice(0, 5).map((comment, index) => (
-                    <React.Fragment key={comment._id || index}>
-                      <ListItem alignItems="flex-start" sx={{ px: 0, py: 1 }}>
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: "#4a5d3a", width: 32, height: 32 }}>
-                            <Person sx={{ fontSize: "1rem" }} />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: "0.9rem" }}>
-                                {comment.user_name || "Anonymous"}
-                              </Typography>
-                              <Rating
-                                value={comment.rating}
-                                readOnly
-                                size="small"
-                              />
-                            </Box>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{ mt: 0.5, fontSize: "0.85rem", lineHeight: 1.4 }}
-                              >
-                                {comment.comment}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ fontSize: "0.75rem" }}
-                              >
-                                {new Date(
-                                  comment.created_at
-                                ).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {index < Math.min(comments.length, 5) - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                  {comments.length > 5 && (
-                    <Box textAlign="center" mt={1}>
-                      <Typography variant="caption" color="text.secondary">
-                        Showing 5 of {comments.length} reviews
-                      </Typography>
-                    </Box>
-                  )}
-                </List>
-              ) : (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  align="center"
-                  py={2}
-                  sx={{ fontSize: "0.9rem" }}
-                >
-                  No reviews yet. Be the first to review this product!
-                </Typography>
-              )}
-            </Paper>
-          </Box>
+            ) : comments.length > 0 ? (
+              <List sx={{ py: 0 }}>
+                {comments.slice(0, 5).map((comment, index) => (
+                  <React.Fragment key={comment._id || index}>
+                    <ListItem alignItems="flex-start" sx={{ px: 0, py: 1 }}>
+                      <ListItemAvatar>
+                        <Avatar
+                          sx={{ bgcolor: "#4a5d3a", width: 32, height: 32 }}
+                        >
+                          <Person sx={{ fontSize: "1rem" }} />
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Typography
+                              variant="subtitle2"
+                              fontWeight="bold"
+                              sx={{ fontSize: "0.9rem" }}
+                            >
+                              {comment.user_name || "Anonymous"}
+                            </Typography>
+                            <Rating
+                              value={comment.rating}
+                              readOnly
+                              size="small"
+                            />
+                          </Box>
+                        }
+                        secondary={
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                mt: 0.5,
+                                fontSize: "0.85rem",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {comment.comment}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontSize: "0.75rem" }}
+                            >
+                              {new Date(
+                                comment.created_at
+                              ).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </ListItem>
+                    {index < Math.min(comments.length, 5) - 1 && <Divider />}
+                  </React.Fragment>
+                ))}
+                {comments.length > 5 && (
+                  <Box textAlign="center" mt={1}>
+                    <Typography variant="caption" color="text.secondary">
+                      Showing 5 of {comments.length} reviews
+                    </Typography>
+                  </Box>
+                )}
+              </List>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                align="center"
+                py={2}
+                sx={{ fontSize: "0.9rem" }}
+              >
+                No reviews yet. Be the first to review this product!
+              </Typography>
+            )}
+          </Paper>
         </motion.div>
       </Container>
-
       {/* Add to Cart Dialog */}
       <Dialog open={openAddToCart} onClose={() => setOpenAddToCart(false)}>
         <DialogTitle>Add to Cart</DialogTitle>
@@ -1243,8 +1347,8 @@ const ProductDetail = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenAddToCart(false)}>Cancel</Button>
-          <Button 
-            onClick={confirmAddToCart} 
+          <Button
+            onClick={confirmAddToCart}
             variant="contained"
             sx={{
               bgcolor: "#4a5d3a",
@@ -1252,7 +1356,7 @@ const ProductDetail = () => {
               px: 3,
               py: 1,
               fontWeight: 600,
-              "&:hover": { 
+              "&:hover": {
                 bgcolor: "#3a4d2a",
               },
             }}
@@ -1329,7 +1433,7 @@ const ProductDetail = () => {
               px: 3,
               py: 1,
               fontWeight: 600,
-              "&:hover": { 
+              "&:hover": {
                 bgcolor: "#3a4d2a",
               },
             }}

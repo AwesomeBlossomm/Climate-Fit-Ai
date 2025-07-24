@@ -4,21 +4,20 @@ import {
   Box,
   Typography,
   Button,
+  AppBar,
+  Toolbar,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
 } from "@mui/material";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import {
-  ShoppingCart,
-  LocalOffer,
-  Storefront,
-} from "@mui/icons-material";
+import { ShoppingCart, LocalOffer, Storefront } from "@mui/icons-material";
 import WeatherMapSection from "../components/WeatherMapSection";
-<<<<<<< HEAD
-import SensorOccupiedIcon from '@mui/icons-material/SensorOccupied';
-import { motion } from "framer-motion";
-=======
 import SensorOccupiedIcon from "@mui/icons-material/SensorOccupied";
->>>>>>> cf7914bf3a2bb8df10269ec4b5a60dc25e8d142e
+import { motion } from "framer-motion";
 
 const Dashboard = () => {
   const { user, logout, token } = useAuth(); // Add token to destructuring
@@ -62,7 +61,7 @@ const Dashboard = () => {
     },
     {
       title: "View Discounts",
-      description: "Check out available offers and discounts", 
+      description: "Check out available offers and discounts",
       icon: <LocalOffer sx={{ fontSize: 40, color: "#ffffff" }} />,
       action: () => navigate("/discounts"),
       gradient: "linear-gradient(135deg, #7a956a 0%, #6b8459 100%)",
@@ -101,8 +100,6 @@ const Dashboard = () => {
 
   return (
     <>
-<<<<<<< HEAD
-      {/* Header with Home.jsx styling */}
       <Box
         component="header"
         display="flex"
@@ -122,125 +119,6 @@ const Dashboard = () => {
       >
         {/* Logo and Title */}
         <Box display="flex" alignItems="center">
-=======
-      <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            ClimateFit Dashboard
-          </Typography>
-          <Button color="inherit" onClick={() => navigate("/products")}>
-            Shop Now
-          </Button>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      <Box sx={{ p: 3, bgcolor: "#f5f5f5", minHeight: "100vh" }}>
-        <Paper
-          elevation={3}
-          sx={{ p: 4, maxWidth: 1200, mx: "auto", borderRadius: 3 }}
-        >
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: "#2e7d32" }}
-          >
-            Welcome to ClimateFit! 🌱
-          </Typography>
-          <Typography variant="h6" gutterBottom color="text.secondary">
-            Hello, {user?.full_name || user?.username}!
-          </Typography>
-
-          {/* Weather and Map Section */}
-          <WeatherMapSection selectedAddress={selectedAddress} />
-
-          <Box mt={3} mb={4}>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              <strong>Account Information:</strong>
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={4}>
-                <Typography variant="body2">
-                  <strong>Username:</strong> {user?.username}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Typography variant="body2">
-                  <strong>Email:</strong> {user?.email}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Typography variant="body2">
-                  <strong>Full Name:</strong> {user?.full_name}
-                </Typography>
-              </Grid>
-            </Grid>
-          </Box>
-          <AddressForm onAddressSelect={handleAddressSelect} />
-          <Typography
-            variant="h5"
-            gutterBottom
-            sx={{ fontWeight: "bold", mb: 3 }}
-          >
-            Quick Actions
-          </Typography>
-
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {quickActions.map((action, index) => (
-              <Grid item xs={12} md={4} key={index}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    height: "100%",
-                    borderRadius: 2,
-                    transition: "transform 0.2s",
-                    "&:hover": { transform: "translateY(-4px)" },
-                  }}
-                >
-                  <CardContent sx={{ textAlign: "center", py: 3 }}>
-                    <Box
-                      sx={{
-                        bgcolor: action.color,
-                        width: 80,
-                        height: 80,
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mx: "auto",
-                        mb: 2,
-                      }}
-                    >
-                      {action.icon}
-                    </Box>
-                    <Typography variant="h6" gutterBottom fontWeight="bold">
-                      {action.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {action.description}
-                    </Typography>
-                  </CardContent>
-                  <CardActions sx={{ justifyContent: "center", pb: 3 }}>
-                    <Button
-                      variant="contained"
-                      onClick={action.action}
-                      sx={{
-                        bgcolor: "#2e7d32",
-                        "&:hover": { bgcolor: "#1b5e20" },
-                      }}
-                    >
-                      Get Started
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-
->>>>>>> cf7914bf3a2bb8df10269ec4b5a60dc25e8d142e
           <Box
             display="flex"
             alignItems="center"
@@ -324,8 +202,8 @@ const Dashboard = () => {
       </Box>
 
       {/* Main Content with Home.jsx background */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           pt: 12, // Account for fixed header height
           mt: 10, // Add top margin for extra spacing
           minHeight: "100vh",
@@ -371,7 +249,7 @@ const Dashboard = () => {
             >
               Welcome Back! 🌱
             </Typography>
-            
+
             <Typography
               variant="body1"
               sx={{
@@ -381,7 +259,8 @@ const Dashboard = () => {
                 lineHeight: 1.5,
               }}
             >
-              Hello, {user?.full_name || user?.username}! Ready to make sustainable fashion choices today?
+              Hello, {user?.full_name || user?.username}! Ready to make
+              sustainable fashion choices today?
             </Typography>
 
             {/* User Info Cards */}
@@ -395,10 +274,19 @@ const Dashboard = () => {
                   backdropFilter: "blur(10px)",
                 }}
               >
-                <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.75rem" }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.7)",
+                    fontSize: "0.75rem",
+                  }}
+                >
                   Username
                 </Typography>
-                <Typography variant="body1" sx={{ color: "#ffffff", fontWeight: 600, fontSize: "0.9rem" }}>
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#ffffff", fontWeight: 600, fontSize: "0.9rem" }}
+                >
                   {user?.username}
                 </Typography>
               </Box>
@@ -411,10 +299,19 @@ const Dashboard = () => {
                   backdropFilter: "blur(10px)",
                 }}
               >
-                <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.75rem" }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.7)",
+                    fontSize: "0.75rem",
+                  }}
+                >
                   Email
                 </Typography>
-                <Typography variant="body1" sx={{ color: "#ffffff", fontWeight: 600, fontSize: "0.9rem" }}>
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#ffffff", fontWeight: 600, fontSize: "0.9rem" }}
+                >
                   {user?.email}
                 </Typography>
               </Box>
@@ -426,10 +323,19 @@ const Dashboard = () => {
                   backdropFilter: "blur(10px)",
                 }}
               >
-                <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.75rem" }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.7)",
+                    fontSize: "0.75rem",
+                  }}
+                >
                   Full Name
                 </Typography>
-                <Typography variant="body1" sx={{ color: "#ffffff", fontWeight: 600, fontSize: "0.9rem" }}>
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#ffffff", fontWeight: 600, fontSize: "0.9rem" }}
+                >
                   {user?.full_name}
                 </Typography>
               </Box>
@@ -441,7 +347,29 @@ const Dashboard = () => {
             <WeatherMapSection />
           </Box>
         </Box>
-
+        <Box mt={3} mb={4}>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>Account Information:</strong>
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2">
+                <strong>Username:</strong> {user?.username}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2">
+                <strong>Email:</strong> {user?.email}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2">
+                <strong>Full Name:</strong> {user?.full_name}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+        <AddressForm onAddressSelect={handleAddressSelect} />
         {/* Quick Actions Section */}
         <Box sx={{ mt: 6, maxWidth: 1400, mx: "auto" }}>
           <Typography
@@ -475,10 +403,10 @@ const Dashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ scale: 1.03, y: -5 }}
                 whileTap={{ scale: 0.97 }}
-                transition={{ 
-                  duration: 0.6, 
+                transition={{
+                  duration: 0.6,
                   delay: index * 0.1,
-                  hover: { duration: 0.2 }
+                  hover: { duration: 0.2 },
                 }}
                 onClick={action.action}
                 sx={{
@@ -516,15 +444,24 @@ const Dashboard = () => {
                     mb: 2,
                   }}
                 >
-                  {React.cloneElement(action.icon, { sx: { fontSize: 35, color: "#ffffff" } })}
+                  {React.cloneElement(action.icon, {
+                    sx: { fontSize: 35, color: "#ffffff" },
+                  })}
                 </Box>
 
                 {/* Content */}
-                <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      color: "#ffffff", 
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: "#ffffff",
                       fontWeight: 700,
                       mb: 1,
                       fontSize: "1.1rem",
@@ -532,9 +469,9 @@ const Dashboard = () => {
                   >
                     {action.title}
                   </Typography>
-                  <Typography 
-                    sx={{ 
-                      color: "rgba(255,255,255,0.9)", 
+                  <Typography
+                    sx={{
+                      color: "rgba(255,255,255,0.9)",
                       fontSize: "0.85rem",
                       lineHeight: 1.3,
                       mb: 2,
