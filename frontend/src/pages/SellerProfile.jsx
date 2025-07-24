@@ -62,10 +62,23 @@ const SellerProfile = () => {
   const fetchSellerProfile = async () => {
     try {
       setLoading(true);
-      const response = await clothingAPI.getSellerProfile(sellerId);
-      setSeller(response.data);
+      // Try to get seller info from the public endpoint
+      const response = await fetch(
+        `http://localhost:8000/api/v1/clothes/seller/${sellerId}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setSeller(data.data);
+      } else {
+        // If seller endpoint fails, we'll try to get seller info from the first product
+        console.warn(
+          "Seller endpoint failed, will try to get info from products"
+        );
+      }
     } catch (error) {
       console.error("Error fetching seller profile:", error);
+      // Don't set error state yet, we'll try to get seller info from products
     } finally {
       setLoading(false);
     }
@@ -74,12 +87,48 @@ const SellerProfile = () => {
   const fetchSellerProducts = async () => {
     try {
       setProductsLoading(true);
-      const response = await clothingAPI.getSellerProducts(sellerId);
-      setSellerProducts(response.data || []);
+      // Use the correct endpoint for getting seller products
+      const response = await fetch(
+        `http://localhost:8000/api/v1/sellers/${sellerId}/products/?limit=100&offset=0`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setSellerProducts(data.data || []);
+
+        // If we don't have seller info yet, try to extract it from the first product
+        if (!seller && data.data && data.data.length > 0) {
+          const firstProduct = data.data[0];
+          if (firstProduct.seller) {
+            setSeller(firstProduct.seller);
+          } else if (firstProduct.seller_id) {
+            // Try to fetch seller info using the seller_id from product
+            fetchSellerInfoFromProduct(firstProduct.seller_id);
+          }
+        }
+      } else {
+        throw new Error(`Failed to fetch products: ${response.statusText}`);
+      }
     } catch (error) {
       console.error("Error fetching seller products:", error);
+      setSellerProducts([]);
     } finally {
       setProductsLoading(false);
+    }
+  };
+
+  const fetchSellerInfoFromProduct = async (sellerIdFromProduct) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/v1/clothes/seller/public/${sellerIdFromProduct}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setSeller(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching seller info from product:", error);
     }
   };
 

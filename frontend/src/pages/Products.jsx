@@ -139,21 +139,60 @@ const Products = () => {
         // Try to get all products at once first
         let response;
         try {
+          console.log(
+            "Attempting to load all products with query:",
+            searchQuery,
+            "and filters:",
+            filters
+          );
           response = await clothingAPI.getAllProductsAtOnce(
             searchQuery,
             filters
           );
-          console.log(`Loaded ALL ${response.data.length} products at once`);
-        } catch (error) {
-          console.log("Falling back to paginated loading...");
-          // Fallback to paginated loading if getting all fails
-          const currentPage = resetData ? 0 : pagination.page;
-          response = await clothingAPI.getProductsInfiniteScroll(
-            currentPage,
-            20, // Increased page size
-            searchQuery,
-            filters
+          console.log(
+            `Loaded ${response.data?.length || 0} products successfully`
           );
+
+          // If we got a successful response with data, process it
+          if (response && response.data && Array.isArray(response.data)) {
+            const newProducts = response.data;
+
+            if (resetData) {
+              setProducts(newProducts);
+            } else {
+              setProducts((prev) => [...prev, ...newProducts]);
+            }
+
+            // Set pagination info based on response
+            setPagination({
+              page: 1,
+              hasMore: false, // Since we got all products
+              totalCount: newProducts.length,
+              loadedCount: newProducts.length,
+            });
+
+            console.log(`Total products loaded: ${newProducts.length}`);
+            setLoading(false);
+            return; // Exit early since we successfully loaded all products
+          }
+        } catch (error) {
+          console.log(
+            "Failed to get all products at once, falling back to paginated loading...",
+            error.message || error
+          );
+        }
+
+        // Fallback to paginated loading if getting all fails
+        const currentPage = resetData ? 0 : pagination.page;
+        response = await clothingAPI.getProductsInfiniteScroll(
+          currentPage,
+          50, // Increased page size
+          searchQuery,
+          filters
+        );
+
+        if (!response || !response.data) {
+          throw new Error("Invalid response from API");
         }
 
         const newProducts = response.data || [];
@@ -187,12 +226,47 @@ const Products = () => {
           message: "Failed to load products. Please try again.",
           severity: "error",
         });
+
+        // Set empty state on error
+        setProducts([]);
+        setPagination({
+          page: 0,
+          hasMore: false,
+          totalCount: 0,
+          loadedCount: 0,
+        });
       } finally {
         setLoading(false);
       }
     },
-    [loading, pagination.page, searchQuery, filters, resetProducts]
+    [loading, searchQuery, filters, resetProducts]
   );
+
+  // Handle individual filter changes
+  const handleFilterChange = (filterName, value) => {
+    console.log(`Updating filter ${filterName} to:`, value);
+    setFilters({
+      ...filters,
+      [filterName]: value,
+    });
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    console.log("Clearing all filters");
+    setFilters({
+      priceMin: "",
+      priceMax: "",
+      category: "",
+      weather: "",
+      rating: "",
+    });
+  };
+
+  // Count active filters for display
+  const getActiveFiltersCount = () => {
+    return Object.values(filters).filter((val) => val !== "").length;
+  };
 
   // Load more products for infinite scroll with filters - enhanced
   const loadMoreProducts = useCallback(async () => {
@@ -242,19 +316,49 @@ const Products = () => {
   // Handle search changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery !== tempSearchQuery) {
-        setSearchQuery(tempSearchQuery);
+      const trimmedQuery = tempSearchQuery.trim();
+      if (trimmedQuery !== searchQuery) {
+        setSearchQuery(trimmedQuery);
       }
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
   }, [tempSearchQuery, searchQuery]);
 
-  // Reset and reload when search query or filters change
+  const handleSearch = () => {
+    const trimmedQuery = tempSearchQuery.trim();
+    console.log("Performing search with query:", trimmedQuery);
+    setSearchQuery(trimmedQuery);
+  };
+
+  const handleClearSearch = () => {
+    console.log("Clearing search and filters");
+    setTempSearchQuery("");
+    setSearchQuery("");
+    setSelectedCategory("");
+    // Clear filters as well
+    setFilters({
+      priceMin: "",
+      priceMax: "",
+      category: "",
+      weather: "",
+      rating: "",
+    });
+  };
+
+  // Reset and reload when search query or filters change - improved
   useEffect(() => {
-    if (searchQuery !== undefined) {
+    console.log("Search or filters changed, reloading products...");
+    console.log("Current search query:", searchQuery);
+    console.log("Current filters:", filters);
+
+    // Add a small delay to prevent too many rapid API calls
+    const timeoutId = setTimeout(() => {
+      resetProducts();
       loadProducts(true);
-    }
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [searchQuery, filters]);
 
   // Fetch categories on component mount
@@ -270,46 +374,6 @@ const Products = () => {
 
     fetchCategories();
   }, []);
-
-  const handleSearch = () => {
-    setSearchQuery(tempSearchQuery.trim());
-  };
-
-  const handleClearSearch = () => {
-    setTempSearchQuery("");
-    setSearchQuery("");
-    setSelectedCategory("");
-    // Clear filters as well
-    setFilters({
-      priceMin: "",
-      priceMax: "",
-      category: "",
-      weather: "",
-      rating: "",
-    });
-  };
-
-  // Filter handling functions
-  const handleFilterChange = (filterName, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [filterName]: value,
-    }));
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      priceMin: "",
-      priceMax: "",
-      category: "",
-      weather: "",
-      rating: "",
-    });
-  };
-
-  const getActiveFiltersCount = () => {
-    return Object.values(filters).filter((value) => value !== "").length;
-  };
 
   const handleCategoryChange = (event) => {
     setSelectedCategory(event.target.value);
@@ -404,7 +468,7 @@ const Products = () => {
   // Loading skeleton component
   const ProductSkeleton = () => (
     <Card sx={{ height: "100%", borderRadius: 3 }}>
-      <Skeleton variant="rectangular" height={paginationData.total_count} />
+      <Skeleton variant="rectangular" height={180} />
       <CardContent>
         <Skeleton variant="text" height={24} width="60%" />
         <Skeleton variant="text" height={20} width="80%" />

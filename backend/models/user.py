@@ -52,3 +52,16 @@ class UserDiscountAssignment(BaseModel):
     discount_code: str
     assigned_by: Optional[str] = None
     notes: Optional[str] = None
+
+class Address(BaseModel):
+    street: str
+    barangay: str
+    city: str
+    province: str
+    region: str
+    postal_code: str
+    country: str = "Philippines"  # Default value
+    is_default: bool = False
+    contact_number: str
+    recipient_name: str
+    address_type: Optional[str] = "Home"  # Can be Home, Work, etc.

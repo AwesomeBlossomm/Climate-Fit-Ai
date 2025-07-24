@@ -76,7 +76,8 @@ class AIImageProcessor:
                 "style": "Style description (casual, formal, sporty, etc.)",
                 "season": "Suitable season (Spring, Summer, Fall, Winter, All-season)",
                 "gender": "Target gender (Men, Women, Unisex)",
-                "brand_style": "Estimated brand style or type"
+                "brand_style": "Estimated brand style or type",
+                "footwear_type": "If shoes, specify type (Sneakers, Sandals, Boots, etc.)"
             }
             
             Be specific and detailed in your analysis. Focus on visible characteristics.
@@ -127,7 +128,8 @@ class AIImageProcessor:
             "style": random.choice(["Casual", "Formal", "Sporty", "Trendy", "Classic"]),
             "season": random.choice(["Spring", "Summer", "Fall", "Winter", "All-season"]),
             "gender": random.choice(["Men", "Women", "Unisex"]),
-            "brand_style": random.choice(["Contemporary", "Classic", "Trendy", "Urban", "Casual"])
+            "brand_style": random.choice(["Contemporary", "Classic", "Trendy", "Urban", "Casual"]),
+            "footwear_type": random.choice(["Sneakers", "Sandals", "Boots", "Slippers", "Loafers"])
         }
     
     def _parse_ai_response(self, response_text: str) -> Dict[str, Any]:
@@ -156,6 +158,10 @@ class AIImageProcessor:
                 if field not in parsed_data or not parsed_data[field]:
                     parsed_data[field] = self._get_default_value(field)
             
+            # Add footwear_type if missing for shoes
+            if parsed_data.get("category", "").lower() == "shoes" and "footwear_type" not in parsed_data:
+                parsed_data["footwear_type"] = random.choice(["Sneakers", "Sandals", "Boots", "Slippers", "Loafers"])
+            
             return parsed_data
         except Exception as e:
             logger.error(f"JSON parsing failed: {str(e)}")
@@ -168,7 +174,8 @@ class AIImageProcessor:
         defaults = {
             "name": "Fashion Item",
             "description": "Stylish clothing item",
-            "category": random.choice(self.clothing_categories)
+            "category": random.choice(self.clothing_categories),
+            "footwear_type": random.choice(["Sneakers", "Sandals", "Boots", "Slippers", "Loafers"])
         }
         return defaults.get(field, "Unknown")
     
@@ -177,17 +184,34 @@ class AIImageProcessor:
         Generate complete product data including price, sizes, etc.
         """
         try:
-            # Generate price in peso (PHP) based on category
-            category = ai_data.get("category", "T-Shirts")
-            if category.lower() in ["shoes", "jackets", "dresses"]:
-                base_price = random.randint(1500, 5000)
-            elif category.lower() in ["jeans", "pants"]:
-                base_price = random.randint(1000, 3000)
+           # Generate price in peso (PHP) based on category
+            category = ai_data.get("category", "T-Shirts").lower()
+            footwear_type = ai_data.get("footwear_type", "").lower()
+            
+            # Very affordable pricing structure for Filipino consumers
+            if category == "shoes":
+                # Extremely affordable shoe pricing
+                if "sneakers" in footwear_type:
+                    base_price = random.choice([199, 299, 399, 499])
+                elif "sandals" in footwear_type or "slippers" in footwear_type:
+                    base_price = random.choice([50, 99, 149, 199])
+                elif "boots" in footwear_type:
+                    base_price = random.choice([499, 599, 799, 999])
+                else:
+                    base_price = random.choice([199, 299, 399, 499])
+            elif category in ["jackets", "dresses"]:
+                base_price = random.choice([299, 399, 499, 799])
+            elif category in ["jeans", "pants"]:
+                base_price = random.choice([199, 299, 399, 499])
+            elif category in ["t-shirts", "hoodies", "shorts"]:
+                base_price = random.choice([99, 149, 199, 249])
+            elif category == "accessories":
+                base_price = random.choice([50, 99, 149, 199])
             else:
-                base_price = random.randint(500, 2000)
+                base_price = random.choice([99, 149, 199, 299])
             
             # Generate available sizes based on category
-            if category.lower() == "shoes":
+            if category == "shoes":
                 available_sizes = [str(i) for i in random.sample(range(36, 45), random.randint(3, 6))]
             else:
                 num_sizes = random.randint(3, 6)
@@ -209,11 +233,11 @@ class AIImageProcessor:
                 "season": ai_data.get("season", "All-season"),
                 "gender": ai_data.get("gender", "Unisex"),
                 "brand_style": ai_data.get("brand_style", "Contemporary"),
+                "footwear_type": ai_data.get("footwear_type", None),
                 "image_path": image_path,
                 "created_at": datetime.utcnow(),
                 "is_active": True
             }
-            
             logger.info(f"Generated product data for: {product_data['name']}")
             return product_data
         except Exception as e:

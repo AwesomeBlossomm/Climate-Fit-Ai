@@ -78,6 +78,8 @@ const ProductDetail = () => {
     comment: "",
     rating: 5,
   });
+  const [seller, setSeller] = useState(null);
+  const [sellerLoading, setSellerLoading] = useState(false);
 
   // Fetch product details
   useEffect(() => {
@@ -109,6 +111,14 @@ const ProductDetail = () => {
       };
 
       setProduct(formattedProduct);
+
+      // If seller info is not included, fetch it separately
+      if (!productData.seller && productData.seller_id) {
+        fetchSellerInfo(productData.seller_id);
+      } else if (!productData.seller) {
+        // Try to fetch seller info using the new endpoint
+        fetchSellerFromProduct();
+      }
     } catch (error) {
       console.error("Error fetching product details:", error);
       setSnackbar({
@@ -118,6 +128,44 @@ const ProductDetail = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSellerFromProduct = async () => {
+    try {
+      setSellerLoading(true);
+      const response = await clothingAPI.getSellerFromProduct(productId);
+      if (response.seller) {
+        setSeller(response.seller);
+        // Update the product with seller info
+        setProduct((prev) =>
+          prev ? { ...prev, seller: response.seller } : prev
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching seller from product:", error);
+    } finally {
+      setSellerLoading(false);
+    }
+  };
+
+  const fetchSellerInfo = async (sellerId) => {
+    try {
+      setSellerLoading(true);
+      // Use the public endpoint to avoid auth issues
+      const response = await fetch(
+        `http://localhost:8000/api/v1/clothes/seller/public/${sellerId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setSeller(data.data);
+        // Update the product with seller info
+        setProduct((prev) => (prev ? { ...prev, seller: data.data } : prev));
+      }
+    } catch (error) {
+      console.error("Error fetching seller info:", error);
+    } finally {
+      setSellerLoading(false);
     }
   };
 
@@ -911,6 +959,7 @@ const ProductDetail = () => {
                   <Comment sx={{ mr: 1, verticalAlign: "middle", fontSize: "1.3rem" }} />
                   Customer Reviews ({comments.length})
                 </Typography>
+<<<<<<< HEAD
                 {user && (
                   <Button
                     variant="outlined"
@@ -934,6 +983,163 @@ const ProductDetail = () => {
                     Write Review
                   </Button>
                 )}
+=======
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate(`/seller/${product.seller._id}`)}
+                  sx={{ color: "#2e7d32", borderColor: "#2e7d32" }}
+                >
+                  View Store Profile
+                </Button>
+              </Box>
+
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                    mb={2}
+                    onClick={() => navigate(`/seller/${product.seller._id}`)}
+                    sx={{
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
+                      borderRadius: 2,
+                      p: 1,
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        bgcolor: "#2e7d32",
+                        width: 56,
+                        height: 56,
+                        fontSize: "1.5rem",
+                      }}
+                    >
+                      {product.seller.store_name?.charAt(0) || "S"}
+                    </Avatar>
+                    <Box>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {product.seller.store_name}
+                        </Typography>
+                        {product.seller.is_verified && (
+                          <Verified sx={{ color: "#4caf50", fontSize: 20 }} />
+                        )}
+                      </Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Owner: {product.seller.owner_full_name}
+                      </Typography>
+                      {product.seller.established_date && (
+                        <Typography variant="caption" color="text.secondary">
+                          Est.{" "}
+                          {new Date(
+                            product.seller.established_date
+                          ).getFullYear()}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+
+                  {product.seller.rating && (
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <Rating
+                        value={product.seller.rating}
+                        readOnly
+                        size="small"
+                      />
+                      <Typography variant="body2">
+                        {product.seller.rating.toFixed(1)}/5.0
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {product.seller.specializes_in &&
+                    product.seller.specializes_in.length > 0 && (
+                      <Box mt={2}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          gutterBottom
+                        >
+                          Specializes in:
+                        </Typography>
+                        <Box display="flex" gap={1} flexWrap="wrap">
+                          {product.seller.specializes_in.map(
+                            (specialty, index) => (
+                              <Chip
+                                key={index}
+                                label={specialty}
+                                size="small"
+                                variant="outlined"
+                              />
+                            )
+                          )}
+                        </Box>
+                      </Box>
+                    )}
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  {product.seller.contact_number && (
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <Phone fontSize="small" />
+                      <Typography variant="body2">
+                        {product.seller.contact_number}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {product.seller.email && (
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <Email fontSize="small" />
+                      <Typography variant="body2">
+                        {product.seller.email}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {product.seller.address && (
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <LocationOn fontSize="small" />
+                      <Typography variant="body2">
+                        {product.seller.address}
+                      </Typography>
+                    </Box>
+                  )}
+                </Grid>
+              </Grid>
+            </Paper>
+          )}
+
+          {/* Comments Section */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3, mt: 4 }}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={3}
+            >
+              <Typography variant="h5" fontWeight="bold">
+                <Comment sx={{ mr: 1, verticalAlign: "middle" }} />
+                Customer Reviews ({comments.length})
+              </Typography>
+              {user && (
+                <Button
+                  variant="outlined"
+                  startIcon={<Add />}
+                  onClick={() => setOpenCommentDialog(true)}
+                  sx={{ color: "#2e7d32", borderColor: "#2e7d32" }}
+                >
+                  Write Review
+                </Button>
+              )}
+            </Box>
+
+            {commentsLoading ? (
+              <Box display="flex" justifyContent="center" py={4}>
+                <CircularProgress />
+>>>>>>> cf7914bf3a2bb8df10269ec4b5a60dc25e8d142e
               </Box>
 
               {commentsLoading ? (

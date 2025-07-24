@@ -25,15 +25,29 @@ import {
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
-const WeatherMapSection = () => {
+const WeatherMapSection = ({ selectedAddress }) => {
   const [weather, setWeather] = useState(null);
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getCurrentLocation();
-  }, []);
+    if (selectedAddress) {
+      // Use selected address coordinates if available
+      if (selectedAddress.latitude && selectedAddress.longitude) {
+        setLocation({
+          lat: selectedAddress.latitude,
+          lng: selectedAddress.longitude,
+        });
+        fetchWeatherData(selectedAddress.latitude, selectedAddress.longitude);
+      } else {
+        // If no coordinates, try to geocode the address
+        geocodeAddress(selectedAddress);
+      }
+    } else {
+      getCurrentLocation();
+    }
+  }, [selectedAddress]);
 
   const getCurrentLocation = () => {
     setLoading(true);
@@ -62,11 +76,35 @@ const WeatherMapSection = () => {
     }
   };
 
+  const geocodeAddress = async (address) => {
+    try {
+      setLoading(true);
+      // Format address for geocoding
+      const fullAddress = `${address.street}, ${address.barangay}, ${address.city}, ${address.province}, ${address.region}, Philippines`;
+
+      // Mock geocoding - replace with actual geocoding service
+      const mockCoordinates = {
+        lat: 14.5995,
+        lng: 120.9842,
+      };
+
+      setLocation(mockCoordinates);
+      fetchWeatherData(mockCoordinates.lat, mockCoordinates.lng);
+    } catch (error) {
+      console.error("Error geocoding address:", error);
+      getCurrentLocation();
+    }
+  };
+
   const fetchWeatherData = async (lat, lng) => {
     try {
+      const locationName = selectedAddress
+        ? `${selectedAddress.city}, ${selectedAddress.province}`
+        : "Manila, Philippines";
+
       // Mock weather data - replace with actual API call
       const mockWeatherData = {
-        location: "Manila, Philippines",
+        location: locationName,
         temperature: 28,
         condition: "Partly Cloudy",
         humidity: 75,
@@ -150,10 +188,18 @@ const WeatherMapSection = () => {
             variant="h5"
             sx={{ fontWeight: "bold", color: "#2e7d32" }}
           >
-            🌍 Current Location & Weather
+            🌍 {selectedAddress ? "Selected Location" : "Current Location"} &
+            Weather
           </Typography>
           <Tooltip title="Refresh weather data">
-            <IconButton onClick={getCurrentLocation} disabled={loading}>
+            <IconButton
+              onClick={
+                selectedAddress
+                  ? () => geocodeAddress(selectedAddress)
+                  : getCurrentLocation
+              }
+              disabled={loading}
+            >
               <Refresh />
             </IconButton>
           </Tooltip>
@@ -167,7 +213,9 @@ const WeatherMapSection = () => {
                 <Box
                   sx={{
                     height: "100%",
-                    background: `linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)`,
+                    background: selectedAddress
+                      ? `linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)`
+                      : `linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)`,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -181,6 +229,18 @@ const WeatherMapSection = () => {
                   <Typography variant="h6" fontWeight="bold" textAlign="center">
                     {weather?.location || "Loading location..."}
                   </Typography>
+                  {selectedAddress && (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mt: 1,
+                        opacity: 0.9,
+                        textAlign: "center",
+                      }}
+                    >
+                      📍 {selectedAddress.street}, {selectedAddress.barangay}
+                    </Typography>
+                  )}
                   <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
                     Lat: {location?.lat.toFixed(4)}, Lng:{" "}
                     {location?.lng.toFixed(4)}

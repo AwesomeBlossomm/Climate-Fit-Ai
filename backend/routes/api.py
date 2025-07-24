@@ -741,24 +741,38 @@ async def get_clothes_infinite_scroll(
         if get_all:
             if query.strip():
                 products = await product_model.search_products_unlimited(query=query)
+                # Apply filters in Python if specified
+                if any([price_min, price_max, category, weather_suitable, min_rating]):
+                    filters = {}
+                    if price_min is not None:
+                        filters['price_min'] = price_min
+                    if price_max is not None:
+                        filters['price_max'] = price_max
+                    if category:
+                        filters['category'] = category
+                    if weather_suitable:
+                        filters['weather_suitable'] = weather_suitable.lower() == 'true'
+                    if min_rating is not None:
+                        filters['min_rating'] = min_rating
+                    
+                    products = apply_basic_filters(products, filters)
             else:
                 products = await product_model.get_all_products_with_sellers_unlimited()
-            
-            # Apply filters in Python if specified
-            if any([price_min, price_max, category, weather_suitable, min_rating]):
-                filters = {}
-                if price_min is not None:
-                    filters['price_min'] = price_min
-                if price_max is not None:
-                    filters['price_max'] = price_max
-                if category:
-                    filters['category'] = category
-                if weather_suitable:
-                    filters['weather_suitable'] = weather_suitable.lower() == 'true'
-                if min_rating is not None:
-                    filters['min_rating'] = min_rating
-                
-                products = apply_basic_filters(products, filters)
+                # Apply filters in Python if specified
+                if any([price_min, price_max, category, weather_suitable, min_rating]):
+                    filters = {}
+                    if price_min is not None:
+                        filters['price_min'] = price_min
+                    if price_max is not None:
+                        filters['price_max'] = price_max
+                    if category:
+                        filters['category'] = category
+                    if weather_suitable:
+                        filters['weather_suitable'] = weather_suitable.lower() == 'true'
+                    if min_rating is not None:
+                        filters['min_rating'] = min_rating
+                    
+                    products = apply_basic_filters(products, filters)
             
             # Process image URLs
             products = process_image_urls(products, request)
@@ -775,10 +789,10 @@ async def get_clothes_infinite_scroll(
                     "loaded_count": len(products)
                 },
                 "query": query,
-                "filters": {"get_all": True}
+                "filters": filters
             }
         
-        # Regular pagination with increased limits
+        # Regular pagination
         offset = page * limit
         
         # Build filters dictionary
@@ -794,21 +808,28 @@ async def get_clothes_infinite_scroll(
         if min_rating is not None:
             filters['min_rating'] = min_rating
         
-        # Try to use filter methods if they exist, otherwise use fallback
+        # Try to use optimized filter methods, otherwise use fallback
         try:
             if query.strip():
+                # Search with filters
+                logger.info(f"Searching with query: '{query}' and filters: {filters}")
+                
                 if hasattr(product_model, 'search_products_paginated_with_filters'):
                     products = await product_model.search_products_paginated_with_filters(
-                        query=query, limit=limit, offset=offset, filters=filters
+                        query=query.strip(), limit=limit, offset=offset, filters=filters
                     )
-                    total_count = await product_model.get_search_results_count_with_filters(query, filters)
+                    total_count = await product_model.get_search_results_count_with_filters(query.strip(), filters)
                 else:
-                    # Fallback: get more search results and apply filters in Python
-                    all_products = await product_model.search_products_unlimited(query)
+                    # Fallback: get all search results and apply filters in Python
+                    logger.info("Using fallback search method")
+                    all_products = await product_model.search_products_unlimited(query.strip())
                     filtered_products = apply_basic_filters(all_products, filters)
                     total_count = len(filtered_products)
                     products = filtered_products[offset:offset + limit]
             else:
+                # Get all products with filters
+                logger.info(f"Getting all products with filters: {filters}")
+                
                 if hasattr(product_model, 'get_all_products_with_sellers_paginated_with_filters'):
                     products = await product_model.get_all_products_with_sellers_paginated_with_filters(
                         limit=limit, offset=offset, filters=filters
@@ -816,16 +837,17 @@ async def get_clothes_infinite_scroll(
                     total_count = await product_model.get_total_products_count_with_filters(filters)
                 else:
                     # Fallback: get all products and apply filters in Python
+                    logger.info("Using fallback get all method")
                     all_products = await product_model.get_all_products_with_sellers_unlimited()
                     filtered_products = apply_basic_filters(all_products, filters)
                     total_count = len(filtered_products)
                     products = filtered_products[offset:offset + limit]
         
-        except AttributeError as e:
-            logger.warning(f"Filter method not found, using fallback: {str(e)}")
-            # Fallback implementation with unlimited data
+        except Exception as method_error:
+            logger.warning(f"Filter method failed, using fallback: {str(method_error)}")
+            # Fallback implementation
             if query.strip():
-                all_products = await product_model.search_products_unlimited(query)
+                all_products = await product_model.search_products_unlimited(query.strip())
             else:
                 all_products = await product_model.get_all_products_with_sellers_unlimited()
             
@@ -873,28 +895,35 @@ async def get_clothes_infinite_scroll_public(
     Get clothing products with infinite scroll pagination and filters for public access - enhanced
     """
     try:
+        logger.info(f"Public infinite scroll request - Query: '{query}', Page: {page}, Limit: {limit}, Category: {category}")
+        
+        # Build filters dictionary
+        filters = {}
+        if price_min is not None:
+            filters['price_min'] = price_min
+        if price_max is not None:
+            filters['price_max'] = price_max
+        if category:
+            filters['category'] = category
+        if weather_suitable:
+            filters['weather_suitable'] = weather_suitable.lower() == 'true'
+        if min_rating is not None:
+            filters['min_rating'] = min_rating
+        
         # If get_all is true, ignore pagination and get everything
         if get_all:
             if query.strip():
-                products = await product_model.search_products_unlimited(query=query)
+                # Search all products with query
+                products = await product_model.search_products_unlimited(query=query.strip())
+                # Apply filters in Python if specified
+                if filters:
+                    products = apply_basic_filters(products, filters)
             else:
+                # Get all products
                 products = await product_model.get_all_products_with_sellers_unlimited()
-            
-            # Apply filters in Python if specified
-            if any([price_min, price_max, category, weather_suitable, min_rating]):
-                filters = {}
-                if price_min is not None:
-                    filters['price_min'] = price_min
-                if price_max is not None:
-                    filters['price_max'] = price_max
-                if category:
-                    filters['category'] = category
-                if weather_suitable:
-                    filters['weather_suitable'] = weather_suitable.lower() == 'true'
-                if min_rating is not None:
-                    filters['min_rating'] = min_rating
-                
-                products = apply_basic_filters(products, filters)
+                # Apply filters in Python if specified
+                if filters:
+                    products = apply_basic_filters(products, filters)
             
             # Process image URLs
             products = process_image_urls(products, request)
@@ -911,40 +940,34 @@ async def get_clothes_infinite_scroll_public(
                     "loaded_count": len(products)
                 },
                 "query": query,
-                "filters": {"get_all": True}
+                "filters": filters
             }
         
-        # Continue with existing pagination logic...
+        # Regular pagination
         offset = page * limit
         
-        # Build filters dictionary
-        filters = {}
-        if price_min is not None:
-            filters['price_min'] = price_min
-        if price_max is not None:
-            filters['price_max'] = price_max
-        if category:
-            filters['category'] = category
-        if weather_suitable:
-            filters['weather_suitable'] = weather_suitable.lower() == 'true'
-        if min_rating is not None:
-            filters['min_rating'] = min_rating
-        
-        # Try to use filter methods if they exist, otherwise use fallback
+        # Try to use optimized filter methods, otherwise use fallback
         try:
             if query.strip():
+                # Search with filters
+                logger.info(f"Searching with query: '{query}' and filters: {filters}")
+                
                 if hasattr(product_model, 'search_products_paginated_with_filters'):
                     products = await product_model.search_products_paginated_with_filters(
-                        query=query, limit=limit, offset=offset, filters=filters
+                        query=query.strip(), limit=limit, offset=offset, filters=filters
                     )
-                    total_count = await product_model.get_search_results_count_with_filters(query, filters)
+                    total_count = await product_model.get_search_results_count_with_filters(query.strip(), filters)
                 else:
                     # Fallback: get all search results and apply filters in Python
-                    all_products = await product_model.search_products_unlimited(query)
+                    logger.info("Using fallback search method")
+                    all_products = await product_model.search_products_unlimited(query.strip())
                     filtered_products = apply_basic_filters(all_products, filters)
                     total_count = len(filtered_products)
                     products = filtered_products[offset:offset + limit]
             else:
+                # Get all products with filters
+                logger.info(f"Getting all products with filters: {filters}")
+                
                 if hasattr(product_model, 'get_all_products_with_sellers_paginated_with_filters'):
                     products = await product_model.get_all_products_with_sellers_paginated_with_filters(
                         limit=limit, offset=offset, filters=filters
@@ -952,16 +975,17 @@ async def get_clothes_infinite_scroll_public(
                     total_count = await product_model.get_total_products_count_with_filters(filters)
                 else:
                     # Fallback: get all products and apply filters in Python
+                    logger.info("Using fallback get all method")
                     all_products = await product_model.get_all_products_with_sellers_unlimited()
                     filtered_products = apply_basic_filters(all_products, filters)
                     total_count = len(filtered_products)
                     products = filtered_products[offset:offset + limit]
         
-        except AttributeError as e:
-            logger.warning(f"Filter method not found, using fallback: {str(e)}")
+        except Exception as method_error:
+            logger.warning(f"Filter method failed, using fallback: {str(method_error)}")
             # Fallback implementation
             if query.strip():
-                all_products = await product_model.search_products_unlimited(query)
+                all_products = await product_model.search_products_unlimited(query.strip())
             else:
                 all_products = await product_model.get_all_products_with_sellers_unlimited()
             
@@ -973,6 +997,8 @@ async def get_clothes_infinite_scroll_public(
         products = process_image_urls(products, request)
         
         has_more = (offset + len(products)) < total_count
+        
+        logger.info(f"Returning {len(products)} products out of {total_count} total")
         
         return {
             "success": True,
@@ -990,6 +1016,8 @@ async def get_clothes_infinite_scroll_public(
         }
     except Exception as e:
         logger.error(f"Error in public infinite scroll endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch products: {str(e)}")
 
 @router.get("/sellers/{seller_id}/products")
@@ -1000,47 +1028,31 @@ async def get_seller_products(
     offset: int = Query(default=0, ge=0, description="Offset for pagination")
 ):
     """
-    Get all products for a specific seller
+    Get all products for a specific seller with enhanced debugging
     """
     try:
-        products = await product_model.get_products_by_seller(seller_id, limit, offset)
+        logger.info(f"Fetching products for seller: {seller_id}")
+        
+        # Log the raw seller_id before processing
+        logger.debug(f"Raw seller_id from request: {seller_id}")
+        
+        # Clean the seller_id
+        clean_seller_id = seller_id.strip('{}')
+        logger.debug(f"Cleaned seller_id: {clean_seller_id}")
+        
+        products = await product_model.get_products_by_seller(clean_seller_id, limit, offset)
+        
+        logger.debug(f"Found {len(products)} products for seller {clean_seller_id}")
         
         # Process image URLs
         products = process_image_urls(products, request)
         
         return {
             "success": True,
-            "seller_id": seller_id,
+            "seller_id": clean_seller_id,
             "total_returned": len(products),
             "data": products
         }
     except Exception as e:
-        logger.error(f"Error fetching seller products: {str(e)}")
+        logger.error(f"Error fetching seller products: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch seller products: {str(e)}")
-
-@router.get("/sellers/{seller_id}/products/public")
-async def get_seller_products_public(
-    seller_id: str,
-    request: Request,
-    limit: int = Query(default=50, ge=1, le=100, description="Maximum number of results"),
-    offset: int = Query(default=0, ge=0, description="Offset for pagination")
-):
-    """
-    Get all products for a specific seller (public access)
-    """
-    try:
-        products = await product_model.get_products_by_seller(seller_id, limit, offset)
-        
-        # Process image URLs
-        products = process_image_urls(products, request)
-        
-        return {
-            "success": True,
-            "seller_id": seller_id,
-            "total_returned": len(products),
-            "data": products
-        }
-    except Exception as e:
-        logger.error(f"Error fetching seller products (public): {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch seller products: {str(e)}")
-

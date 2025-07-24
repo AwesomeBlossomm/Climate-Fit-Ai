@@ -200,52 +200,7 @@ class ClothingAPI {
     );
   }
 
-  // Infinite scroll methods
-  async getProductsInfiniteScroll(page = 0, limit = 20, query = "") {
-    try {
-      const token = localStorage.getItem("token");
-      const endpoint = token
-        ? "/clothes/infinite-scroll"
-        : "/clothes/infinite-scroll/public";
-
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(query && { query }),
-      });
-
-      const config = {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      };
-
-      const response = await fetch(
-        `${API_BASE_URL}${endpoint}?${params}`,
-        config
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Process image URLs in the response
-      if (data.data && Array.isArray(data.data)) {
-        data.data = processProducts(data.data);
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Error fetching products with infinite scroll:", error);
-      throw error;
-    }
-  }
-
-  // Infinite scroll methods with filters
+  // Infinite scroll methods with filters - enhanced to get all products
   async getProductsInfiniteScroll(
     page = 0,
     limit = 20,
@@ -253,6 +208,13 @@ class ClothingAPI {
     filters = {}
   ) {
     try {
+      console.log("API: Searching with params:", {
+        page,
+        limit,
+        query,
+        filters,
+      });
+
       const token = localStorage.getItem("token");
       const endpoint = token
         ? "/clothes/infinite-scroll"
@@ -261,14 +223,29 @@ class ClothingAPI {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-        ...(query && { query }),
-        // Add filter parameters
-        ...(filters.priceMin && { price_min: filters.priceMin }),
-        ...(filters.priceMax && { price_max: filters.priceMax }),
-        ...(filters.category && { category: filters.category }),
-        ...(filters.weather && { weather_suitable: filters.weather }),
-        ...(filters.rating && { min_rating: filters.rating }),
       });
+
+      // Add query parameter
+      if (query && query.trim()) {
+        params.append("query", query.trim());
+      }
+
+      // Add filter parameters
+      if (filters.priceMin !== undefined && filters.priceMin !== "") {
+        params.append("price_min", filters.priceMin);
+      }
+      if (filters.priceMax !== undefined && filters.priceMax !== "") {
+        params.append("price_max", filters.priceMax);
+      }
+      if (filters.category && filters.category !== "") {
+        params.append("category", filters.category);
+      }
+      if (filters.weather && filters.weather !== "") {
+        params.append("weather_suitable", filters.weather);
+      }
+      if (filters.rating && filters.rating !== "") {
+        params.append("min_rating", filters.rating);
+      }
 
       const config = {
         method: "GET",
@@ -278,75 +255,25 @@ class ClothingAPI {
         },
       };
 
-      const response = await fetch(
-        `${API_BASE_URL}${endpoint}?${params}`,
-        config
-      );
+      const url = `${API_BASE_URL}${endpoint}?${params}`;
+      console.log("API: Making request to:", url);
+
+      const response = await fetch(url, config);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorText}`
+        );
       }
 
       const data = await response.json();
-
-      // Process image URLs in the response
-      if (data.data && Array.isArray(data.data)) {
-        data.data = processProducts(data.data);
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Error fetching products with infinite scroll:", error);
-      throw error;
-    }
-  }
-
-  // Infinite scroll methods with filters - enhanced to get all products
-  async getProductsInfiniteScroll(
-    page = 0,
-    limit = 50,
-    query = "",
-    filters = {},
-    getAllProducts = false
-  ) {
-    try {
-      const token = localStorage.getItem("token");
-      const endpoint = token
-        ? "/clothes/infinite-scroll"
-        : "/clothes/infinite-scroll/public";
-
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(query && { query }),
-        // Add filter parameters
-        ...(filters.priceMin && { price_min: filters.priceMin }),
-        ...(filters.priceMax && { price_max: filters.priceMax }),
-        ...(filters.category && { category: filters.category }),
-        ...(filters.weather && { weather_suitable: filters.weather }),
-        ...(filters.rating && { min_rating: filters.rating }),
-        // Add get_all parameter to fetch everything at once
-        ...(getAllProducts && { get_all: "true", limit: "10000" }),
+      console.log("API: Received response:", {
+        success: data.success,
+        dataLength: data.data?.length || 0,
+        totalCount: data.pagination?.total_count || 0,
       });
-
-      const config = {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      };
-
-      const response = await fetch(
-        `${API_BASE_URL}${endpoint}?${params}`,
-        config
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
 
       // Process image URLs in the response
       if (data.data && Array.isArray(data.data)) {
@@ -362,16 +289,46 @@ class ClothingAPI {
 
   // New method to get all products at once
   async getAllProductsAtOnce(query = "", filters = {}) {
-    return this.getProductsInfiniteScroll(0, 10000, query, filters, true);
-  }
+    console.log(
+      "API: Getting all products at once with query:",
+      query,
+      "and filters:",
+      filters
+    );
 
-  // Get seller profile
-  async getSellerProfile(sellerId) {
     try {
       const token = localStorage.getItem("token");
       const endpoint = token
-        ? `/clothes/seller/${sellerId}`
-        : `/clothes/seller/public/${sellerId}`;
+        ? "/clothes/infinite-scroll"
+        : "/clothes/infinite-scroll/public";
+
+      const params = new URLSearchParams({
+        page: "0",
+        limit: "10000",
+        get_all: "true",
+      });
+
+      // Add query parameter
+      if (query && query.trim()) {
+        params.append("query", query.trim());
+      }
+
+      // Add filter parameters
+      if (filters.priceMin !== undefined && filters.priceMin !== "") {
+        params.append("price_min", filters.priceMin);
+      }
+      if (filters.priceMax !== undefined && filters.priceMax !== "") {
+        params.append("price_max", filters.priceMax);
+      }
+      if (filters.category && filters.category !== "") {
+        params.append("category", filters.category);
+      }
+      if (filters.weather && filters.weather !== "") {
+        params.append("weather_suitable", filters.weather);
+      }
+      if (filters.rating && filters.rating !== "") {
+        params.append("min_rating", filters.rating);
+      }
 
       const config = {
         method: "GET",
@@ -381,31 +338,25 @@ class ClothingAPI {
         },
       };
 
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+      const url = `${API_BASE_URL}${endpoint}?${params}`;
+      console.log("API: Making get all request to:", url);
+
+      const response = await fetch(url, config);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching seller profile:", error);
-      throw error;
-    }
-  }
-
-  // Get seller products
-  async getSellerProducts(sellerId, limit = 50, offset = 0) {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/sellers/${sellerId}/products?limit=${limit}&offset=${offset}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorText}`
+        );
       }
 
       const data = await response.json();
+      console.log("API: Get all response:", {
+        success: data.success,
+        dataLength: data.data?.length || 0,
+        totalCount: data.pagination?.total_count || 0,
+      });
 
       // Process image URLs in the response
       if (data.data && Array.isArray(data.data)) {
@@ -413,6 +364,40 @@ class ClothingAPI {
       }
 
       return data;
+    } catch (error) {
+      console.error("Error getting all products at once:", error);
+      throw error;
+    }
+  }
+
+  async getSellerProfile(sellerId) {
+    try {
+      // Clean the sellerId first
+      const cleanSellerId = sellerId.replace(/[{}]/g, "");
+      const response = await this.api.get(`/clothes/seller/${cleanSellerId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching seller profile:", error);
+      throw error;
+    }
+  }
+
+  // In your ClothingAPI class
+  async getSellerProducts(sellerId, limit = 100, offset = 0) {
+    try {
+      // Clean the sellerId by removing curly braces if present
+      const cleanSellerId = sellerId.replace(/[{}]/g, "");
+
+      const response = await this.makeRequest(
+        `/sellers/${cleanSellerId}/products?limit=${limit}&offset=${offset}`
+      );
+
+      // Process product images
+      if (response.data && Array.isArray(response.data)) {
+        response.data = processProducts(response.data);
+      }
+
+      return response;
     } catch (error) {
       console.error("Error fetching seller products:", error);
       throw error;
