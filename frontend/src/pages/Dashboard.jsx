@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import AddressForm from "../components/AddressForm.jsx";
 import {
   Box,
   Typography,
@@ -20,11 +21,25 @@ import {
   Payment,
 } from "@mui/icons-material";
 import WeatherMapSection from "../components/WeatherMapSection";
-import SensorOccupiedIcon from '@mui/icons-material/SensorOccupied';
+import SensorOccupiedIcon from "@mui/icons-material/SensorOccupied";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null); // Add this state
+
+  const handleSaveAddress = (addressData) => {
+    // In a real app, you would send this to your backend API
+    console.log("Saving address:", addressData);
+    setAddresses([...addresses, addressData]);
+    // You might want to show a success message here
+  };
+
+  const handleAddressSelect = (address) => {
+    setSelectedAddress(address);
+    console.log("Selected address:", address);
+  };
 
   const handleLogout = () => {
     logout();
@@ -96,7 +111,7 @@ const Dashboard = () => {
           </Typography>
 
           {/* Weather and Map Section */}
-          <WeatherMapSection />
+          <WeatherMapSection selectedAddress={selectedAddress} />
 
           <Box mt={3} mb={4}>
             <Typography variant="body1" sx={{ mb: 2 }}>
@@ -120,7 +135,7 @@ const Dashboard = () => {
               </Grid>
             </Grid>
           </Box>
-
+          <AddressForm onAddressSelect={handleAddressSelect} />
           <Typography
             variant="h5"
             gutterBottom
