@@ -1018,46 +1018,31 @@ async def get_seller_products(
     offset: int = Query(default=0, ge=0, description="Offset for pagination")
 ):
     """
-    Get all products for a specific seller
+    Get all products for a specific seller with enhanced debugging
     """
     try:
-        products = await product_model.get_products_by_seller(seller_id, limit, offset)
+        logger.info(f"Fetching products for seller: {seller_id}")
+        
+        # Log the raw seller_id before processing
+        logger.debug(f"Raw seller_id from request: {seller_id}")
+        
+        # Clean the seller_id
+        clean_seller_id = seller_id.strip('{}')
+        logger.debug(f"Cleaned seller_id: {clean_seller_id}")
+        
+        products = await product_model.get_products_by_seller(clean_seller_id, limit, offset)
+        
+        logger.debug(f"Found {len(products)} products for seller {clean_seller_id}")
         
         # Process image URLs
         products = process_image_urls(products, request)
         
         return {
             "success": True,
-            "seller_id": seller_id,
+            "seller_id": clean_seller_id,
             "total_returned": len(products),
             "data": products
         }
     except Exception as e:
-        logger.error(f"Error fetching seller products: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch seller products: {str(e)}")
-
-@router.get("/sellers/{seller_id}/products/public")
-async def get_seller_products_public(
-    seller_id: str,
-    request: Request,
-    limit: int = Query(default=50, ge=1, le=100, description="Maximum number of results"),
-    offset: int = Query(default=0, ge=0, description="Offset for pagination")
-):
-    """
-    Get all products for a specific seller (public access)
-    """
-    try:
-        products = await product_model.get_products_by_seller(seller_id, limit, offset)
-        
-        # Process image URLs
-        products = process_image_urls(products, request)
-        
-        return {
-            "success": True,
-            "seller_id": seller_id,
-            "total_returned": len(products),
-            "data": products
-        }
-    except Exception as e:
-        logger.error(f"Error fetching seller products (public): {str(e)}")
+        logger.error(f"Error fetching seller products: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch seller products: {str(e)}")

@@ -78,6 +78,8 @@ const ProductDetail = () => {
     comment: "",
     rating: 5,
   });
+  const [seller, setSeller] = useState(null);
+  const [sellerLoading, setSellerLoading] = useState(false);
 
   // Fetch product details
   useEffect(() => {
@@ -109,6 +111,14 @@ const ProductDetail = () => {
       };
 
       setProduct(formattedProduct);
+
+      // If seller info is not included, fetch it separately
+      if (!productData.seller && productData.seller_id) {
+        fetchSellerInfo(productData.seller_id);
+      } else if (!productData.seller) {
+        // Try to fetch seller info using the new endpoint
+        fetchSellerFromProduct();
+      }
     } catch (error) {
       console.error("Error fetching product details:", error);
       setSnackbar({
@@ -118,6 +128,44 @@ const ProductDetail = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSellerFromProduct = async () => {
+    try {
+      setSellerLoading(true);
+      const response = await clothingAPI.getSellerFromProduct(productId);
+      if (response.seller) {
+        setSeller(response.seller);
+        // Update the product with seller info
+        setProduct((prev) =>
+          prev ? { ...prev, seller: response.seller } : prev
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching seller from product:", error);
+    } finally {
+      setSellerLoading(false);
+    }
+  };
+
+  const fetchSellerInfo = async (sellerId) => {
+    try {
+      setSellerLoading(true);
+      // Use the public endpoint to avoid auth issues
+      const response = await fetch(
+        `http://localhost:8000/api/v1/clothes/seller/public/${sellerId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setSeller(data.data);
+        // Update the product with seller info
+        setProduct((prev) => (prev ? { ...prev, seller: data.data } : prev));
+      }
+    } catch (error) {
+      console.error("Error fetching seller info:", error);
+    } finally {
+      setSellerLoading(false);
     }
   };
 
@@ -631,19 +679,6 @@ const ProductDetail = () => {
                       </Typography>
                     </Box>
                   )}
-
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={() => navigate(`/seller/${product.seller._id}`)}
-                    sx={{
-                      mt: 2,
-                      bgcolor: "#2e7d32",
-                      "&:hover": { bgcolor: "#1b5e20" },
-                    }}
-                  >
-                    Visit Store
-                  </Button>
                 </Grid>
               </Grid>
             </Paper>
