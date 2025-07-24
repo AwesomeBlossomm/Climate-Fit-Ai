@@ -29,6 +29,8 @@ import {
 } from "@mui/material";
 import { Edit, Delete, Add, LocationOn } from "@mui/icons-material";
 
+const API_BASE_URL = "http://localhost:8000/api/v1";
+
 const fetchRegions = async () => {
   const res = await fetch("https://psgc.gitlab.io/api/regions/");
   const data = await res.json();
@@ -111,41 +113,67 @@ const AddressManagement = ({ onAddressSelect }) => {
 
   const [isNCR, setIsNCR] = useState(false);
 
+  // Enhanced authentication check
+  const checkAuth = () => {
+    if (!user?.username || !token) {
+      showNotification("Please log in to manage addresses", "error");
+      return false;
+    }
+    return true;
+  };
+
   // Fetch saved addresses
   const fetchSavedAddresses = async () => {
-    if (!user?.username || !token) {
-      console.error("User or token not available");
-      return;
-    }
+    if (!checkAuth()) return;
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/users/${user.username}/addresses`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      console.log("Fetching addresses for user:", user.username); // Debug log
+      const response = await fetch(
+        `${API_BASE_URL}/users/${user.username}/addresses`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Response status:", response.status); // Debug log
 
       if (response.ok) {
         const addresses = await response.json();
+        console.log("Addresses received:", addresses); // Debug log
         setSavedAddresses(addresses);
 
-        // Auto-select default address if exists
+        // Auto-select default address if available
         const defaultAddress = addresses.find((addr) => addr.is_default);
-        if (defaultAddress && defaultAddress._id) {
+        if (defaultAddress && !selectedAddressId) {
           setSelectedAddressId(defaultAddress._id);
-          // Trigger the callback if provided
           if (onAddressSelect) {
             onAddressSelect(defaultAddress);
           }
         }
+      } else if (response.status === 401) {
+        showNotification(
+          "Authentication expired. Please log in again.",
+          "error"
+        );
+      } else if (response.status === 404) {
+        // User exists but no addresses found - this is normal
+        setSavedAddresses([]);
       } else {
-        showNotification("Failed to fetch addresses", "error");
+        const errorData = await response.json();
+        console.error("Error response:", errorData); // Debug log
+        showNotification(
+          errorData.detail || "Failed to fetch addresses",
+          "error"
+        );
       }
     } catch (error) {
-      console.error("Error fetching addresses:", error);
-      showNotification("Failed to fetch addresses", "error");
+      console.error("Network error:", error);
+      showNotification("Network error. Please check your connection.", "error");
     } finally {
       setLoading(false);
     }
@@ -164,12 +192,20 @@ const AddressManagement = ({ onAddressSelect }) => {
   useEffect(() => {
     const loadRegions = async () => {
       setLoadingStates((prev) => ({ ...prev, regions: true }));
-      const regions = await fetchRegions();
-      setOptions((prev) => ({ ...prev, regions }));
-      setLoadingStates((prev) => ({ ...prev, regions: false }));
+      try {
+        const regions = await fetchRegions();
+        setOptions((prev) => ({ ...prev, regions }));
+      } catch (error) {
+        console.error("Error loading regions:", error);
+        showNotification("Failed to load regions", "error");
+      } finally {
+        setLoadingStates((prev) => ({ ...prev, regions: false }));
+      }
     };
+
     loadRegions();
 
+    // Only fetch addresses if user and token are available
     if (user?.username && token) {
       fetchSavedAddresses();
     }
@@ -286,8 +322,19 @@ const AddressManagement = ({ onAddressSelect }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!user?.username || !token) {
-      showNotification("Authentication required", "error");
+    if (!checkAuth()) return;
+
+    // Validate required fields
+    if (
+      !formData.recipient_name ||
+      !formData.street ||
+      !formData.region ||
+      !formData.city ||
+      !formData.barangay ||
+      !formData.postal_code ||
+      !formData.contact_number
+    ) {
+      showNotification("Please fill in all required fields", "error");
       return;
     }
 
@@ -295,10 +342,21 @@ const AddressManagement = ({ onAddressSelect }) => {
 
     try {
       const url = editingAddress
-        ? `/api/users/${user.username}/addresses/${editingAddress._id}`
-        : `/api/users/${user.username}/addresses`;
+        ? `${API_BASE_URL}/users/${user.username}/addresses/${editingAddress._id}`
+        : `${API_BASE_URL}/users/${user.username}/addresses`;
 
       const method = editingAddress ? "PUT" : "POST";
+
+      // Prepare form data with proper structure
+      const addressData = {
+        ...formData,
+        region: getRegionName(formData.region),
+        province: isNCR ? "" : getProvinceName(formData.province),
+        city: getCityName(formData.city),
+        barangay: getBarangayName(formData.barangay),
+      };
+
+      console.log("Submitting address data:", addressData); // Debug log
 
       const response = await fetch(url, {
         method,
@@ -306,21 +364,29 @@ const AddressManagement = ({ onAddressSelect }) => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(addressData),
       });
 
       if (response.ok) {
+        const result = await response.json();
         showNotification(
           editingAddress
             ? "Address updated successfully!"
             : "Address added successfully!"
         );
-        fetchSavedAddresses();
+
+        await fetchSavedAddresses(); // Refresh the addresses list
         setShowAddForm(false);
         setEditingAddress(null);
         resetForm();
+      } else if (response.status === 401) {
+        showNotification(
+          "Authentication expired. Please log in again.",
+          "error"
+        );
       } else {
         const errorData = await response.json();
+        console.error("Submit error:", errorData);
         throw new Error(errorData.detail || "Failed to save address");
       }
     } catch (error) {
@@ -333,35 +399,134 @@ const AddressManagement = ({ onAddressSelect }) => {
 
   const handleEdit = (address) => {
     setEditingAddress(address);
+
+    // Find the codes for the address data
+    const regionCode =
+      options.regions.find((r) => r.name === address.region)?.code ||
+      address.region;
+
     setFormData({
       recipient_name: address.recipient_name,
       street: address.street,
       barangay: address.barangay,
       city: address.city,
       province: address.province,
-      region: address.region,
+      region: regionCode, // Use the found code or fallback to stored value
       postal_code: address.postal_code,
-      country: address.country,
+      country: address.country || "Philippines",
       is_default: address.is_default,
       contact_number: address.contact_number,
       address_type: address.address_type || "Home",
     });
+
+    // Load provinces/cities for the selected region
+    if (regionCode) {
+      loadProvincesForEdit(regionCode, address);
+    }
+
     setShowAddForm(true);
+  };
+
+  // Helper function to load provinces when editing
+  const loadProvincesForEdit = async (regionCode, address) => {
+    try {
+      setLoadingStates((prev) => ({ ...prev, provinces: true, cities: true }));
+
+      const result = await fetchProvinces(regionCode);
+
+      if (result.isNCR) {
+        setIsNCR(true);
+        setOptions((prev) => ({
+          ...prev,
+          provinces: [],
+          cities: result.cities,
+        }));
+
+        // Find city code for NCR
+        const cityCode =
+          result.cities.find((c) => c.name === address.city)?.code ||
+          address.city;
+        setFormData((prev) => ({ ...prev, city: cityCode, province: "" }));
+
+        // Load barangays for the city
+        if (cityCode) {
+          loadBarangaysForEdit(cityCode, address.barangay);
+        }
+      } else {
+        setIsNCR(false);
+        setOptions((prev) => ({
+          ...prev,
+          provinces: result.provinces,
+          cities: [],
+        }));
+
+        // Find province code
+        const provinceCode =
+          result.provinces.find((p) => p.name === address.province)?.code ||
+          address.province;
+        setFormData((prev) => ({ ...prev, province: provinceCode }));
+
+        // Load cities for the province
+        if (provinceCode) {
+          loadCitiesForEdit(provinceCode, address);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading provinces for edit:", error);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, provinces: false }));
+    }
+  };
+
+  // Helper function to load cities when editing
+  const loadCitiesForEdit = async (provinceCode, address) => {
+    try {
+      setLoadingStates((prev) => ({ ...prev, cities: true }));
+      const cities = await fetchCities(provinceCode);
+      setOptions((prev) => ({ ...prev, cities }));
+
+      // Find city code
+      const cityCode =
+        cities.find((c) => c.name === address.city)?.code || address.city;
+      setFormData((prev) => ({ ...prev, city: cityCode }));
+
+      // Load barangays for the city
+      if (cityCode) {
+        loadBarangaysForEdit(cityCode, address.barangay);
+      }
+    } catch (error) {
+      console.error("Error loading cities for edit:", error);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, cities: false }));
+    }
+  };
+
+  // Helper function to load barangays when editing
+  const loadBarangaysForEdit = async (cityCode, barangayName) => {
+    try {
+      setLoadingStates((prev) => ({ ...prev, barangays: true }));
+      const barangays = await fetchBarangays(cityCode);
+      setOptions((prev) => ({ ...prev, barangays }));
+
+      // Set the barangay name (not code)
+      setFormData((prev) => ({ ...prev, barangay: barangayName }));
+    } catch (error) {
+      console.error("Error loading barangays for edit:", error);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, barangays: false }));
+    }
   };
 
   const handleDelete = async (addressId) => {
     if (!window.confirm("Are you sure you want to delete this address?"))
       return;
 
-    if (!user?.username || !token) {
-      showNotification("Authentication required", "error");
-      return;
-    }
+    if (!checkAuth()) return;
 
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/users/${user.username}/addresses/${addressId}`,
+        `${API_BASE_URL}/users/${user.username}/addresses/${addressId}`,
         {
           method: "DELETE",
           headers: {
@@ -373,13 +538,18 @@ const AddressManagement = ({ onAddressSelect }) => {
 
       if (response.ok) {
         showNotification("Address deleted successfully!");
-        fetchSavedAddresses();
+        await fetchSavedAddresses(); // Refresh the addresses list
         if (selectedAddressId === addressId) {
           setSelectedAddressId("");
           if (onAddressSelect) {
             onAddressSelect(null);
           }
         }
+      } else if (response.status === 401) {
+        showNotification(
+          "Authentication expired. Please log in again.",
+          "error"
+        );
       } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to delete address");
@@ -393,15 +563,12 @@ const AddressManagement = ({ onAddressSelect }) => {
   };
 
   const handleSetDefault = async (addressId) => {
-    if (!user?.username || !token) {
-      showNotification("Authentication required", "error");
-      return;
-    }
+    if (!checkAuth()) return;
 
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/users/${user.username}/addresses/${addressId}/set-default`,
+        `${API_BASE_URL}/users/${user.username}/addresses/${addressId}/set-default`,
         {
           method: "PUT",
           headers: {
@@ -413,7 +580,12 @@ const AddressManagement = ({ onAddressSelect }) => {
 
       if (response.ok) {
         showNotification("Default address updated!");
-        fetchSavedAddresses();
+        await fetchSavedAddresses(); // Refresh the addresses list
+      } else if (response.status === 401) {
+        showNotification(
+          "Authentication expired. Please log in again.",
+          "error"
+        );
       } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to set default address");
@@ -427,6 +599,26 @@ const AddressManagement = ({ onAddressSelect }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper functions to get names from codes
+  const getRegionName = (code) => {
+    const region = options.regions.find((r) => r.code === code);
+    return region ? region.name : code;
+  };
+
+  const getProvinceName = (code) => {
+    const province = options.provinces.find((p) => p.code === code);
+    return province ? province.name : code;
+  };
+
+  const getCityName = (code) => {
+    const city = options.cities.find((c) => c.code === code);
+    return city ? city.name : code;
+  };
+
+  const getBarangayName = (name) => {
+    return name; // Barangay is stored as name, not code
   };
 
   const formatAddress = (address) => {
@@ -455,7 +647,7 @@ const AddressManagement = ({ onAddressSelect }) => {
   };
 
   // Add authentication check at the beginning of the component
-  if (!user) {
+  if (!user || !token) {
     return (
       <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
         <Alert severity="warning">

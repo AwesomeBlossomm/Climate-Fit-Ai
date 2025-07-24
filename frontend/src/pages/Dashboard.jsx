@@ -24,10 +24,19 @@ import WeatherMapSection from "../components/WeatherMapSection";
 import SensorOccupiedIcon from "@mui/icons-material/SensorOccupied";
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth(); // Add token to destructuring
   const navigate = useNavigate();
   const [addresses, setAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(null); // Add this state
+  const [selectedAddress, setSelectedAddress] = useState(null);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    if (!user || !token) {
+      console.log("No user or token found, redirecting to login");
+      navigate("/login");
+      return;
+    }
+  }, [user, token, navigate]);
 
   const handleSaveAddress = (addressData) => {
     // In a real app, you would send this to your backend API
@@ -76,6 +85,22 @@ const Dashboard = () => {
       color: "#e3f2fd",
     },
   ];
+
+  // Add authentication check before rendering
+  if (!user || !token) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <Typography>Authenticating...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <>

@@ -63,6 +63,17 @@ def serialize_user(user_doc):
         user_doc["_id"] = str(user_doc["_id"])
         if "created_at" in user_doc:
             user_doc["created_at"] = user_doc["created_at"].isoformat()
+        
+        # Handle addresses array if it exists
+        if "addresses" in user_doc and isinstance(user_doc["addresses"], list):
+            for addr in user_doc["addresses"]:
+                if "_id" in addr and isinstance(addr["_id"], ObjectId):
+                    addr["_id"] = str(addr["_id"])
+                if "created_at" in addr:
+                    addr["created_at"] = addr["created_at"].isoformat()
+                if "updated_at" in addr:
+                    addr["updated_at"] = addr["updated_at"].isoformat()
+    
     return user_doc
 
 @router.post("/register")
@@ -133,7 +144,7 @@ async def get_profile(current_user: str = Depends(verify_token)):
     
     # Convert ObjectId to string for JSON serialization
     return serialize_user(user)
-# Add these new endpoints to your router
+
 @router.post("/users/{username}/addresses")
 async def add_user_address(
     username: str,
@@ -149,6 +160,11 @@ async def add_user_address(
     user = users_collection.find_one({"username": username})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Validate required fields
+    if not all([address.street, address.barangay, address.city, address.region, 
+                address.postal_code, address.contact_number, address.recipient_name]):
+        raise HTTPException(status_code=400, detail="All address fields are required")
     
     # Prepare address data
     address_data = address.dict()
@@ -242,6 +258,11 @@ async def update_user_address(
         address_obj_id = ObjectId(address_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid address ID format")
+    
+    # Validate required fields
+    if not all([address.street, address.barangay, address.city, address.region, 
+                address.postal_code, address.contact_number, address.recipient_name]):
+        raise HTTPException(status_code=400, detail="All address fields are required")
     
     # Check if address exists
     user = users_collection.find_one(

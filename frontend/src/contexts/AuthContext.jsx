@@ -15,15 +15,19 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null); // Add token state
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem("access_token");
+        const storedToken = localStorage.getItem("access_token");
         const userData = localStorage.getItem("user");
 
-        if (token && userData) {
+        if (storedToken && userData) {
           try {
+            // Set token first
+            setToken(storedToken);
+
             // Verify token is still valid
             const profile = await authAPI.getProfile();
             setUser(profile);
@@ -34,15 +38,18 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem("user");
             setUser(null);
             setIsAuthenticated(false);
+            setToken(null);
           }
         } else {
           setUser(null);
           setIsAuthenticated(false);
+          setToken(null);
         }
       } catch (error) {
         console.error("Auth check error:", error);
         setUser(null);
         setIsAuthenticated(false);
+        setToken(null);
       } finally {
         setLoading(false); // Ensure loading is always set to false
       }
@@ -62,6 +69,7 @@ export const AuthProvider = ({ children }) => {
 
       // Store token
       localStorage.setItem("access_token", access_token);
+      setToken(access_token); // Set token in state
 
       // Get user profile
       const userData = await authAPI.getProfile();
@@ -109,6 +117,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    setToken(null); // Clear token from state
     localStorage.removeItem("access_token");
     localStorage.removeItem("user");
   };
@@ -116,6 +125,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     isAuthenticated,
     user,
+    token, // Add token to the context value
     login,
     register,
     logout,
