@@ -1160,4 +1160,7 @@ const DiscountsPage = () => {
   );
 };
 
+
+
 export default DiscountsPage;
+
