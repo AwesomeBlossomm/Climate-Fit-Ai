@@ -19,6 +19,8 @@ import {
   CircularProgress,
   Badge,
   Divider,
+  Pagination,
+  Stack,
 } from "@mui/material";
 import {
   LocalOffer,
@@ -46,6 +48,16 @@ const DiscountsPage = () => {
   const [myVouchers, setMyVouchers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [collectingAll, setCollectingAll] = useState(false);
+  
+  // Pagination states
+  const [clothesPage, setClothesPage] = useState(1);
+  const [shippingPage, setShippingPage] = useState(1);
+  const [myVouchersClothesPage, setMyVouchersClothesPage] = useState(1);
+  const [myVouchersShippingPage, setMyVouchersShippingPage] = useState(1);
+  
+  const ITEMS_PER_PAGE = 10; // 2 rows * 5 columns for clothes
+  const SHIPPING_ITEMS_PER_PAGE = 4; // 1 row * 4 columns for shipping
+  
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -114,6 +126,12 @@ const DiscountsPage = () => {
         severity: "success",
       });
 
+      // Reset pagination to first page
+      setClothesPage(1);
+      setShippingPage(1);
+      setMyVouchersClothesPage(1);
+      setMyVouchersShippingPage(1);
+
       // Refresh both lists
       await fetchAvailableVouchers();
       await fetchMyVouchers();
@@ -136,6 +154,12 @@ const DiscountsPage = () => {
         message: `Successfully collected ${response.collected_count} vouchers!`,
         severity: "success",
       });
+
+      // Reset pagination to first page
+      setClothesPage(1);
+      setShippingPage(1);
+      setMyVouchersClothesPage(1);
+      setMyVouchersShippingPage(1);
 
       // Refresh both lists
       await fetchAvailableVouchers();
@@ -161,6 +185,16 @@ const DiscountsPage = () => {
     });
   };
 
+  // Pagination helper functions
+  const getPaginatedItems = (items, page, itemsPerPage = ITEMS_PER_PAGE) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return items.slice(startIndex, startIndex + itemsPerPage);
+  };
+
+  const getTotalPages = (items, itemsPerPage = ITEMS_PER_PAGE) => {
+    return Math.ceil(items.length / itemsPerPage);
+  };
+
   const getVoucherIcon = (type) => {
     return type === "shipping" ? <LocalShipping /> : <LocalOffer />;
   };
@@ -178,7 +212,8 @@ const DiscountsPage = () => {
       <Card
         elevation={3}
         sx={{
-          height: "100%",
+          height: "400px", // Fixed height for consistency
+          width: "100%", // Full width of grid item
           borderRadius: 3,
           opacity:
             isMyVoucher && (voucher.is_used || voucher.is_expired) ? 0.7 : 1,
@@ -189,9 +224,17 @@ const DiscountsPage = () => {
           "&:hover": {
             boxShadow: "0 8px 25px rgba(74, 93, 58, 0.2)",
           },
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <CardContent>
+        <CardContent sx={{ 
+          flex: 1, 
+          display: "flex", 
+          flexDirection: "column",
+          p: 2,
+          "&:last-child": { pb: 2 }
+        }}>
           <Box
             display="flex"
             justifyContent="space-between"
@@ -301,7 +344,7 @@ const DiscountsPage = () => {
             </Box>
           )}
 
-          <Box display="flex" gap={1}>
+          <Box display="flex" gap={1} sx={{ mt: "auto" }}>
             {showCollectButton ? (
               <Button
                 variant="contained"
@@ -523,7 +566,12 @@ const DiscountsPage = () => {
             <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
               <Tabs
                 value={tabValue}
-                onChange={(e, newValue) => setTabValue(newValue)}
+                onChange={(e, newValue) => {
+                  setTabValue(newValue);
+                  // Reset pagination when switching main tabs
+                  setMyVouchersClothesPage(1);
+                  setMyVouchersShippingPage(1);
+                }}
               >
                 <Tab
                   label={
@@ -548,7 +596,12 @@ const DiscountsPage = () => {
                 <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
                   <Tabs
                     value={voucherTypeTab}
-                    onChange={(e, v) => setVoucherTypeTab(v)}
+                    onChange={(e, v) => {
+                      setVoucherTypeTab(v);
+                      // Reset pagination when switching tabs
+                      setClothesPage(1);
+                      setShippingPage(1);
+                    }}
                     aria-label="Voucher Type Tabs"
                   >
                     <Tab
@@ -672,24 +725,58 @@ const DiscountsPage = () => {
                             </Button>
                           </Paper>
                         ) : (
-                          <Grid container spacing={3} sx={{ mb: 4 }}>
-                            {availableVouchers.clothes_vouchers.map(
-                              (voucher) => (
-                                <Grid
-                                  item
-                                  xs={12}
-                                  md={6}
-                                  lg={4}
-                                  key={voucher._id}
-                                >
-                                  <VoucherCard
-                                    voucher={voucher}
-                                    showCollectButton={true}
-                                  />
-                                </Grid>
-                              )
+                          <>
+                            <Box display="flex" justifyContent="center" mb={4}>
+                              <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                                {getPaginatedItems(
+                                  availableVouchers.clothes_vouchers,
+                                  clothesPage
+                                ).map((voucher) => (
+                                  <Grid
+                                    item
+                                    xs={12}
+                                    sm={6}
+                                    md={2.4}
+                                    key={voucher._id}
+                                  >
+                                    <VoucherCard
+                                      voucher={voucher}
+                                      showCollectButton={true}
+                                    />
+                                  </Grid>
+                                ))}
+                              </Grid>
+                            </Box>
+                            
+                            {/* Pagination for Clothes Vouchers */}
+                            {getTotalPages(availableVouchers.clothes_vouchers) > 1 && (
+                              <Box display="flex" justifyContent="center" mt={3}>
+                                <Pagination
+                                  count={getTotalPages(availableVouchers.clothes_vouchers)}
+                                  page={clothesPage}
+                                  onChange={(e, page) => setClothesPage(page)}
+                                  color="primary"
+                                  size="large"
+                                  sx={{
+                                    '& .MuiPaginationItem-root': {
+                                      color: '#4a5d3a',
+                                      fontWeight: 600,
+                                      '&.Mui-selected': {
+                                        backgroundColor: '#4a5d3a',
+                                        color: '#ffffff',
+                                        '&:hover': {
+                                          backgroundColor: '#3a4d2a',
+                                        },
+                                      },
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                      },
+                                    },
+                                  }}
+                                />
+                              </Box>
                             )}
-                          </Grid>
+                          </>
                         )}
                       </>
                     )}
@@ -794,24 +881,59 @@ const DiscountsPage = () => {
                             </Button>
                           </Paper>
                         ) : (
-                          <Grid container spacing={3}>
-                            {availableVouchers.shipping_vouchers.map(
-                              (voucher) => (
-                                <Grid
-                                  item
-                                  xs={12}
-                                  md={6}
-                                  lg={4}
-                                  key={voucher._id}
-                                >
-                                  <VoucherCard
-                                    voucher={voucher}
-                                    showCollectButton={true}
-                                  />
-                                </Grid>
-                              )
+                          <>
+                            <Box display="flex" justifyContent="center" mb={4}>
+                              <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                                {getPaginatedItems(
+                                  availableVouchers.shipping_vouchers,
+                                  shippingPage,
+                                  SHIPPING_ITEMS_PER_PAGE
+                                ).map((voucher) => (
+                                  <Grid
+                                    item
+                                    xs={12}
+                                    sm={6}
+                                    md={3}
+                                    key={voucher._id}
+                                  >
+                                    <VoucherCard
+                                      voucher={voucher}
+                                      showCollectButton={true}
+                                    />
+                                  </Grid>
+                                ))}
+                              </Grid>
+                            </Box>
+                            
+                            {/* Pagination for Shipping Vouchers */}
+                            {getTotalPages(availableVouchers.shipping_vouchers, SHIPPING_ITEMS_PER_PAGE) > 1 && (
+                              <Box display="flex" justifyContent="center" mt={3}>
+                                <Pagination
+                                  count={getTotalPages(availableVouchers.shipping_vouchers, SHIPPING_ITEMS_PER_PAGE)}
+                                  page={shippingPage}
+                                  onChange={(e, page) => setShippingPage(page)}
+                                  color="primary"
+                                  size="large"
+                                  sx={{
+                                    '& .MuiPaginationItem-root': {
+                                      color: '#4a5d3a',
+                                      fontWeight: 600,
+                                      '&.Mui-selected': {
+                                        backgroundColor: '#4a5d3a',
+                                        color: '#ffffff',
+                                        '&:hover': {
+                                          backgroundColor: '#3a4d2a',
+                                        },
+                                      },
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                      },
+                                    },
+                                  }}
+                                />
+                              </Box>
                             )}
-                          </Grid>
+                          </>
                         )}
                       </>
                     )}
@@ -890,21 +1012,53 @@ const DiscountsPage = () => {
                           </Typography>
                         </Paper>
                       ) : (
-                        <Grid container spacing={3}>
-                          {myVouchers
-                            .filter(
-                              (voucher) => voucher.voucher_type === "clothes"
-                            )
-                            .map((voucher) => (
-                              <Grid item xs={12} md={6} lg={4} key={voucher.id}>
-                                <VoucherCard
-                                  voucher={voucher}
-                                  showCollectButton={false}
-                                  isMyVoucher={true}
-                                />
-                              </Grid>
-                            ))}
-                        </Grid>
+                        <>
+                          <Box display="flex" justifyContent="center" mb={4}>
+                            <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                              {getPaginatedItems(
+                                myVouchers.filter((v) => v.voucher_type === "clothes"),
+                                myVouchersClothesPage
+                              ).map((voucher) => (
+                                <Grid item xs={12} sm={6} md={2.4} key={voucher.id}>
+                                  <VoucherCard
+                                    voucher={voucher}
+                                    showCollectButton={false}
+                                    isMyVoucher={true}
+                                  />
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+                          
+                          {/* Pagination for My Clothes Vouchers */}
+                          {getTotalPages(myVouchers.filter((v) => v.voucher_type === "clothes")) > 1 && (
+                            <Box display="flex" justifyContent="center" mt={2}>
+                              <Pagination
+                                count={getTotalPages(myVouchers.filter((v) => v.voucher_type === "clothes"))}
+                                page={myVouchersClothesPage}
+                                onChange={(e, page) => setMyVouchersClothesPage(page)}
+                                color="primary"
+                                size="medium"
+                                sx={{
+                                  '& .MuiPaginationItem-root': {
+                                    color: '#4a5d3a',
+                                    fontWeight: 600,
+                                    '&.Mui-selected': {
+                                      backgroundColor: '#4a5d3a',
+                                      color: '#ffffff',
+                                      '&:hover': {
+                                        backgroundColor: '#3a4d2a',
+                                      },
+                                    },
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                    },
+                                  },
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </>
                       )}
                     </Box>
 
@@ -937,21 +1091,54 @@ const DiscountsPage = () => {
                           </Typography>
                         </Paper>
                       ) : (
-                        <Grid container spacing={3}>
-                          {myVouchers
-                            .filter(
-                              (voucher) => voucher.voucher_type === "shipping"
-                            )
-                            .map((voucher) => (
-                              <Grid item xs={12} md={6} lg={4} key={voucher.id}>
-                                <VoucherCard
-                                  voucher={voucher}
-                                  showCollectButton={false}
-                                  isMyVoucher={true}
-                                />
-                              </Grid>
-                            ))}
-                        </Grid>
+                        <>
+                          <Box display="flex" justifyContent="center" mb={4}>
+                            <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                              {getPaginatedItems(
+                                myVouchers.filter((v) => v.voucher_type === "shipping"),
+                                myVouchersShippingPage,
+                                SHIPPING_ITEMS_PER_PAGE
+                              ).map((voucher) => (
+                                <Grid item xs={12} sm={6} md={3} key={voucher.id}>
+                                  <VoucherCard
+                                    voucher={voucher}
+                                    showCollectButton={false}
+                                    isMyVoucher={true}
+                                  />
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+                          
+                          {/* Pagination for My Shipping Vouchers */}
+                          {getTotalPages(myVouchers.filter((v) => v.voucher_type === "shipping"), SHIPPING_ITEMS_PER_PAGE) > 1 && (
+                            <Box display="flex" justifyContent="center" mt={2}>
+                              <Pagination
+                                count={getTotalPages(myVouchers.filter((v) => v.voucher_type === "shipping"), SHIPPING_ITEMS_PER_PAGE)}
+                                page={myVouchersShippingPage}
+                                onChange={(e, page) => setMyVouchersShippingPage(page)}
+                                color="primary"
+                                size="medium"
+                                sx={{
+                                  '& .MuiPaginationItem-root': {
+                                    color: '#4a5d3a',
+                                    fontWeight: 600,
+                                    '&.Mui-selected': {
+                                      backgroundColor: '#4a5d3a',
+                                      color: '#ffffff',
+                                      '&:hover': {
+                                        backgroundColor: '#3a4d2a',
+                                      },
+                                    },
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                    },
+                                  },
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </>
                       )}
                     </Box>
                   </>
