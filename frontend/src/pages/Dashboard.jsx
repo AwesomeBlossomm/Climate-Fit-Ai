@@ -344,7 +344,7 @@ const Dashboard = () => {
 
           {/* Weather Section - Right Side */}
           <Box sx={{ flex: 1 }}>
-            <WeatherMapSection />
+            <WeatherMapSection selectedAddress={selectedAddress} />
           </Box>
         </Box>
         <AddressForm onAddressSelect={handleAddressSelect} />
