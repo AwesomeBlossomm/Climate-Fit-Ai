@@ -54,12 +54,13 @@ import { motion } from "framer-motion";
 import { clothingAPI } from "../services/api";
 import { discountAPI } from "../services/discountApi";
 import WeatherMapSection from "../components/WeatherMapSection";
+import { useAddressSelection } from "../components/AddressForm";
 
 const Products = () => {
   const { user, logout } = useAuth();
   const { addToCart, getCartItemsCount } = useCart();
   const navigate = useNavigate();
-
+  const { selectedAddress, loading: addressLoading } = useAddressSelection();
   // State for infinite scroll
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -645,7 +646,7 @@ const Products = () => {
           transition={{ duration: 0.6 }}
         >
           <Box sx={{ mb: 4 }}>
-            <WeatherMapSection />
+            <WeatherMapSection selectedAddress={selectedAddress} />
           </Box>
         </motion.div>
 
