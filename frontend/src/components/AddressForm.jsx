@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { createContext, useEffect, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   TextField,
@@ -292,7 +292,7 @@ const AddressManagement = ({ onAddressSelect }) => {
     const { name, value, checked, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "radiobox" ? checked : value,
     }));
   };
 
@@ -635,14 +635,54 @@ const AddressManagement = ({ onAddressSelect }) => {
     return parts.join(", ");
   };
 
-  // Add this function to handle address selection
+  // Enhanced address selection handler
   const handleAddressSelection = (addressId) => {
+    console.log("=== ADDRESS SELECTION TRIGGERED ===");
+    console.log("Selected address ID:", addressId);
+
     setSelectedAddressId(addressId);
     const selectedAddress = savedAddresses.find(
       (addr) => addr._id === addressId
     );
+
+    console.log("Found address object:", selectedAddress);
+
     if (selectedAddress && onAddressSelect) {
-      onAddressSelect(selectedAddress);
+      // Ensure all required fields are available and clean
+      const addressForWeather = {
+        _id: selectedAddress._id,
+        street: selectedAddress.street?.trim() || "",
+        barangay: selectedAddress.barangay?.trim() || "",
+        city: selectedAddress.city?.trim() || "",
+        province: selectedAddress.province?.trim() || "",
+        region: selectedAddress.region?.trim() || "",
+        postal_code: selectedAddress.postal_code?.trim() || "",
+        country: selectedAddress.country || "Philippines",
+        recipient_name: selectedAddress.recipient_name?.trim() || "",
+        contact_number: selectedAddress.contact_number?.trim() || "",
+        address_type: selectedAddress.address_type || "Home",
+        is_default: selectedAddress.is_default || false,
+        // Add timestamp to ensure change detection
+        _selected_at: Date.now(),
+      };
+
+      console.log(
+        "Clean address being passed to weather component:",
+        addressForWeather
+      );
+      console.log("Key weather lookup fields:", {
+        city: addressForWeather.city,
+        postal_code: addressForWeather.postal_code,
+        region: addressForWeather.region,
+        _id: addressForWeather._id,
+      });
+
+      // Force the parent component to re-render by passing new object
+      onAddressSelect(addressForWeather);
+    } else if (!selectedAddress && onAddressSelect) {
+      // Clear selection
+      console.log("Clearing address selection");
+      onAddressSelect(null);
     }
   };
 
@@ -1165,6 +1205,69 @@ const AddressManagement = ({ onAddressSelect }) => {
       </Dialog>
     </Box>
   );
+};
+
+// Create a custom hook to get selected address
+export const useAddressSelection = () => {
+  const { user, token } = useAuth();
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchUserAddresses = useCallback(async () => {
+    if (!user?.username || !token) return;
+
+    try {
+      setLoading(true);
+      console.log("Fetching addresses for address selection hook...");
+      const response = await fetch(
+        `${API_BASE_URL}/users/${user.username}/addresses`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const addressList = await response.json();
+        console.log("Addresses fetched for hook:", addressList);
+        setAddresses(addressList);
+
+        // Auto-select default address or first address
+        const defaultAddress =
+          addressList.find((addr) => addr.is_default) || addressList[0];
+        if (defaultAddress) {
+          console.log("Auto-selecting address for weather:", defaultAddress);
+          setSelectedAddress(defaultAddress);
+        }
+      } else {
+        console.log("No addresses found or error in hook");
+        setAddresses([]);
+        setSelectedAddress(null);
+      }
+    } catch (error) {
+      console.error("Error in address selection hook:", error);
+      setAddresses([]);
+      setSelectedAddress(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.username, token]);
+
+  useEffect(() => {
+    fetchUserAddresses();
+  }, [fetchUserAddresses]);
+
+  return {
+    selectedAddress,
+    addresses,
+    loading,
+    refreshAddresses: fetchUserAddresses,
+    setSelectedAddress,
+  };
 };
 
 export default AddressManagement;
