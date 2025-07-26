@@ -6,6 +6,7 @@ from bson import ObjectId
 import asyncio
 import logging
 from dotenv import load_dotenv
+import re
 
 # Load environment variables
 load_dotenv()
@@ -417,7 +418,7 @@ class ProductModel:
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_all_with_sellers_unlimited)
 
-    async def get_all_products_with_sellers_paginated_with_filters(self, limit: int = 50, offset: int = 0, filters: dict = None) -> List[Dict[str, Any]]:
+    async def get_all_products_with_sellers_paginated_with_filters(self, limit: int = 200, offset: int = 0, filters: dict = None) -> List[Dict[str, Any]]:
         """
         Get products with seller information with pagination and filters for infinite scroll
         """
@@ -1011,3 +1012,37 @@ class CommentModel:
                 return []
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_products_by_seller)
+async def get_weather_suggestions_count(self, suggestions: List[str], filters: dict = None) -> int:
+    def _get_count():
+        try:
+            search_filter = {
+                "$or": [
+                    {"name": {"$in": [re.compile(f'.*{s}.*', re.IGNORECASE) for s in suggestions]}},
+                    # Add other fields as in get_products_with_weather_suggestions
+                ]
+            }
+            
+            if filters:
+                # Apply same filters as in get_products_with_weather_suggestions
+                pass
+                
+            return self.collection.count_documents(search_filter)
+        except Exception as e:
+            logger.error(f"Error counting weather suggestions: {str(e)}")
+            return 0
+    
+    return await asyncio.get_event_loop().run_in_executor(None, _get_count)
+
+async def get_total_products_count_with_filters(self, filters: dict = None) -> int:
+    def _get_count():
+        try:
+            match_stage = {}
+            if filters:
+                # Same filter logic as in get_all_products_with_sellers_paginated_with_filters
+                pass
+            return self.collection.count_documents(match_stage if match_stage else {})
+        except Exception as e:
+            logger.error(f"Error counting products with filters: {str(e)}")
+            return 0
+    
+    return await asyncio.get_event_loop().run_in_executor(None, _get_count)

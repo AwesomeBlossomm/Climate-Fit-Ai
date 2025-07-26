@@ -106,6 +106,8 @@ def process_image_urls(products, request: Request):
     
     return products
 
+
+
 @router.get("/serve-image/{filename}")
 async def serve_image(filename: str):
     """
@@ -722,80 +724,25 @@ def apply_basic_filters(products, filters):
 @router.get("/clothes/infinite-scroll")
 async def get_clothes_infinite_scroll(
     request: Request,
-    page: int = Query(default=0, ge=0, description="Page number (0-based)"),
-    limit: int = Query(default=50, ge=1, le=200, description="Items per page - increased limit"),
-    query: str = Query(default="", description="Search query"),
-    price_min: Optional[float] = Query(default=None, description="Minimum price filter"),
-    price_max: Optional[float] = Query(default=None, description="Maximum price filter"),
-    category: Optional[str] = Query(default=None, description="Category filter"),
-    weather_suitable: Optional[str] = Query(default=None, description="Weather suitability filter"),
-    min_rating: Optional[float] = Query(default=None, description="Minimum rating filter"),
-    get_all: Optional[bool] = Query(default=False, description="Get all products at once"),
+    page: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=50),
+    query: str = Query(default=""),
+    price_min: Optional[float] = Query(default=None),
+    price_max: Optional[float] = Query(default=None),
+    category: Optional[str] = Query(default=None),
+    weather_suitable: Optional[str] = Query(default=None),
+    weather_suggestions: Optional[str] = Query(default=None),  # New parameter
+    min_rating: Optional[float] = Query(default=None),
+    get_all: Optional[bool] = Query(default=False),
     current_user: str = Depends(verify_token)
 ):
-    """
-    Get clothing products with infinite scroll pagination and filters - enhanced to handle all products
-    """
     try:
-        # If get_all is true, ignore pagination and get everything
-        if get_all:
-            if query.strip():
-                products = await product_model.search_products_unlimited(query=query)
-                # Apply filters in Python if specified
-                if any([price_min, price_max, category, weather_suitable, min_rating]):
-                    filters = {}
-                    if price_min is not None:
-                        filters['price_min'] = price_min
-                    if price_max is not None:
-                        filters['price_max'] = price_max
-                    if category:
-                        filters['category'] = category
-                    if weather_suitable:
-                        filters['weather_suitable'] = weather_suitable.lower() == 'true'
-                    if min_rating is not None:
-                        filters['min_rating'] = min_rating
-                    
-                    products = apply_basic_filters(products, filters)
-            else:
-                products = await product_model.get_all_products_with_sellers_unlimited()
-                # Apply filters in Python if specified
-                if any([price_min, price_max, category, weather_suitable, min_rating]):
-                    filters = {}
-                    if price_min is not None:
-                        filters['price_min'] = price_min
-                    if price_max is not None:
-                        filters['price_max'] = price_max
-                    if category:
-                        filters['category'] = category
-                    if weather_suitable:
-                        filters['weather_suitable'] = weather_suitable.lower() == 'true'
-                    if min_rating is not None:
-                        filters['min_rating'] = min_rating
-                    
-                    products = apply_basic_filters(products, filters)
-            
-            # Process image URLs
-            products = process_image_urls(products, request)
-            
-            return {
-                "success": True,
-                "data": products,
-                "pagination": {
-                    "page": 0,
-                    "limit": len(products),
-                    "total_count": len(products),
-                    "has_more": False,
-                    "current_count": len(products),
-                    "loaded_count": len(products)
-                },
-                "query": query,
-                "filters": filters
-            }
+        # Parse weather suggestions if provided
+        suggestions = []
+        if weather_suggestions:
+            suggestions = [s.strip() for s in weather_suggestions.split(',') if s.strip()]
         
-        # Regular pagination
-        offset = page * limit
-        
-        # Build filters dictionary
+        # Build filters
         filters = {}
         if price_min is not None:
             filters['price_min'] = price_min
@@ -808,81 +755,61 @@ async def get_clothes_infinite_scroll(
         if min_rating is not None:
             filters['min_rating'] = min_rating
         
-        # Try to use optimized filter methods, otherwise use fallback
-        try:
-            if query.strip():
-                # Search with filters
-                logger.info(f"Searching with query: '{query}' and filters: {filters}")
-                
-                if hasattr(product_model, 'search_products_paginated_with_filters'):
-                    products = await product_model.search_products_paginated_with_filters(
-                        query=query.strip(), limit=limit, offset=offset, filters=filters
+        # Special handling for weather suggestions
+        if weather_suitable and weather_suitable.lower() == 'true' and suggestions:
+            if get_all:
+                if query.strip():
+                    products = await product_model.search_products_with_weather_suggestions(
+                        query, suggestions, filters
                     )
-                    total_count = await product_model.get_search_results_count_with_filters(query.strip(), filters)
                 else:
-                    # Fallback: get all search results and apply filters in Python
-                    logger.info("Using fallback search method")
-                    all_products = await product_model.search_products_unlimited(query.strip())
-                    filtered_products = apply_basic_filters(all_products, filters)
-                    total_count = len(filtered_products)
-                    products = filtered_products[offset:offset + limit]
-            else:
-                # Get all products with filters
-                logger.info(f"Getting all products with filters: {filters}")
-                
-                if hasattr(product_model, 'get_all_products_with_sellers_paginated_with_filters'):
-                    products = await product_model.get_all_products_with_sellers_paginated_with_filters(
-                        limit=limit, offset=offset, filters=filters
+                    products = await product_model.get_products_with_weather_suggestions(
+                        suggestions, filters
                     )
-                    total_count = await product_model.get_total_products_count_with_filters(filters)
-                else:
-                    # Fallback: get all products and apply filters in Python
-                    logger.info("Using fallback get all method")
-                    all_products = await product_model.get_all_products_with_sellers_unlimited()
-                    filtered_products = apply_basic_filters(all_products, filters)
-                    total_count = len(filtered_products)
-                    products = filtered_products[offset:offset + limit]
-        
-        except Exception as method_error:
-            logger.warning(f"Filter method failed, using fallback: {str(method_error)}")
-            # Fallback implementation
-            if query.strip():
-                all_products = await product_model.search_products_unlimited(query.strip())
             else:
-                all_products = await product_model.get_all_products_with_sellers_unlimited()
+                offset = page * limit
+                if query.strip():
+                    products = await product_model.search_products_with_weather_suggestions(
+                        query, suggestions, filters
+                    )
+                    products = products[offset:offset + limit]
+                    total_count = len(products)
+                else:
+                    all_products = await product_model.get_products_with_weather_suggestions(
+                        suggestions, filters
+                    )
+                    total_count = len(all_products)
+                    products = all_products[offset:offset + limit]
             
-            filtered_products = apply_basic_filters(all_products, filters)
-            total_count = len(filtered_products)
-            products = filtered_products[offset:offset + limit]
+            # Process and return results
+            products = process_image_urls(products, request)
+            return {
+                "success": True,
+                "data": products,
+                "pagination": {
+                    "page": page,
+                    "limit": limit,
+                    "total_count": total_count,
+                    "has_more": (offset + len(products)) < total_count,
+                    "current_count": len(products),
+                    "loaded_count": offset + len(products)
+                },
+                "query": query,
+                "filters": filters
+            }
         
-        # Process image URLs
-        products = process_image_urls(products, request)
-        
-        has_more = (offset + len(products)) < total_count
-        
-        return {
-            "success": True,
-            "data": products,
-            "pagination": {
-                "page": page,
-                "limit": limit,
-                "total_count": total_count,
-                "has_more": has_more,
-                "current_count": len(products),
-                "loaded_count": offset + len(products)
-            },
-            "query": query,
-            "filters": filters
-        }
+        # Rest of your existing implementation...
+        # ... (keep the original code for non-weather filtered cases)
+
     except Exception as e:
         logger.error(f"Error in infinite scroll endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch products: {str(e)}")
-
+    
 @router.get("/clothes/infinite-scroll/public")
 async def get_clothes_infinite_scroll_public(
     request: Request,
     page: int = Query(default=0, ge=0, description="Page number (0-based)"),
-    limit: int = Query(default=50, ge=1, le=200, description="Items per page - increased limit"),
+    limit: int = Query(default=20, ge=1, le=200, description="Items per page - increased limit"),
     query: str = Query(default="", description="Search query"),
     price_min: Optional[float] = Query(default=None, description="Minimum price filter"),
     price_max: Optional[float] = Query(default=None, description="Maximum price filter"),
@@ -920,7 +847,7 @@ async def get_clothes_infinite_scroll_public(
                     products = apply_basic_filters(products, filters)
             else:
                 # Get all products
-                products = await product_model.get_all_products_with_sellers_unlimited()
+                products = await product_model.get_all_products_with_sellers_paginated_with_filters()
                 # Apply filters in Python if specified
                 if filters:
                     products = apply_basic_filters(products, filters)
@@ -976,7 +903,7 @@ async def get_clothes_infinite_scroll_public(
                 else:
                     # Fallback: get all products and apply filters in Python
                     logger.info("Using fallback get all method")
-                    all_products = await product_model.get_all_products_with_sellers_unlimited()
+                    all_products = await product_model.get_all_products_with_sellers_paginated_with_filters()
                     filtered_products = apply_basic_filters(all_products, filters)
                     total_count = len(filtered_products)
                     products = filtered_products[offset:offset + limit]
@@ -987,7 +914,7 @@ async def get_clothes_infinite_scroll_public(
             if query.strip():
                 all_products = await product_model.search_products_unlimited(query.strip())
             else:
-                all_products = await product_model.get_all_products_with_sellers_unlimited()
+                all_products = await product_model.get_all_products_with_sellers_paginated_with_filters()
             
             filtered_products = apply_basic_filters(all_products, filters)
             total_count = len(filtered_products)

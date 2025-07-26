@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -52,7 +52,7 @@ import { motion } from "framer-motion";
 import { clothingAPI } from "../services/api";
 
 const ProductDetail = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { addToCart, getCartItemsCount } = useCart();
   const navigate = useNavigate();
   const { productId } = useParams();
@@ -63,7 +63,9 @@ const ProductDetail = () => {
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [openAddToCart, setOpenAddToCart] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -152,15 +154,17 @@ const ProductDetail = () => {
   const fetchSellerInfo = async (sellerId) => {
     try {
       setSellerLoading(true);
-      // Use the public endpoint to avoid auth issues
       const response = await fetch(
         `http://localhost:8000/api/v1/clothes/seller/public/${sellerId}`
       );
       if (response.ok) {
         const data = await response.json();
+        console.log("Seller data:", data); // Add this for debugging
         setSeller(data.data);
         // Update the product with seller info
         setProduct((prev) => (prev ? { ...prev, seller: data.data } : prev));
+      } else {
+        console.error("Failed to fetch seller info:", response.status);
       }
     } catch (error) {
       console.error("Error fetching seller info:", error);
@@ -181,53 +185,106 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = () => {
-    if (!product) return;
+  const handleAddToCart = async (product) => {
+    try {
+      // Convert product format to match API expectations
+      const cartItem = {
+        product_id: product._id || product.id || product.product_id,
+        product_name: product.name || product.product_name,
+        brand: product.brand_style || product.brand || "Unknown Brand",
+        unit_price: product.price_php || product.unit_price || 0,
+        quantity: 1, // Default quantity
+        size:
+          (product.sizes_available && product.sizes_available[0]) ||
+          product.size ||
+          "One Size",
+        color: product.color || "Default Color",
+        image_url:
+          product.image_path ||
+          product.image_url ||
+          "/default-product-image.jpg",
+      };
+      debugger;
+      // Make API request
+      const response = await fetch("http://localhost:8000/api/cart/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(cartItem),
+      });
+      fetchCartCount();
+      // Handle empty or invalid responses
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = "Failed to add item to cart";
 
-    const cartProduct = {
-      id: product._id,
-      name: product.name,
-      price: product.price_php || 0,
-      image:
-        product.image_path ||
-        "https://via.placeholder.com/300x400?text=Fashion+Item",
-      brand: product.brand_style || "Fashion",
-      category: product.category || "Clothing",
-      description: product.description || "",
-      rating: product.average_rating || 0,
-    };
+        try {
+          const errorData = errorText ? JSON.parse(errorText) : {};
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch (e) {
+          console.error("Failed to parse error response:", e);
+        }
 
-    setOpenAddToCart(true);
+        throw new Error(errorMessage);
+      }
+
+      // Parse successful response
+      const result = await response.json();
+
+      // Show success notification
+      setSnackbar({
+        open: true,
+        message: `${cartItem.product_name} added to cart!`,
+        severity: "success",
+      });
+
+      // Update local cart state if needed
+      addToCart({
+        id: cartItem.product_id,
+        name: cartItem.product_name,
+        price: cartItem.unit_price,
+        image: cartItem.image_url,
+        quantity: cartItem.quantity,
+        size: cartItem.size,
+        color: cartItem.color,
+      });
+
+      return result;
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      setSnackbar({
+        open: true,
+        message: error.message || "Failed to add item to cart",
+        severity: "error",
+      });
+      throw error;
+    }
   };
+  const fetchCartCount = useCallback(async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/cart/count", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch cart count");
+      const data = await response.json();
+      setCartCount(data.item_count || 0);
+    } catch (error) {
+      setCartCount(0);
+    }
+  }, [token]);
 
-  const confirmAddToCart = () => {
-    if (!product) return;
-
-    const cartProduct = {
-      id: product._id,
-      name: product.name,
-      price: product.price_php || 0,
-      image:
-        product.image_path ||
-        "https://via.placeholder.com/300x400?text=Fashion+Item",
-      brand: product.brand_style || "Fashion",
-      category: product.category || "Clothing",
-      description: product.description || "",
-      rating: product.average_rating || 0,
-    };
-
-    addToCart(cartProduct, quantity);
-
-    setSnackbar({
-      open: true,
-      message: `${product.name} added to cart!`,
-      severity: "success",
-    });
-
-    setOpenAddToCart(false);
-    setQuantity(1);
+  useEffect(() => {
+    fetchCartCount();
+  }, [fetchCartCount]);
+  const getTotalCartItems = () => {
+    return cartCount;
   };
-
   const handleSubmitComment = async () => {
     if (!user) {
       setSnackbar({
@@ -524,11 +581,10 @@ const ProductDetail = () => {
           </Button>
           <Button
             onClick={() => navigate("/cart")}
-            variant="outlined"
+            variant="contained"
             sx={{
-              backgroundColor: "transparent",
+              backgroundColor: "#8fa876",
               color: "#ffffff",
-              border: "2px solid #ffffff",
               borderRadius: "25px",
               px: 3,
               py: 1,
@@ -536,14 +592,19 @@ const ProductDetail = () => {
               textTransform: "none",
               fontSize: "0.9rem",
               "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "#ffffff",
+                backgroundColor: "#7a956a",
               },
+              position: "relative",
             }}
           >
-            <Badge badgeContent={getCartItemsCount()} color="error">
+            <Badge
+              badgeContent={getTotalCartItems()}
+              color="error"
+              sx={{ mr: 1 }}
+            >
               <ShoppingCart />
             </Badge>
+            Cart
           </Button>
           {user && (
             <Button
@@ -800,7 +861,7 @@ const ProductDetail = () => {
                     size="medium"
                     fullWidth
                     startIcon={<Add />}
-                    onClick={handleAddToCart}
+                    onClick={() => handleAddToCart(product)}
                     disabled={!product.quantity || product.quantity === 0}
                     sx={{
                       bgcolor: "#4a5d3a",
@@ -825,6 +886,7 @@ const ProductDetail = () => {
             </Grid>
           </Grid>
 
+          {/* Seller Information - Compact and Centered */}
           {/* Seller Information - Compact and Centered */}
           {product.seller && (
             <Box display="flex" justifyContent="center" mb={3}>
@@ -913,14 +975,15 @@ const ProductDetail = () => {
                             fontWeight="bold"
                             sx={{ fontSize: "0.95rem" }}
                           >
-                            {product.seller.store_name}
+                            {product.seller.store_name || "Seller"}
                           </Typography>
                           {product.seller.is_verified && (
                             <Verified sx={{ color: "#4caf50", fontSize: 16 }} />
                           )}
                         </Box>
                         <Typography variant="caption" color="text.secondary">
-                          Owner: {product.seller.owner_full_name}
+                          Owner:{" "}
+                          {product.seller.owner_full_name || "Not specified"}
                         </Typography>
                         {product.seller.established_date && (
                           <Typography
@@ -950,32 +1013,31 @@ const ProductDetail = () => {
                       </Box>
                     )}
 
-                    {product.seller.specializes_in &&
-                      product.seller.specializes_in.length > 0 && (
-                        <Box mt={1}>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            gutterBottom
-                            display="block"
-                          >
-                            Specializes in:
-                          </Typography>
-                          <Box display="flex" gap={0.5} flexWrap="wrap">
-                            {product.seller.specializes_in.map(
-                              (specialty, index) => (
-                                <Chip
-                                  key={index}
-                                  label={specialty}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{ fontSize: "0.7rem", height: "20px" }}
-                                />
-                              )
-                            )}
-                          </Box>
+                    {product.seller.specializes_in?.length > 0 && (
+                      <Box mt={1}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          gutterBottom
+                          display="block"
+                        >
+                          Specializes in:
+                        </Typography>
+                        <Box display="flex" gap={0.5} flexWrap="wrap">
+                          {product.seller.specializes_in.map(
+                            (specialty, index) => (
+                              <Chip
+                                key={index}
+                                label={specialty}
+                                size="small"
+                                variant="outlined"
+                                sx={{ fontSize: "0.7rem", height: "20px" }}
+                              />
+                            )
+                          )}
                         </Box>
-                      )}
+                      </Box>
+                    )}
                   </Grid>
 
                   <Grid item xs={12} md={6}>
@@ -1005,214 +1067,11 @@ const ProductDetail = () => {
                         </Typography>
                       </Box>
                     )}
-
-                    <Button
-                      variant="contained"
-                      size="small"
-                      fullWidth
-                      onClick={() => navigate(`/seller/${product.seller._id}`)}
-                      sx={{
-                        mt: 1,
-                        bgcolor: "#4a5d3a",
-                        borderRadius: "20px",
-                        px: 2,
-                        py: 0.8,
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        boxShadow: "0 3px 12px rgba(74, 93, 58, 0.3)",
-                        "&:hover": {
-                          bgcolor: "#3a4d2a",
-                          boxShadow: "0 4px 15px rgba(74, 93, 58, 0.4)",
-                        },
-                      }}
-                    >
-                      Visit Store
-                    </Button>
                   </Grid>
                 </Grid>
               </Paper>
             </Box>
           )}
-
-          {/* Comments Section - Compact and Centered */}
-          <Box display="flex" justifyContent="center">
-            <Paper
-              elevation={3}
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                background: "#ffffff",
-                boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
-                maxWidth: "800px",
-                width: "100%",
-              }}
-            >
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  sx={{ color: "#4a5d3a", fontSize: "1.2rem" }}
-                >
-                  <Comment
-                    sx={{ mr: 1, verticalAlign: "middle", fontSize: "1.3rem" }}
-                  />
-                  Customer Reviews ({comments.length})
-                </Typography>
-                {user && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<Add />}
-                    onClick={() => setOpenCommentDialog(true)}
-                    sx={{
-                      color: "#4a5d3a",
-                      borderColor: "#4a5d3a",
-                      borderRadius: "20px",
-                      px: 2,
-                      py: 0.5,
-                      fontWeight: 600,
-                      fontSize: "0.8rem",
-                      "&:hover": {
-                        backgroundColor: "rgba(74, 93, 58, 0.1)",
-                        borderColor: "#4a5d3a",
-                      },
-                    }}
-                  >
-                    Write Review
-                  </Button>
-                )}
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate(`/seller/${product.seller._id}`)}
-                  sx={{ color: "#2e7d32", borderColor: "#2e7d32" }}
-                >
-                  View Store Profile
-                </Button>
-              </Box>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    mb={2}
-                    onClick={() => navigate(`/seller/${product.seller._id}`)}
-                    sx={{
-                      cursor: "pointer",
-                      "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
-                      borderRadius: 2,
-                      p: 1,
-                    }}
-                  >
-                    <Avatar
-                      sx={{
-                        bgcolor: "#2e7d32",
-                        width: 56,
-                        height: 56,
-                        fontSize: "1.5rem",
-                      }}
-                    >
-                      {product.seller.store_name?.charAt(0) || "S"}
-                    </Avatar>
-                    <Box>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="h6" fontWeight="bold">
-                          {product.seller.store_name}
-                        </Typography>
-                        {product.seller.is_verified && (
-                          <Verified sx={{ color: "#4caf50", fontSize: 20 }} />
-                        )}
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Owner: {product.seller.owner_full_name}
-                      </Typography>
-                      {product.seller.established_date && (
-                        <Typography variant="caption" color="text.secondary">
-                          Est.{" "}
-                          {new Date(
-                            product.seller.established_date
-                          ).getFullYear()}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-
-                  {product.seller.rating && (
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      <Rating
-                        value={product.seller.rating}
-                        readOnly
-                        size="small"
-                      />
-                      <Typography variant="body2">
-                        {product.seller.rating.toFixed(1)}/5.0
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {product.seller.specializes_in &&
-                    product.seller.specializes_in.length > 0 && (
-                      <Box mt={2}>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          gutterBottom
-                        >
-                          Specializes in:
-                        </Typography>
-                        <Box display="flex" gap={1} flexWrap="wrap">
-                          {product.seller.specializes_in.map(
-                            (specialty, index) => (
-                              <Chip
-                                key={index}
-                                label={specialty}
-                                size="small"
-                                variant="outlined"
-                              />
-                            )
-                          )}
-                        </Box>
-                      </Box>
-                    )}
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  {product.seller.contact_number && (
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      <Phone fontSize="small" />
-                      <Typography variant="body2">
-                        {product.seller.contact_number}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {product.seller.email && (
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      <Email fontSize="small" />
-                      <Typography variant="body2">
-                        {product.seller.email}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {product.seller.address && (
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      <LocationOn fontSize="small" />
-                      <Typography variant="body2">
-                        {product.seller.address}
-                      </Typography>
-                    </Box>
-                  )}
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
 
           {/* Comments Section */}
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3, mt: 4 }}>
@@ -1321,50 +1180,6 @@ const ProductDetail = () => {
           </Paper>
         </motion.div>
       </Container>
-      {/* Add to Cart Dialog */}
-      <Dialog open={openAddToCart} onClose={() => setOpenAddToCart(false)}>
-        <DialogTitle>Add to Cart</DialogTitle>
-        <DialogContent>
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              {product?.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              ₱{product?.price_php?.toFixed(2)} each
-            </Typography>
-            <TextField
-              label="Quantity"
-              type="number"
-              value={quantity}
-              onChange={(e) =>
-                setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-              }
-              inputProps={{ min: 1, max: product?.quantity || 1 }}
-              fullWidth
-              sx={{ mt: 2 }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAddToCart(false)}>Cancel</Button>
-          <Button
-            onClick={confirmAddToCart}
-            variant="contained"
-            sx={{
-              bgcolor: "#4a5d3a",
-              borderRadius: "25px",
-              px: 3,
-              py: 1,
-              fontWeight: 600,
-              "&:hover": {
-                bgcolor: "#3a4d2a",
-              },
-            }}
-          >
-            Add to Cart
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Comment Dialog */}
       <Dialog
