@@ -6,7 +6,6 @@ from bson import ObjectId
 import asyncio
 import logging
 from dotenv import load_dotenv
-import re
 
 # Load environment variables
 load_dotenv()
@@ -430,7 +429,7 @@ class ProductModel:
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_all_with_sellers_unlimited)
 
-    async def get_all_products_with_sellers_paginated_with_filters(self, limit: int = 200, offset: int = 0, filters: dict = None) -> List[Dict[str, Any]]:
+    async def get_all_products_with_sellers_paginated_with_filters(self, limit: int = 50, offset: int = 0, filters: dict = None) -> List[Dict[str, Any]]:
         """
         Get products with seller information with pagination and filters for infinite scroll
         """
@@ -856,39 +855,39 @@ class ProductModel:
 
         return await asyncio.get_event_loop().run_in_executor(None, _find_products_by_season)
     
-    class SellerModel:
-        def __init__(self, db_connection: MongoDBConnection):
-            self.collection = db_connection.sellers_collection
-            self.db = db_connection.db
+class SellerModel:
+    def __init__(self, db_connection: MongoDBConnection):
+        self.collection = db_connection.sellers_collection
+        self.db = db_connection.db
+    
+    async def create_seller(self, seller_data: Dict[str, Any]) -> str:
+        """
+        Create a new seller in MongoDB
+        """
+        def _create_seller():
+            try:
+                # Ensure proper data types
+                seller_document = {
+                    "store_name": str(seller_data.get("store_name", "Unknown Store")),
+                    "owner_full_name": str(seller_data.get("owner_full_name", "Unknown Owner")),
+                    "address": str(seller_data.get("address", "")),
+                    "contact_number": str(seller_data.get("contact_number", "")),
+                    "email": str(seller_data.get("email", "")),
+                    "specializes_in": seller_data.get("specializes_in", []),
+                    "established_date": datetime.utcnow(),
+                    "is_verified": bool(seller_data.get("is_verified", False)),
+                    "rating": float(seller_data.get("rating", 4.0)),
+                    "created_at": datetime.utcnow()
+                }
+                
+                result = self.collection.insert_one(seller_document)
+                logger.info(f"Created seller with ID: {result.inserted_id}")
+                return str(result.inserted_id)
+            except Exception as e:
+                logger.error(f"Error creating seller: {str(e)}")
+                raise Exception(f"Failed to create seller: {str(e)}")
         
-        async def create_seller(self, seller_data: Dict[str, Any]) -> str:
-            """
-            Create a new seller in MongoDB
-            """
-            def _create_seller():
-                try:
-                    # Ensure proper data types
-                    seller_document = {
-                        "store_name": str(seller_data.get("store_name", "Unknown Store")),
-                        "owner_full_name": str(seller_data.get("owner_full_name", "Unknown Owner")),
-                        "address": str(seller_data.get("address", "")),
-                        "contact_number": str(seller_data.get("contact_number", "")),
-                        "email": str(seller_data.get("email", "")),
-                        "specializes_in": seller_data.get("specializes_in", []),
-                        "established_date": datetime.utcnow(),
-                        "is_verified": bool(seller_data.get("is_verified", False)),
-                        "rating": float(seller_data.get("rating", 4.0)),
-                        "created_at": datetime.utcnow()
-                    }
-                    
-                    result = self.collection.insert_one(seller_document)
-                    logger.info(f"Created seller with ID: {result.inserted_id}")
-                    return str(result.inserted_id)
-                except Exception as e:
-                    logger.error(f"Error creating seller: {str(e)}")
-                    raise Exception(f"Failed to create seller: {str(e)}")
-            
-            return await asyncio.get_event_loop().run_in_executor(None, _create_seller)
+        return await asyncio.get_event_loop().run_in_executor(None, _create_seller)
     
     async def get_seller_by_id(self, seller_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -938,35 +937,35 @@ class ProductModel:
 
         return await asyncio.get_event_loop().run_in_executor(None, _get_all_sellers)
 
-    class CommentModel:
-        def __init__(self, db_connection: MongoDBConnection):
-            self.collection = db_connection.db.comments
-            self.db = db_connection.db
+class CommentModel:
+    def __init__(self, db_connection: MongoDBConnection):
+        self.collection = db_connection.db.comments
+        self.db = db_connection.db
+    
+    async def create_comment(self, comment_data: Dict[str, Any]) -> str:
+        """
+        Create a new comment in MongoDB
+        """
+        def _create_comment():
+            try:
+                comment_document = {
+                    "product_id": ObjectId(comment_data.get("product_id")),
+                    "user_name": str(comment_data.get("user_name", "Anonymous")),
+                    "user_email": str(comment_data.get("user_email", "")),
+                    "comment": str(comment_data.get("comment", "")),
+                    "rating": int(comment_data.get("rating", 5)),
+                    "created_at": datetime.utcnow(),
+                    "is_approved": True
+                }
+                
+                result = self.collection.insert_one(comment_document)
+                logger.info(f"Created comment with ID: {result.inserted_id}")
+                return str(result.inserted_id)
+            except Exception as e:
+                logger.error(f"Error creating comment: {str(e)}")
+                raise Exception(f"Failed to create comment: {str(e)}")
         
-        async def create_comment(self, comment_data: Dict[str, Any]) -> str:
-            """
-            Create a new comment in MongoDB
-            """
-            def _create_comment():
-                try:
-                    comment_document = {
-                        "product_id": ObjectId(comment_data.get("product_id")),
-                        "user_name": str(comment_data.get("user_name", "Anonymous")),
-                        "user_email": str(comment_data.get("user_email", "")),
-                        "comment": str(comment_data.get("comment", "")),
-                        "rating": int(comment_data.get("rating", 5)),
-                        "created_at": datetime.utcnow(),
-                        "is_approved": True
-                    }
-                    
-                    result = self.collection.insert_one(comment_document)
-                    logger.info(f"Created comment with ID: {result.inserted_id}")
-                    return str(result.inserted_id)
-                except Exception as e:
-                    logger.error(f"Error creating comment: {str(e)}")
-                    raise Exception(f"Failed to create comment: {str(e)}")
-            
-            return await asyncio.get_event_loop().run_in_executor(None, _create_comment)
+        return await asyncio.get_event_loop().run_in_executor(None, _create_comment)
     
     async def get_comments_by_product(self, product_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """
@@ -1062,6 +1061,7 @@ class ProductModel:
                 return []
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_products_by_seller)
+
     async def get_weather_suggestions_count(self, suggestions: List[str], filters: dict = None) -> int:
         def _get_count():
             try:
