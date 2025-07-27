@@ -1,0 +1,498 @@
+// import React, { useEffect, useRef, useState } from "react";
+// import { Box, Typography, Button, Select, MenuItem, Slider, AppBar, Toolbar, TextField, IconButton } from "@mui/material";
+// import SendIcon from "@mui/icons-material/Send";
+// import axios from "axios";
+// import { useNavigate } from "react-router-dom";
+// import * as THREE from "three";
+// import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+// import { useAuth } from "../contexts/AuthContext";
+// import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+
+// const BodyScan = () => {
+//   const { user, logout } = useAuth();
+//   const navigate = useNavigate();
+//   const mountRef = useRef(null);
+//   const [gender, setGender] = useState(user?.gender || "male");
+//   const [height, setHeight] = useState(170);
+//   const [weight, setWeight] = useState(70);
+//   const [location, setLocation] = useState("");
+//   const [weather, setWeather] = useState("");
+//   const [selectedLocation, setSelectedLocation] = useState("");
+//   const [climateOverview, setClimateOverview] = useState("");
+//   const [productRecommendations, setProductRecommendations] = useState([]);
+//   const [chatMessages, setChatMessages] = useState([]);
+//   const [chatInput, setChatInput] = useState("");
+//   const [isChatOpen, setIsChatOpen] = useState(false);
+
+//   const handleLogout = () => {
+//     logout();
+//     navigate("/");
+//   };
+
+//   useEffect(() => {
+//     const scene = new THREE.Scene();
+//     const camera = new THREE.PerspectiveCamera(75, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 1000);
+//     const renderer = new THREE.WebGLRenderer({ antialias: true });
+//     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+//     mountRef.current.appendChild(renderer.domElement);
+
+//     const light = new THREE.DirectionalLight(0xffffff, 1);
+//     light.position.set(0, 1, 1).normalize();
+//     scene.add(light);
+
+//     const controls = new OrbitControls(camera, renderer.domElement);
+//     controls.enableDamping = true;
+//     controls.dampingFactor = 0.25;
+//     controls.enableZoom = true;
+
+//     const loader = new GLTFLoader();
+//     loader.load(`/src/assets/3DModels/${gender}/${gender}.gltf`, (gltf) => {
+//       const model = gltf.scene;
+//       model.position.set(0, 0, 0);
+//       scene.add(model);
+
+//       // Set camera position based on gender
+//       if (gender === "male") {
+//         camera.position.set(0, 0.5, 2);
+//         model.position.set(0, 0, 0);
+//       } else {
+//         camera.position.set(0, 0.5, 2);
+//         model.position.set(0, -1, 0);
+//       }
+
+//       const animate = function () {
+//         requestAnimationFrame(animate);
+//         model.scale.set(weight / 70, height / 170, weight / 70);
+//         controls.update();
+//         renderer.render(scene, camera);
+//       };
+//       animate();
+//     });
+
+//     return () => {
+//       if (mountRef.current) {
+//         mountRef.current.removeChild(renderer.domElement);
+//       }
+//     };
+//   }, [gender, height, weight]);
+
+//   const fetchWeatherData = async (latitude, longitude) => {
+//     try {
+//       // Fetch location details using OpenCage Geocoder
+//       const locationResponse = await axios.get(
+//         `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=11e5b381c9044da4bf265856b677886e`
+//       );
+//       const components = locationResponse.data.results[0].components;
+
+//       const continent = components.continent || "Unknown Continent";
+//       const locality = components.town || components.city || components.village || "Unknown Locality";
+//       const country = components.country || "Unknown Country";
+
+//       // Combine details into a formatted string
+//       setLocation(`${locality}, ${country}, ${continent}`);
+
+//       // Fetch weather details using WeatherAPI
+//       const weatherResponse = await axios.get(
+//         `https://api.weatherapi.com/v1/current.json?key=bd230479f01a45ca8ae41503252407&q=${latitude},${longitude}`
+//       );
+//       const weatherType = weatherResponse.data.current.condition.text;
+//       const temperature = weatherResponse.data.current.temp_c;
+//       setWeather(`${weatherType}, ${temperature}°C`);
+//     } catch (error) {
+//       console.error("Error fetching location or weather data:", error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (navigator.geolocation) {
+//       navigator.geolocation.getCurrentPosition((position) => {
+//         const { latitude, longitude } = position.coords;
+//         fetchWeatherData(latitude, longitude);
+//       });
+//     } else {
+//       console.error("Geolocation is not supported by this browser.");
+//     }
+//   }, []);
+
+//   const handleLocationChange = async (event) => {
+//     const newLocation = event.target.value;
+//     setSelectedLocation(newLocation);
+
+//     try {
+//       const geocodeResponse = await axios.get(
+//         `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(newLocation)}&key=11e5b381c9044da4bf265856b677886e`
+//       );
+//       const { lat, lng } = geocodeResponse.data.results[0].geometry;
+
+//       // Fetch weather data and update location
+//       const weatherResponse = await axios.get(
+//         `https://api.weatherapi.com/v1/current.json?key=bd230479f01a45ca8ae41503252407&q=${lat},${lng}`
+//       );
+//       const weatherType = weatherResponse.data.current.condition.text;
+//       const temperature = weatherResponse.data.current.temp_c;
+//       const components = geocodeResponse.data.results[0].components;
+
+//       const continent = components.continent || "Unknown Continent";
+//       const locality = components.town || components.city || components.village || "Unknown Locality";
+//       const country = components.country || "Unknown Country";
+
+//       const formattedLocation = `${locality}, ${country}, ${continent}`;
+//       setLocation(formattedLocation);
+//       setWeather(`${weatherType}, ${temperature}°C`);
+
+//       // Fetch climate overview immediately after weather and location update
+//       fetchClimateOverview(locality, country, continent, gender, height, weight);
+//     } catch (error) {
+//       console.error("Error fetching coordinates or weather for the selected location:", error);
+//     }
+//   };
+
+//   const determineSeason = (month, country) => {
+//     const northernHemisphereSeasons = [
+//       "Winter", "Winter", "Spring", "Spring", "Spring", "Summer", "Summer", "Summer", "Autumn", "Autumn", "Autumn", "Winter"
+//     ];
+//     const southernHemisphereSeasons = [
+//       "Summer", "Summer", "Autumn", "Autumn", "Autumn", "Winter", "Winter", "Winter", "Spring", "Spring", "Spring", "Summer"
+//     ];
+
+//     // Special case for countries with unique seasonal patterns
+//     const tropicalCountries = {
+//       "Philippines": ["Summer", "Summer", "Summer", "Summer", "Summer", "Rainy", "Rainy", "Rainy", "Rainy", "Rainy", "Rainy", "Summer"],
+//     };
+
+//     if (tropicalCountries[country]) {
+//       return tropicalCountries[country][month];
+//     }
+
+//     // Default to hemisphere-based seasons
+//     const southernHemisphereContinents = ["Australia", "South America", "Africa", "Oceania"];
+//     const isSouthernHemisphere = southernHemisphereContinents.some((hemisphere) => country.includes(hemisphere));
+
+//     const seasons = isSouthernHemisphere ? southernHemisphereSeasons : northernHemisphereSeasons;
+//     return seasons[month];
+//   };
+
+//   const fetchProductRecommendations = async (season) => {
+//     try {
+//       const response = await axios.get(`http://localhost:8000/api/v1/products?season=${encodeURIComponent(season)}`);
+//       return response.data.products || [];
+//     } catch (error) {
+//       console.error("Error fetching product recommendations:", error);
+//       return [];
+//     }
+//   };
+
+//   const fetchClimateOverview = async (city, country, continent, gender, height, weight) => {
+//     try {
+//       const currentMonth = new Date().getMonth(); // 0 = January, 11 = December
+//       const currentSeason = determineSeason(currentMonth, country);
+
+//       const seasonClothingRecommendations = {
+//         "Winter": "Wear warm layers such as wool sweaters, thermal pants, and insulated jackets. Accessories like scarves, gloves, and beanies are essential. Materials: wool, fleece, down.",
+//         "Spring": "Opt for light layers such as cardigans, long-sleeve shirts, and jeans. Comfortable sneakers or flats are ideal. Materials: cotton, light denim, polyester blends.",
+//         "Summer": "Choose breathable fabrics like cotton or linen. T-shirts, shorts, and sundresses are perfect. Don’t forget sunglasses and hats. Materials: cotton, linen, rayon.",
+//         "Autumn": "Go for cozy sweaters, light jackets, and boots. Earth-tone colors are popular during this season. Materials: wool, corduroy, flannel.",
+//         "Dry Season": "Light and breathable clothing such as cotton shirts and shorts are ideal. Hats and sunglasses can help with the sun. Materials: cotton, linen, synthetic blends.",
+//         "Wet Season": "Water-resistant jackets, boots, and umbrellas are essential. Avoid fabrics that soak easily, like cotton. Materials: polyester, nylon, waterproof fabrics.",
+//       };
+
+//       const clothesRecommendation = seasonClothingRecommendations[currentSeason] || "No specific recommendation available.";
+
+//       const productRecommendations = await fetchProductRecommendations(currentSeason);
+
+//       const response = await axios.post(
+//         "https://api.groq.com/openai/v1/chat/completions",
+//         {
+//           model: "llama-3.3-70b-versatile",
+//           messages: [
+//             {
+//               role: "user",
+//               content: `Provide a brief summary of the general seasons for ${city}, ${country}, located in ${continent}. 
+//                 Format the response as follows:
+//                   General Season:
+//                   - [Details about the seasons the country experiences]`,
+//             },
+//             {
+//               role: "user",
+//               content: `Current Season:
+//                   - ${currentSeason} [Details about the current season based on the location and month]`,
+//             },
+//             {
+//               role: "user",
+//               content: `Clothes Recommendations:
+//                   - ${clothesRecommendation}`,
+//             },
+//             {
+//               role: "user",
+//               content: `Product Recommendations:
+//                   - ${productRecommendations.join(", ")}`,
+//             },
+//           ],
+//         },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${import.meta.env.bearer_token}`,
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+
+//       const overview = response.data.choices[0].message.content;
+//       setClimateOverview(overview);
+//       setProductRecommendations(productRecommendations); // Update product recommendations state
+//     } catch (error) {
+//       console.error("Error fetching season overview:", error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (location && weather) {
+//       const [city, country, continent] = location.split(", ");
+//       fetchClimateOverview(city, country, continent, weather, gender, height, weight);
+//     }
+//   }, [location, weather, gender, height, weight]);
+
+//   useEffect(() => {
+//     if (weather) {
+//       const weatherType = weather.split(",")[0].toLowerCase();
+
+//       // Adjust background color based on weather type
+//       const sceneBackground = {
+//         clear: "#87CEEB", // Light blue for clear weather
+//         clouds: "#B0C4DE", // Light gray for cloudy weather
+//         rain: "#708090", // Dark gray for rainy weather
+//         snow: "#F0F8FF", // White for snowy weather
+//       }[weatherType] || "#FFFFFF"; // Default to white
+
+//       const scene = new THREE.Scene();
+//       scene.background = new THREE.Color(sceneBackground);
+//     }
+//   }, [weather]);
+
+//   const handleChatSubmit = async () => {
+//     if (!chatInput.trim()) return;
+
+//     const userMessage = { role: "user", content: chatInput };
+//     setChatMessages((prev) => [...prev, userMessage]);
+//     setChatInput("");
+
+//     try {
+//       const response = await axios.post(
+//         "https://api.groq.com/openai/v1/chat/completions",
+//         {
+//           model: "llama-3.3-70b-versatile",
+//           messages: [...chatMessages, userMessage],
+//         },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${import.meta.env.bearer_token}`,
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+
+//       const botMessage = {
+//         role: "assistant",
+//         content: response.data.choices[0].message.content,
+//       };
+//       setChatMessages((prev) => [...prev, botMessage]);
+//     } catch (error) {
+//       console.error("Error communicating with chatbot:", error);
+//       const errorMessage = {
+//         role: "assistant",
+//         content: "Sorry, I couldn't process your request. Please try again later.",
+//       };
+//       setChatMessages((prev) => [...prev, errorMessage]);
+//     }
+//   };
+
+//   return (
+//     <>
+//       <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
+//         <Toolbar>
+//           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+//             ClimateFit Dashboard
+//           </Typography>
+//           <Button color="inherit" onClick={() => navigate("/products")}>Shop Now</Button>
+//           <Button color="inherit" onClick={handleLogout}>Logout</Button>
+//         </Toolbar>
+//       </AppBar>
+//       <Box sx={{ p: 3, bgcolor: "#f5f5f5", minHeight: "100vh", display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+//         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: "100%", maxWidth: 1200, mb: 4 }}>
+//           <Box sx={{ width: "50%", maxWidth: 600, bgcolor: "#fff", borderRadius: 2, boxShadow: 3, p: 3, mr: 4 }}>
+//             <Box ref={mountRef} sx={{ width: "100%", height: "500px", bgcolor: "#e0e0e0", borderRadius: 2 }} />
+//           </Box>
+//           <Box sx={{ width: "30%", maxWidth: 400, bgcolor: "#fff", borderRadius: 2, boxShadow: 3, p: 3 }}>
+//             <Typography variant="h6" sx={{ mb: 2, color: "#2e7d32" }}>Adjust Model</Typography>
+//             <Select value={gender} onChange={(e) => setGender(e.target.value)} fullWidth sx={{ mb: 2 }}>
+//               <MenuItem value="male">Male</MenuItem>
+//               <MenuItem value="female">Female</MenuItem>
+//             </Select>
+//             <Typography variant="body1" sx={{ color: "#2e7d32" }}>Height, cm</Typography>
+//             <Slider value={height} onChange={(e, newValue) => setHeight(newValue)} min={150} max={200} step={1} valueLabelDisplay="auto" sx={{ width: '100%', color: '#2e7d32', mb: 2 }} />
+//             <Typography variant="body1" sx={{ color: "#2e7d32" }}>Weight, kg</Typography>
+//             <Slider value={weight} onChange={(e, newValue) => setWeight(newValue)} min={50} max={100} step={1} valueLabelDisplay="auto" sx={{ width: '100%', color: '#2e7d32', mb: 2 }} />
+//             <Typography variant="body1" sx={{ color: "#2e7d32" }}>Location</Typography>
+//             <TextField
+//               fullWidth
+//               placeholder="Enter a location"
+//               value={selectedLocation}
+//               onChange={handleLocationChange}
+//               sx={{ mb: 2 }}
+//             />
+//             <Typography variant="body1" sx={{ color: "#2e7d32", mb: 1 }}>
+//               Current Location: {location}
+//             </Typography>
+//             <Typography variant="body1" sx={{ color: "#2e7d32", mb: 2 }}>
+//               Weather: {weather}
+//             </Typography>
+//           </Box>
+//         </Box>
+//         <Box sx={{ width: "80%", maxWidth: 800, bgcolor: "#fff", borderRadius: 2, boxShadow: 3, p: 3, mb: 3 }}>
+//           <Typography variant="h6" sx={{ mb: 2, color: "#2e7d32" }}>General Season</Typography>
+//           <Typography variant="body1" sx={{ color: "#2e7d32" }}>
+//             {climateOverview.split("General Season:")[1]?.split("Current Season:")[0]?.trim() || "Loading..."}
+//           </Typography>
+//         </Box>
+//         <Box sx={{ width: "80%", maxWidth: 800, bgcolor: "#fff", borderRadius: 2, boxShadow: 3, p: 3, mb: 3 }}>
+//           <Typography variant="h6" sx={{ mb: 2, color: "#2e7d32" }}>Current Season</Typography>
+//           <Typography variant="body1" sx={{ color: "#2e7d32" }}>
+//             {climateOverview.split("Current Season:")[1]?.split("Clothes Recommendations:")[0]?.trim() || "Loading..."}
+//           </Typography>
+//         </Box>
+//         <Box sx={{ width: "80%", maxWidth: 800, bgcolor: "#fff", borderRadius: 2, boxShadow: 3, p: 3, mb: 3 }}>
+//           <Typography variant="h6" sx={{ mb: 2, color: "#2e7d32" }}>Clothes Recommendations</Typography>
+//           <Typography variant="body1" sx={{ color: "#2e7d32" }}>
+//             {climateOverview.split("Clothes Recommendations:")[1]?.trim() || "Loading..."}
+//           </Typography>
+//         </Box>
+//         <Box sx={{ width: "80%", maxWidth: 800, bgcolor: "#fff", borderRadius: 2, boxShadow: 3, p: 3 }}>
+//           <Typography variant="h6" sx={{ mb: 2, color: "#2e7d32" }}>Product Recommendations</Typography>
+//           {/* Display product recommendations as cards or a list */}
+//           {Array.isArray(productRecommendations) && productRecommendations.length > 0 ? (
+//             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+//               {productRecommendations.map((product) => (
+//                 <Box key={product._id} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, p: 2, minWidth: 200, maxWidth: 250, flex: '1 1 200px', bgcolor: '#fafafa' }}>
+//                   <Typography variant="subtitle1" sx={{ color: '#2e7d32', fontWeight: 600 }}>{product.name}</Typography>
+//                   <Typography variant="body2" sx={{ color: '#555' }}>{product.description}</Typography>
+//                   <Typography variant="body2" sx={{ color: '#888', mt: 1 }}>Category: {product.category}</Typography>
+//                   <Typography variant="body2" sx={{ color: '#888' }}>Price: ₱{product.price_php}</Typography>
+//                 </Box>
+//               ))}
+//             </Box>
+//           ) : (
+//             <Typography variant="body1" sx={{ color: "#2e7d32" }}>
+//               No product recommendations found.
+//             </Typography>
+//           )}
+//         </Box>
+//       </Box>
+//       {/* Chat toggle button */}
+//       <Box
+//         sx={{
+//           position: "fixed",
+//           bottom: 16,
+//           right: 16,
+//           zIndex: 1000,
+//         }}
+//       >
+//         <IconButton
+//           color="primary"
+//           onClick={() => setIsChatOpen((prev) => !prev)}
+//           sx={{
+//             bgcolor: "#2e7d32",
+//             color: "#fff",
+//             width: 56,
+//             height: 56,
+//             borderRadius: "50%",
+//             boxShadow: 3,
+//             "&:hover": {
+//               bgcolor: "#1b5e20",
+//             },
+//           }}
+//         >
+//           <ChatBubbleOutlineIcon />
+//         </IconButton>
+//       </Box>
+
+//       {/* Chat window */}
+//       {isChatOpen && (
+//         <Box
+//           sx={{
+//             position: "fixed",
+//             bottom: 80,
+//             right: 16,
+//             width: 400,
+//             maxHeight: 500,
+//             bgcolor: "#fff",
+//             boxShadow: 3,
+//             borderRadius: 2,
+//             overflow: "hidden",
+//             display: "flex",
+//             flexDirection: "column",
+//           }}
+//         >
+//           <Box
+//             sx={{
+//               bgcolor: "#2e7d32",
+//               color: "#fff",
+//               p: 2,
+//               textAlign: "center",
+//             }}
+//           >
+//             <Typography variant="h6">Clothing Chatbot</Typography>
+//           </Box>
+//           <Box
+//             sx={{
+//               flex: 1,
+//               overflowY: "auto",
+//               p: 2,
+//               display: "flex",
+//               flexDirection: "column",
+//               gap: 1,
+//             }}
+//           >
+//             {chatMessages.map((message, index) => (
+//               <Box
+//                 key={index}
+//                 sx={{
+//                   alignSelf: message.role === "user" ? "flex-end" : "flex-start",
+//                   bgcolor: message.role === "user" ? "#e0f7fa" : "#f1f8e9",
+//                   p: 1,
+//                   borderRadius: 2,
+//                   maxWidth: "80%",
+//                 }}
+//               >
+//                 <Typography variant="body2">{message.content}</Typography>
+//               </Box>
+//             ))}
+//           </Box>
+//           <Box
+//             sx={{
+//               display: "flex",
+//               alignItems: "center",
+//               p: 1,
+//               borderTop: "1px solid #e0e0e0",
+//             }}
+//           >
+//             <TextField
+//               fullWidth
+//               placeholder="Ask me about clothes..."
+//               value={chatInput}
+//               onChange={(e) => setChatInput(e.target.value)}
+//               onKeyPress={(e) => {
+//                 if (e.key === "Enter") handleChatSubmit();
+//               }}
+//             />
+//             <IconButton color="primary" onClick={handleChatSubmit}>
+//               <SendIcon />
+//             </IconButton>
+//           </Box>
+//         </Box>
+//       )}
+//     </>
+//   );
+// };
+
+// export default BodyScan;

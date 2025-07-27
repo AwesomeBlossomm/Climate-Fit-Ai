@@ -12,8 +12,20 @@ import Register from "./components/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Cart from "./pages/Cart";
-import PaymentPage from "./pages/PaymentPage";
+import Payment from "./pages/Payment";
+import PaymentManager from "./pages/PaymentManager";
 import DiscountsPage from "./pages/DiscountsPage";
+import ProductDetail from "./pages/ProductDetail";
+import SellerProfile from "./pages/SellerProfile";
+import BodyScan from "./pages/BodyScan";
+
+// Importing the AdminD
+import AdminDashboard from "./admin/AdminDashboard";
+import AdminGraphs from "./admin/AdminGraphs";
+import UserTable from "./admin/UserTable";
+import ProductTable from "./admin/ProductTable";
+import SellerTable from "./admin/SellerTable";
+import OrdersTable from "./admin/OrdersTable";
 
 const theme = createTheme();
 
@@ -70,7 +82,15 @@ function App() {
                 path="/payment"
                 element={
                   <ProtectedRoute>
-                    <PaymentPage />
+                    <Payment />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-manager"
+                element={
+                  <ProtectedRoute>
+                    <PaymentManager />
                   </ProtectedRoute>
                 }
               />
@@ -81,7 +101,66 @@ function App() {
                     <DiscountsPage />
                   </ProtectedRoute>
                 }
-              />{" "}
+              />
+              <Route
+                path="/bodyscan"
+                element={
+                  <ProtectedRoute>
+                    <BodyScan />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/products/:productId" element={<ProductDetail />} />
+              <Route path="/seller/:sellerId" element={<SellerProfile />} />
+
+              <Route
+                path="/admin/dashboard"
+                element={
+                <ProtectedRoute isAdmin={true}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/graphs"
+                element={
+                  <ProtectedRoute>
+                    <AdminGraphs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute>
+                    <UserTable />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/products"
+                element={
+                  <ProtectedRoute>
+                    <ProductTable />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/sellers"
+                element={
+                  <ProtectedRoute>
+                    <SellerTable />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  <ProtectedRoute>
+                    <OrdersTable />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </Router>
         </CartProvider>

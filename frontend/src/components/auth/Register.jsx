@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Navigator from "/src/pages/Navigator";
+import Navigator from "../../pages/Navigator";
 import {
   Box,
   TextField,
@@ -10,6 +10,8 @@ import {
   Divider,
   InputAdornment,
   IconButton,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -23,6 +25,7 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     full_name: "",
+    gender: "male",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -52,8 +55,8 @@ const Register = () => {
     }
 
     try {
-      const { username, email, password, full_name } = formData;
-      const result = await register({ username, email, password, full_name });
+      const { username, email, password, full_name, gender } = formData;
+      const result = await register({ username, email, password, full_name, gender });
 
       if (result.success) {
         setSuccess(
@@ -135,8 +138,19 @@ const Register = () => {
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit} autoComplete="off" style={{ width: "100%" }}>
-              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, fontSize: "0.9rem" }}>
+            <form
+              onSubmit={handleSubmit}
+              autoComplete="off"
+              style={{ width: "100%" }}
+            >
+              <Typography
+                sx={{
+                  color: "#2d3d2d",
+                  fontWeight: 500,
+                  mb: 1,
+                  fontSize: "0.9rem",
+                }}
+              >
                 Full Name
               </Typography>
               <TextField
@@ -155,12 +169,12 @@ const Register = () => {
                     fontSize: "0.95rem",
                     height: 48,
                     mb: 2,
-                    "& input": { 
+                    "& input": {
                       color: "#2d3d2d",
                       "&::placeholder": {
                         color: "#8a8a8a",
                         fontStyle: "italic",
-                      }
+                      },
                     },
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
@@ -174,8 +188,16 @@ const Register = () => {
                   },
                 }}
               />
-              
-              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, mt: 2, fontSize: "0.9rem" }}>
+
+              <Typography
+                sx={{
+                  color: "#2d3d2d",
+                  fontWeight: 500,
+                  mb: 1,
+                  mt: 2,
+                  fontSize: "0.9rem",
+                }}
+              >
                 Username
               </Typography>
               <TextField
@@ -194,12 +216,12 @@ const Register = () => {
                     fontSize: "0.95rem",
                     height: 48,
                     mb: 2,
-                    "& input": { 
+                    "& input": {
                       color: "#2d3d2d",
                       "&::placeholder": {
                         color: "#8a8a8a",
                         fontStyle: "italic",
-                      }
+                      },
                     },
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
@@ -213,8 +235,16 @@ const Register = () => {
                   },
                 }}
               />
-              
-              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, mt: 2, fontSize: "0.9rem" }}>
+
+              <Typography
+                sx={{
+                  color: "#2d3d2d",
+                  fontWeight: 500,
+                  mb: 1,
+                  mt: 2,
+                  fontSize: "0.9rem",
+                }}
+              >
                 Email Address
               </Typography>
               <TextField
@@ -234,12 +264,12 @@ const Register = () => {
                     fontSize: "0.95rem",
                     height: 48,
                     mb: 2,
-                    "& input": { 
+                    "& input": {
                       color: "#2d3d2d",
                       "&::placeholder": {
                         color: "#8a8a8a",
                         fontStyle: "italic",
-                      }
+                      },
                     },
                     "& .MuiOutlinedInput-notchedOutline": {
                       border: "none",
@@ -253,10 +283,47 @@ const Register = () => {
                   },
                 }}
               />
-              
+
+              <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, mt: 2, fontSize: "0.9rem" }}>
+                Gender
+              </Typography>
+              <Select
+                fullWidth
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                sx={{
+                  background: "#e8e4dd",
+                  borderRadius: "25px",
+                  fontStyle: "italic",
+                  fontSize: "0.95rem",
+                  height: 48,
+                  mb: 2,
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    border: "none",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    border: "2px solid #8fa876",
+                  },
+                }}
+              >
+                <MenuItem value="male">Male</MenuItem>
+                <MenuItem value="female">Female</MenuItem>
+              </Select>
+
               <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, fontSize: "0.9rem" }}>
+                  <Typography
+                    sx={{
+                      color: "#2d3d2d",
+                      fontWeight: 500,
+                      mb: 1,
+                      fontSize: "0.9rem",
+                    }}
+                  >
                     Password
                   </Typography>
                   <TextField
@@ -275,12 +342,12 @@ const Register = () => {
                         fontStyle: "italic",
                         fontSize: "0.95rem",
                         height: 48,
-                        "& input": { 
+                        "& input": {
                           color: "#2d3d2d",
                           "&::placeholder": {
                             color: "#8a8a8a",
                             fontStyle: "italic",
-                          }
+                          },
                         },
                         "& .MuiOutlinedInput-notchedOutline": {
                           border: "none",
@@ -308,9 +375,16 @@ const Register = () => {
                     }}
                   />
                 </Box>
-                
+
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ color: "#2d3d2d", fontWeight: 500, mb: 1, fontSize: "0.9rem" }}>
+                  <Typography
+                    sx={{
+                      color: "#2d3d2d",
+                      fontWeight: 500,
+                      mb: 1,
+                      fontSize: "0.9rem",
+                    }}
+                  >
                     Confirm Password
                   </Typography>
                   <TextField
@@ -329,12 +403,12 @@ const Register = () => {
                         fontStyle: "italic",
                         fontSize: "0.95rem",
                         height: 48,
-                        "& input": { 
+                        "& input": {
                           color: "#2d3d2d",
                           "&::placeholder": {
                             color: "#8a8a8a",
                             fontStyle: "italic",
-                          }
+                          },
                         },
                         "& .MuiOutlinedInput-notchedOutline": {
                           border: "none",
@@ -363,7 +437,7 @@ const Register = () => {
                   />
                 </Box>
               </Box>
-              
+
               <Button
                 type="submit"
                 fullWidth
@@ -391,13 +465,15 @@ const Register = () => {
               >
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
-              
+
               <Box sx={{ textAlign: "center", mb: 2 }}>
-                <Typography sx={{ color: "#8a8a8a", fontSize: 14, fontStyle: "italic" }}>
+                <Typography
+                  sx={{ color: "#8a8a8a", fontSize: 14, fontStyle: "italic" }}
+                >
                   Or
                 </Typography>
               </Box>
-              
+
               <Button
                 fullWidth
                 component={Link}
@@ -427,6 +503,5 @@ const Register = () => {
     </>
   );
 };
-
 
 export default Register;

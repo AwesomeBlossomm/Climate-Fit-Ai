@@ -200,43 +200,43 @@ async def get_cart(current_user: str = Depends(verify_token)):
 async def update_cart_item(
     product_id: str, 
     update_data: CartItemUpdate, 
-    size: str = None, 
-    color: str = None,
+    old_size: str = None,
+    old_color: str = None,
     current_user: str = Depends(verify_token)
 ):
     """Update quantity, size, or color of a cart item"""
     try:
         cart = carts_collection.find_one({"username": current_user})
-        
         if not cart:
             raise HTTPException(status_code=404, detail="Cart not found")
-        
         items = cart.get("items", [])
         item_found = False
-        
+        item_index = -1
+
+        # Match by product_id and old_size/old_color if provided
         for i, item in enumerate(items):
-            if (item["product_id"] == product_id and 
-                item.get("size") == size and 
-                item.get("color") == color):
-                
-                # Update item
-                items[i]["quantity"] = update_data.quantity
-                items[i]["total_price"] = round(item["unit_price"] * update_data.quantity, 2)
-                
-                if update_data.size is not None:
-                    items[i]["size"] = update_data.size
-                if update_data.color is not None:
-                    items[i]["color"] = update_data.color
-                
-                item_found = True
-                break
-        
+            if item["product_id"] == product_id:
+                size_match = (old_size is None or item.get("size") == old_size)
+                color_match = (old_color is None or item.get("color") == old_color)
+                if size_match and color_match:
+                    item_index = i
+                    item_found = True
+                    break
+
         if not item_found:
             raise HTTPException(status_code=404, detail="Item not found in cart")
-        
+
+        # Update the item
+        if update_data.quantity is not None:
+            items[item_index]["quantity"] = update_data.quantity
+            items[item_index]["total_price"] = round(items[item_index]["unit_price"] * update_data.quantity, 2)
+        if update_data.size is not None:
+            items[item_index]["size"] = update_data.size
+        if update_data.color is not None:
+            items[item_index]["color"] = update_data.color
+
         # Calculate new totals
         cart_totals = calculate_cart_totals([CartItem(**item) for item in items])
-        
         # Update cart
         carts_collection.update_one(
             {"_id": cart["_id"]},
@@ -249,18 +249,16 @@ async def update_cart_item(
                 }
             }
         )
-        
         return {
             "message": "Cart item updated successfully",
-            "updated_item": items[i] if item_found else None,
+            "updated_item": items[item_index],
             "cart_summary": cart_totals
         }
-    
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update cart item: {str(e)}")
-
+    
 @router.delete("/cart/item/{product_id}")
 async def remove_cart_item(
     product_id: str, 
@@ -374,6 +372,11 @@ async def get_cart_item_count(current_user: str = Depends(verify_token)):
             return {"item_count": 0}
         
         total_items = sum(item["quantity"] for item in cart.get("items", []))
+        
+        return {"item_count": total_items}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch cart count: {str(e)}")
         
         return {"item_count": total_items}
     

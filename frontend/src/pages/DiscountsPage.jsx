@@ -7,233 +7,401 @@ import {
   Card,
   CardContent,
   Button,
-  AppBar,
-  Toolbar,
-  IconButton,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Paper,
   List,
   ListItem,
   ListItemText,
-  Divider,
   Snackbar,
   Alert,
   Tab,
   Tabs,
+  CircularProgress,
+  Badge,
+  Divider,
+  Pagination,
+  Stack,
 } from "@mui/material";
 import {
-  ArrowBack,
   LocalOffer,
   ContentCopy,
-  Add,
-  Edit,
-  Delete,
-  Percent,
   ShoppingCart,
+  LocalShipping,
+  CheckCircle,
+  Schedule,
+  CollectionsBookmark,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { discountAPI } from "../services/discountApi";
 
 const DiscountsPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
-  const [availableDiscounts, setAvailableDiscounts] = useState([]);
-  const [userDiscounts, setUserDiscounts] = useState([]);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newDiscount, setNewDiscount] = useState({
-    code: "",
-    description: "",
-    discount: "",
-    minPurchase: "",
-    validUntil: "",
+  const [voucherTypeTab, setVoucherTypeTab] = useState(0); // 0: clothes, 1: shipping
+  const [availableVouchers, setAvailableVouchers] = useState({
+    clothes_vouchers: [],
+    shipping_vouchers: [],
   });
+  const [myVouchers, setMyVouchers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [collectingAll, setCollectingAll] = useState(false);
+  
+  // Pagination states
+  const [clothesPage, setClothesPage] = useState(1);
+  const [shippingPage, setShippingPage] = useState(1);
+  const [myVouchersClothesPage, setMyVouchersClothesPage] = useState(1);
+  const [myVouchersShippingPage, setMyVouchersShippingPage] = useState(1);
+  
+  const ITEMS_PER_PAGE = 10; // 2 rows * 5 columns for clothes
+  const SHIPPING_ITEMS_PER_PAGE = 4; // 1 row * 4 columns for shipping
+  
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  const mockAvailableDiscounts = [
-    {
-      id: 1,
-      code: "SUMMER50",
-      title: "Summer Sale 2025",
-      description: "Get 50% off on all eco-friendly products",
-      discount: 50,
-      minPurchase: 50,
-      validUntil: "2025-08-31",
-      category: "Seasonal",
-      terms: "Valid on orders above $50. Cannot be combined with other offers.",
-      image: "/src/assets/landing-illustration.png",
-    },
-    {
-      id: 2,
-      code: "ECO33",
-      title: "Eco Warriors Special",
-      description: "33% off for environmental champions",
-      discount: 33,
-      minPurchase: 30,
-      validUntil: "2025-07-31",
-      category: "Special",
-      terms: "Valid for first-time eco product purchases.",
-    },
-    {
-      id: 3,
-      code: "SAVE20",
-      title: "Welcome Discount",
-      description: "20% off for new customers",
-      discount: 20,
-      minPurchase: 25,
-      validUntil: "2025-12-31",
-      category: "Welcome",
-      terms: "Valid for new customers only.",
-    },
-    {
-      id: 4,
-      code: "BULK15",
-      title: "Bulk Purchase",
-      description: "15% off on orders over $100",
-      discount: 15,
-      minPurchase: 100,
-      validUntil: "2025-09-30",
-      category: "Bulk",
-      terms: "Valid on orders above $100. Stackable with seasonal offers.",
-    },
-    {
-      id: 5,
-      code: "STUDENT25",
-      title: "Student Discount",
-      description: "25% off for students",
-      discount: 25,
-      minPurchase: 20,
-      validUntil: "2025-12-31",
-      category: "Student",
-      terms: "Valid student ID required. Verify at checkout.",
-    },
-  ];
-
-  const mockUserDiscounts = [
-    {
-      id: 1,
-      code: "LOYALTY10",
-      description: "Loyalty reward - 10% off",
-      discount: 10,
-      usedDate: null,
-      validUntil: "2025-08-15",
-      status: "active",
-    },
-    {
-      id: 2,
-      code: "BIRTHDAY30",
-      description: "Birthday special - 30% off",
-      discount: 30,
-      usedDate: "2025-06-15",
-      validUntil: "2025-07-15",
-      status: "used",
-    },
-  ];
-
   useEffect(() => {
-    setAvailableDiscounts(mockAvailableDiscounts);
-    setUserDiscounts(mockUserDiscounts);
+    fetchAvailableVouchers();
+    fetchMyVouchers();
   }, []);
+
+  const fetchAvailableVouchers = async () => {
+    try {
+      setLoading(true);
+      const response = await discountAPI.getAvailableVouchers();
+      setAvailableVouchers({
+        clothes_vouchers: response.clothes_vouchers || [],
+        shipping_vouchers: response.shipping_vouchers || [],
+      });
+    } catch (error) {
+      console.error("Error fetching available vouchers:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to load available vouchers.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMyVouchers = async () => {
+    try {
+      const response = await discountAPI.getMyDiscounts();
+      const transformedVouchers = response.discounts.map((voucher) => ({
+        id: voucher.discount_code,
+        code: voucher.discount_code,
+        description: voucher.description,
+        percentage: voucher.percentage,
+        collected_at: voucher.assigned_at,
+        is_used: voucher.is_used,
+        used_at: voucher.used_at,
+        expires_at: voucher.expires_at,
+        is_expired: voucher.is_expired,
+        voucher_type: voucher.voucher_type || "clothes",
+        notes: voucher.notes,
+      }));
+
+      setMyVouchers(transformedVouchers);
+    } catch (error) {
+      console.error("Error fetching my vouchers:", error);
+    }
+  };
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  const copyDiscountCode = (code) => {
+  const collectVoucher = async (voucherId) => {
+    try {
+      await discountAPI.collectVoucher({ voucher_id: voucherId });
+      setSnackbar({
+        open: true,
+        message: "Voucher collected successfully!",
+        severity: "success",
+      });
+
+      // Reset pagination to first page
+      setClothesPage(1);
+      setShippingPage(1);
+      setMyVouchersClothesPage(1);
+      setMyVouchersShippingPage(1);
+
+      // Refresh both lists
+      await fetchAvailableVouchers();
+      await fetchMyVouchers();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.detail || "Failed to collect voucher.",
+        severity: "error",
+      });
+    }
+  };
+
+  const collectAllVouchers = async () => {
+    try {
+      setCollectingAll(true);
+      const response = await discountAPI.collectAllVouchers();
+
+      setSnackbar({
+        open: true,
+        message: `Successfully collected ${response.collected_count} vouchers!`,
+        severity: "success",
+      });
+
+      // Reset pagination to first page
+      setClothesPage(1);
+      setShippingPage(1);
+      setMyVouchersClothesPage(1);
+      setMyVouchersShippingPage(1);
+
+      // Refresh both lists
+      await fetchAvailableVouchers();
+      await fetchMyVouchers();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message:
+          error.response?.data?.detail || "Failed to collect all vouchers.",
+        severity: "error",
+      });
+    } finally {
+      setCollectingAll(false);
+    }
+  };
+
+  const copyVoucherCode = (code) => {
     navigator.clipboard.writeText(code);
     setSnackbar({
       open: true,
-      message: `Discount code "${code}" copied to clipboard!`,
+      message: `Voucher code "${code}" copied to clipboard!`,
       severity: "success",
     });
   };
 
-  const claimDiscount = (discount) => {
-    // Simulate claiming a discount
-    const newUserDiscount = {
-      id: Date.now(),
-      code: discount.code,
-      description: discount.description,
-      discount: discount.discount,
-      usedDate: null,
-      validUntil: discount.validUntil,
-      status: "active",
-    };
-
-    setUserDiscounts([newUserDiscount, ...userDiscounts]);
-    setSnackbar({
-      open: true,
-      message: `Discount "${discount.code}" claimed successfully!`,
-      severity: "success",
-    });
+  // Pagination helper functions
+  const getPaginatedItems = (items, page, itemsPerPage = ITEMS_PER_PAGE) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return items.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  const createCustomDiscount = () => {
-    if (
-      !newDiscount.code ||
-      !newDiscount.description ||
-      !newDiscount.discount
-    ) {
-      setSnackbar({
-        open: true,
-        message: "Please fill in all required fields",
-        severity: "error",
-      });
-      return;
-    }
-
-    const customDiscount = {
-      id: Date.now(),
-      ...newDiscount,
-      usedDate: null,
-      status: "active",
-    };
-
-    setUserDiscounts([customDiscount, ...userDiscounts]);
-    setNewDiscount({
-      code: "",
-      description: "",
-      discount: "",
-      minPurchase: "",
-      validUntil: "",
-    });
-    setCreateDialogOpen(false);
-    setSnackbar({
-      open: true,
-      message: "Custom discount created successfully!",
-      severity: "success",
-    });
+  const getTotalPages = (items, itemsPerPage = ITEMS_PER_PAGE) => {
+    return Math.ceil(items.length / itemsPerPage);
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      Seasonal: "error",
-      Special: "warning",
-      Welcome: "success",
-      Bulk: "info",
-      Student: "secondary",
-    };
-    return colors[category] || "primary";
+  const getVoucherIcon = (type) => {
+    return type === "shipping" ? <LocalShipping /> : <LocalOffer />;
   };
 
-  const getStatusColor = (status) => {
-    return status === "active" ? "success" : "default";
+  const getVoucherColor = (type) => {
+    return type === "shipping" ? "info" : "primary";
   };
 
-  const isExpired = (validUntil) => {
-    return new Date(validUntil) < new Date();
-  };
+  const VoucherCard = ({
+    voucher,
+    showCollectButton = true,
+    isMyVoucher = false,
+  }) => (
+    <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+      <Card
+        elevation={3}
+        sx={{
+          height: "400px", // Fixed height for consistency
+          width: "100%", // Full width of grid item
+          borderRadius: 3,
+          opacity:
+            isMyVoucher && (voucher.is_used || voucher.is_expired) ? 0.7 : 1,
+          borderLeft: `4px solid ${
+            voucher.voucher_type === "shipping" ? "#4a5d3a" : "#4a5d3a"
+          }`,
+          boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)",
+          "&:hover": {
+            boxShadow: "0 8px 25px rgba(74, 93, 58, 0.2)",
+          },
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <CardContent sx={{ 
+          flex: 1, 
+          display: "flex", 
+          flexDirection: "column",
+          p: 2,
+          "&:last-child": { pb: 2 }
+        }}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="flex-start"
+            mb={2}
+          >
+            <Box display="flex" alignItems="center" gap={1}>
+              {getVoucherIcon(voucher.voucher_type)}
+              <Typography 
+                variant="h6" 
+                fontWeight="bold"
+                sx={{ 
+                  color: "#4a5d3a",
+                  fontSize: "1.1rem",
+                }}
+              >
+                {voucher.percentage}% OFF
+              </Typography>
+            </Box>
+            <Chip
+              label={
+                voucher.voucher_type === "shipping" ? "SHIPPING" : "CLOTHES"
+              }
+              size="small"
+              sx={{
+                backgroundColor: voucher.voucher_type === "shipping" ? "#4a5d3a" : "#8fa876",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "0.7rem",
+              }}
+            />
+          </Box>
+
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            {voucher.description}
+          </Typography>
+
+          {voucher.detailed_description && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {voucher.detailed_description}
+            </Typography>
+          )}
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" gutterBottom>
+              <strong>Code:</strong> {voucher.code}
+            </Typography>
+            {voucher.expires_at && (
+              <Typography variant="body2" gutterBottom>
+                <strong>Expires:</strong>{" "}
+                {new Date(voucher.expires_at).toLocaleDateString()}
+              </Typography>
+            )}
+            {isMyVoucher && voucher.collected_at && (
+              <Typography variant="body2" gutterBottom>
+                <strong>Collected:</strong>{" "}
+                {new Date(voucher.collected_at).toLocaleDateString()}
+              </Typography>
+            )}
+            {isMyVoucher && voucher.is_used && voucher.used_at && (
+              <Typography variant="body2" gutterBottom color="success.main">
+                <strong>Used:</strong>{" "}
+                {new Date(voucher.used_at).toLocaleDateString()}
+              </Typography>
+            )}
+          </Box>
+
+          {/* Status chips for my vouchers */}
+          {isMyVoucher && (
+            <Box display="flex" gap={1} mb={2}>
+              {voucher.is_used && (
+                <Chip 
+                  label="USED" 
+                  size="small" 
+                  sx={{
+                    backgroundColor: "#4a5d3a",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                  }}
+                />
+              )}
+              {voucher.is_expired && !voucher.is_used && (
+                <Chip 
+                  label="EXPIRED" 
+                  size="small" 
+                  sx={{
+                    backgroundColor: "#d32f2f",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                  }}
+                />
+              )}
+              {!voucher.is_used && !voucher.is_expired && (
+                <Chip 
+                  label="ACTIVE" 
+                  size="small" 
+                  sx={{
+                    backgroundColor: "#8fa876",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                  }}
+                />
+              )}
+            </Box>
+          )}
+
+          <Box display="flex" gap={1} sx={{ mt: "auto" }}>
+            {showCollectButton ? (
+              <Button
+                variant="contained"
+                fullWidth
+                startIcon={<CollectionsBookmark />}
+                onClick={() => collectVoucher(voucher._id)}
+                sx={{
+                  bgcolor: "#4a5d3a",
+                  borderRadius: "25px",
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                  "&:hover": { 
+                    bgcolor: "#3a4d2a",
+                    boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                  },
+                }}
+              >
+                Collect Voucher
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<ContentCopy />}
+                  onClick={() => copyVoucherCode(voucher.code)}
+                  disabled={
+                    isMyVoucher && (voucher.is_used || voucher.is_expired)
+                  }
+                  sx={{ 
+                    flex: 1,
+                    color: "#4a5d3a",
+                    borderColor: "#4a5d3a",
+                    borderRadius: "25px",
+                    px: 3,
+                    py: 1,
+                    fontWeight: 600,
+                    "&:hover": {
+                      backgroundColor: "rgba(74, 93, 58, 0.1)",
+                      borderColor: "#4a5d3a",
+                    },
+                    "&:disabled": {
+                      color: "#ccc",
+                      borderColor: "#ccc",
+                    },
+                  }}
+                >
+                  Copy Code
+                </Button>
+              </>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
 
   const TabPanel = ({ children, value, index }) => (
     <div hidden={value !== index}>
@@ -241,29 +409,141 @@ const DiscountsPage = () => {
     </div>
   );
 
+  const totalAvailable =
+    (availableVouchers.clothes_vouchers?.length || 0) +
+    (availableVouchers.shipping_vouchers?.length || 0);
+  const activeMyVouchers = myVouchers.filter(
+    (v) => !v.is_used && !v.is_expired
+  ).length;
+
   return (
-    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-      <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={() => navigate("/products")}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Discounts & Offers
-          </Typography>
-          <Button color="inherit" onClick={() => navigate("/products")}>
+    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f0f8f0", background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)" }}>
+      {/* Header with Home.jsx styling */}
+      <Box
+        component="header"
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        width="100%"
+        sx={{
+          px: 4,
+          py: 2,
+          backgroundColor: "#4a5d3a",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 1100,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+        }}
+      >
+        {/* Logo and Title */}
+        <Box display="flex" alignItems="center">
+          <Box
+            onClick={() => navigate("/products")}
+            display="flex"
+            alignItems="center"
+            sx={{
+              textDecoration: "none",
+              cursor: "pointer",
+              "&:hover": {
+                opacity: 0.9,
+              },
+              transition: "opacity 0.2s ease",
+            }}
+          >
+            <Box
+              component="img"
+              src="src/assets/ClimateFitLogo.png"
+              alt="Climate Fit Logo"
+              sx={{
+                width: "50px",
+                height: "30px",
+                objectFit: "cover",
+                mr: 2,
+              }}
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: "#ffffff",
+                fontSize: "1.2rem",
+              }}
+            >
+              CLIMATEFIT FASHION STORE
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Header Actions */}
+        <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            onClick={() => navigate("/products")}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
             Products
           </Button>
-          <Button color="inherit" onClick={() => navigate("/cart")}>
-            <ShoppingCart />
+          <Button
+            onClick={() => navigate("/cart")}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
+            <ShoppingCart sx={{ mr: 1 }} />
+            Cart
           </Button>
-          <Button color="inherit" onClick={handleLogout}>
+          <Button
+            onClick={handleLogout}
+            variant="contained"
+            sx={{
+              backgroundColor: "#8fa876",
+              color: "#ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "#7a956a",
+              },
+            }}
+          >
             Logout
           </Button>
-        </Toolbar>
-      </AppBar>
+        </Box>
+      </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: 4, pt: 12, mt: 8 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -272,357 +552,603 @@ const DiscountsPage = () => {
           <Typography
             variant="h4"
             gutterBottom
-            sx={{ fontWeight: "bold", color: "#2e7d32" }}
+            sx={{ fontWeight: 800, color: "#4a5d3a", fontSize: "2rem", letterSpacing: 1, mb: 1 }}
           >
-            💰 Discounts & Special Offers
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            Save money on your eco-friendly purchases with our exclusive
-            discounts and offers!
+            🎟️ Voucher Collection
           </Typography>
 
-          <Paper elevation={2} sx={{ borderRadius: 2 }}>
-            <Tabs
-              value={tabValue}
-              onChange={(e, newValue) => setTabValue(newValue)}
-              sx={{ borderBottom: 1, borderColor: "divider" }}
-            >
-              <Tab label="Available Discounts" />
-              <Tab label="My Discounts" />
-            </Tabs>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            Collect vouchers and save on your purchases! Get discounts on
+            clothes and shipping.
+          </Typography>
+
+          <Paper elevation={3} sx={{ borderRadius: 4, background: "#ffffff", boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)" }}>
+            <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
+              <Tabs
+                value={tabValue}
+                onChange={(e, newValue) => {
+                  setTabValue(newValue);
+                  // Reset pagination when switching main tabs
+                  setMyVouchersClothesPage(1);
+                  setMyVouchersShippingPage(1);
+                }}
+              >
+                <Tab
+                  label={
+                    <Badge badgeContent={totalAvailable} color="error">
+                      <span>Available Vouchers</span>
+                    </Badge>
+                  }
+                />
+                <Tab
+                  label={
+                    <Badge badgeContent={activeMyVouchers} color="primary">
+                      <span>My Vouchers</span>
+                    </Badge>
+                  }
+                />
+              </Tabs>
+            </Box>
 
             <TabPanel value={tabValue} index={0}>
-              <Grid container spacing={3}>
-                {availableDiscounts.map((discount) => (
-                  <Grid item xs={12} md={6} key={discount.id}>
-                    <motion.div
-                      whileHover={{ y: -4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Card
-                        elevation={3}
-                        sx={{ height: "100%", borderRadius: 2 }}
-                      >
-                        <CardContent>
-                          <Box
-                            display="flex"
-                            justifyContent="space-between"
-                            alignItems="flex-start"
-                            mb={2}
+              <Box sx={{ p: 3 }}>
+                {/* Nested tabs for voucher types */}
+                <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
+                  <Tabs
+                    value={voucherTypeTab}
+                    onChange={(e, v) => {
+                      setVoucherTypeTab(v);
+                      // Reset pagination when switching tabs
+                      setClothesPage(1);
+                      setShippingPage(1);
+                    }}
+                    aria-label="Voucher Type Tabs"
+                  >
+                    <Tab
+                      icon={<LocalOffer color="primary" />}
+                      iconPosition="start"
+                      label={`Clothes (${
+                        availableVouchers.clothes_vouchers?.length || 0
+                      })`}
+                      id="voucher-type-tab-0"
+                      aria-controls="voucher-type-panel-0"
+                    />
+                    <Tab
+                      icon={<LocalShipping color="info" />}
+                      iconPosition="start"
+                      label={`Shipping (${
+                        availableVouchers.shipping_vouchers?.length || 0
+                      })`}
+                      id="voucher-type-tab-1"
+                      aria-controls="voucher-type-panel-1"
+                    />
+                  </Tabs>
+                </Box>
+
+                <Box>
+                  {/* Clothes Vouchers Tab */}
+                  <div
+                    role="tabpanel"
+                    hidden={voucherTypeTab !== 0}
+                    id="voucher-type-panel-0"
+                    aria-labelledby="voucher-type-tab-0"
+                  >
+                    {voucherTypeTab === 0 && (
+                      <>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          mb={3}
+                        >
+                          <Typography variant="h6" fontWeight="bold">
+                            Clothes Vouchers (
+                            {availableVouchers.clothes_vouchers?.length || 0})
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            startIcon={<CollectionsBookmark />}
+                            onClick={collectAllVouchers}
+                            disabled={collectingAll || totalAvailable === 0}
+                            sx={{
+                              bgcolor: "#4a5d3a",
+                              borderRadius: "25px",
+                              px: 3,
+                              py: 1,
+                              fontWeight: 600,
+                              boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                              "&:hover": { 
+                                bgcolor: "#3a4d2a",
+                                boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                              },
+                            }}
                           >
-                            <Box>
-                              <Typography
-                                variant="h6"
-                                fontWeight="bold"
-                                gutterBottom
-                              >
-                                {discount.title}
-                              </Typography>
-                              <Chip
-                                label={discount.category}
-                                color={getCategoryColor(discount.category)}
-                                size="small"
-                                sx={{ mb: 1 }}
-                              />
-                            </Box>
-                            <Chip
-                              label={`${discount.discount}% OFF`}
-                              color="error"
-                              sx={{ fontWeight: "bold" }}
+                            {collectingAll ? (
+                              <>
+                                <CircularProgress
+                                  size={16}
+                                  color="inherit"
+                                  sx={{ mr: 1 }}
+                                />
+                                Collecting...
+                              </>
+                            ) : (
+                              "Collect All"
+                            )}
+                          </Button>
+                        </Box>
+                        {loading ? (
+                          <Box display="flex" justifyContent="center" p={4}>
+                            <CircularProgress />
+                          </Box>
+                        ) : availableVouchers.clothes_vouchers?.length === 0 ? (
+                          <Paper
+                            elevation={1}
+                            sx={{ p: 4, textAlign: "center" }}
+                          >
+                            <LocalOffer
+                              sx={{ fontSize: 60, color: "#bdbdbd", mb: 2 }}
                             />
-                          </Box>
-
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mb: 2 }}
-                          >
-                            {discount.description}
-                          </Typography>
-
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="body2" gutterBottom>
-                              <strong>Code:</strong> {discount.code}
+                            <Typography
+                              variant="h6"
+                              color="text.secondary"
+                              gutterBottom
+                            >
+                              No clothes vouchers available
                             </Typography>
-                            <Typography variant="body2" gutterBottom>
-                              <strong>Min. Purchase:</strong> $
-                              {discount.minPurchase}
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              mb={2}
+                            >
+                              All clothes vouchers have been collected or
+                              expired.
                             </Typography>
-                            <Typography variant="body2" gutterBottom>
-                              <strong>Valid Until:</strong>{" "}
-                              {new Date(
-                                discount.validUntil
-                              ).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ mb: 2, display: "block" }}
-                          >
-                            {discount.terms}
-                          </Typography>
-
-                          <Box display="flex" gap={1}>
                             <Button
                               variant="outlined"
-                              size="small"
-                              startIcon={<ContentCopy />}
-                              onClick={() => copyDiscountCode(discount.code)}
-                              sx={{ flexGrow: 1 }}
-                            >
-                              Copy Code
-                            </Button>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              startIcon={<LocalOffer />}
-                              onClick={() => claimDiscount(discount)}
-                              disabled={isExpired(discount.validUntil)}
-                              sx={{
-                                flexGrow: 1,
-                                bgcolor: "#2e7d32",
-                                "&:hover": { bgcolor: "#1b5e20" },
+                              onClick={() => navigate("/products")}
+                              sx={{ 
+                                mt: 1,
+                                color: "#4a5d3a",
+                                borderColor: "#4a5d3a",
+                                borderRadius: "25px",
+                                px: 3,
+                                py: 1,
+                                fontWeight: 600,
+                                "&:hover": {
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  borderColor: "#4a5d3a",
+                                },
                               }}
                             >
-                              {isExpired(discount.validUntil)
-                                ? "Expired"
-                                : "Claim"}
+                              Continue Shopping
                             </Button>
+                          </Paper>
+                        ) : (
+                          <>
+                            <Box display="flex" justifyContent="center" mb={4}>
+                              <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                                {getPaginatedItems(
+                                  availableVouchers.clothes_vouchers,
+                                  clothesPage
+                                ).map((voucher) => (
+                                  <Grid
+                                    item
+                                    xs={12}
+                                    sm={6}
+                                    md={2.4}
+                                    key={voucher._id}
+                                  >
+                                    <VoucherCard
+                                      voucher={voucher}
+                                      showCollectButton={true}
+                                    />
+                                  </Grid>
+                                ))}
+                              </Grid>
+                            </Box>
+                            
+                            {/* Pagination for Clothes Vouchers */}
+                            {getTotalPages(availableVouchers.clothes_vouchers) > 1 && (
+                              <Box display="flex" justifyContent="center" mt={3}>
+                                <Pagination
+                                  count={getTotalPages(availableVouchers.clothes_vouchers)}
+                                  page={clothesPage}
+                                  onChange={(e, page) => setClothesPage(page)}
+                                  color="primary"
+                                  size="large"
+                                  sx={{
+                                    '& .MuiPaginationItem-root': {
+                                      color: '#4a5d3a',
+                                      fontWeight: 600,
+                                      '&.Mui-selected': {
+                                        backgroundColor: '#4a5d3a',
+                                        color: '#ffffff',
+                                        '&:hover': {
+                                          backgroundColor: '#3a4d2a',
+                                        },
+                                      },
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                      },
+                                    },
+                                  }}
+                                />
+                              </Box>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {/* Shipping Vouchers Tab */}
+                  <div
+                    role="tabpanel"
+                    hidden={voucherTypeTab !== 1}
+                    id="voucher-type-panel-1"
+                    aria-labelledby="voucher-type-tab-1"
+                  >
+                    {voucherTypeTab === 1 && (
+                      <>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          mb={3}
+                        >
+                          <Typography variant="h6" fontWeight="bold">
+                            Shipping Vouchers (
+                            {availableVouchers.shipping_vouchers?.length || 0})
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            startIcon={<CollectionsBookmark />}
+                            onClick={collectAllVouchers}
+                            disabled={collectingAll || totalAvailable === 0}
+                            sx={{
+                              bgcolor: "#4a5d3a",
+                              borderRadius: "25px",
+                              px: 3,
+                              py: 1,
+                              fontWeight: 600,
+                              boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                              "&:hover": { 
+                                bgcolor: "#3a4d2a",
+                                boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                              },
+                            }}
+                          >
+                            {collectingAll ? (
+                              <>
+                                <CircularProgress
+                                  size={16}
+                                  color="inherit"
+                                  sx={{ mr: 1 }}
+                                />
+                                Collecting...
+                              </>
+                            ) : (
+                              "Collect All"
+                            )}
+                          </Button>
+                        </Box>
+                        {loading ? (
+                          <Box display="flex" justifyContent="center" p={4}>
+                            <CircularProgress />
                           </Box>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </Grid>
-                ))}
-              </Grid>
+                        ) : availableVouchers.shipping_vouchers?.length ===
+                          0 ? (
+                          <Paper
+                            elevation={1}
+                            sx={{ p: 4, textAlign: "center" }}
+                          >
+                            <LocalShipping
+                              sx={{ fontSize: 60, color: "#bdbdbd", mb: 2 }}
+                            />
+                            <Typography
+                              variant="h6"
+                              color="text.secondary"
+                              gutterBottom
+                            >
+                              No shipping vouchers available
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              mb={2}
+                            >
+                              All shipping vouchers have been collected or
+                              expired.
+                            </Typography>
+                            <Button
+                              variant="outlined"
+                              onClick={() => navigate("/products")}
+                              sx={{ 
+                                mt: 1,
+                                color: "#4a5d3a",
+                                borderColor: "#4a5d3a",
+                                borderRadius: "25px",
+                                px: 3,
+                                py: 1,
+                                fontWeight: 600,
+                                "&:hover": {
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  borderColor: "#4a5d3a",
+                                },
+                              }}
+                            >
+                              Continue Shopping
+                            </Button>
+                          </Paper>
+                        ) : (
+                          <>
+                            <Box display="flex" justifyContent="center" mb={4}>
+                              <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                                {getPaginatedItems(
+                                  availableVouchers.shipping_vouchers,
+                                  shippingPage,
+                                  SHIPPING_ITEMS_PER_PAGE
+                                ).map((voucher) => (
+                                  <Grid
+                                    item
+                                    xs={12}
+                                    sm={6}
+                                    md={3}
+                                    key={voucher._id}
+                                  >
+                                    <VoucherCard
+                                      voucher={voucher}
+                                      showCollectButton={true}
+                                    />
+                                  </Grid>
+                                ))}
+                              </Grid>
+                            </Box>
+                            
+                            {/* Pagination for Shipping Vouchers */}
+                            {getTotalPages(availableVouchers.shipping_vouchers, SHIPPING_ITEMS_PER_PAGE) > 1 && (
+                              <Box display="flex" justifyContent="center" mt={3}>
+                                <Pagination
+                                  count={getTotalPages(availableVouchers.shipping_vouchers, SHIPPING_ITEMS_PER_PAGE)}
+                                  page={shippingPage}
+                                  onChange={(e, page) => setShippingPage(page)}
+                                  color="primary"
+                                  size="large"
+                                  sx={{
+                                    '& .MuiPaginationItem-root': {
+                                      color: '#4a5d3a',
+                                      fontWeight: 600,
+                                      '&.Mui-selected': {
+                                        backgroundColor: '#4a5d3a',
+                                        color: '#ffffff',
+                                        '&:hover': {
+                                          backgroundColor: '#3a4d2a',
+                                        },
+                                      },
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                      },
+                                    },
+                                  }}
+                                />
+                              </Box>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </Box>
+              </Box>
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={3}
-              >
-                <Typography variant="h6" fontWeight="bold">
-                  Your Personal Discounts
+              <Box sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  My Collected Vouchers ({myVouchers.length})
                 </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  onClick={() => setCreateDialogOpen(true)}
-                  sx={{ bgcolor: "#2e7d32", "&:hover": { bgcolor: "#1b5e20" } }}
-                >
-                  Create Custom
-                </Button>
-              </Box>
 
-              {userDiscounts.length === 0 ? (
-                <Paper
-                  elevation={1}
-                  sx={{ p: 4, textAlign: "center", borderRadius: 2 }}
-                >
-                  <LocalOffer sx={{ fontSize: 60, color: "#bdbdbd", mb: 2 }} />
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    No personal discounts yet
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Claim discounts from the available offers or create custom
-                    ones!
-                  </Typography>
-                </Paper>
-              ) : (
-                <List>
-                  {userDiscounts.map((discount, index) => (
-                    <React.Fragment key={discount.id}>
-                      <ListItem
-                        sx={{
-                          border: 1,
-                          borderColor: "divider",
-                          borderRadius: 2,
-                          mb: 1,
-                          bgcolor:
-                            discount.status === "used"
-                              ? "grey.50"
-                              : "background.paper",
-                        }}
+                {myVouchers.length === 0 ? (
+                  <Paper elevation={1} sx={{ p: 4, textAlign: "center" }}>
+                    <CollectionsBookmark
+                      sx={{ fontSize: 60, color: "#bdbdbd", mb: 2 }}
+                    />
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      No vouchers collected yet
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" mb={2}>
+                      Go to Available Vouchers tab to start collecting!
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      onClick={() => setTabValue(0)}
+                      sx={{
+                        bgcolor: "#4a5d3a",
+                        borderRadius: "25px",
+                        px: 3,
+                        py: 1,
+                        fontWeight: 600,
+                        boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                        "&:hover": { 
+                          bgcolor: "#3a4d2a",
+                          boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                        },
+                      }}
+                    >
+                      Browse Vouchers
+                    </Button>
+                  </Paper>
+                ) : (
+                  <>
+                    {/* Clothes Vouchers Section */}
+                    <Box sx={{ mb: 4 }}>
+                      <Typography
+                        variant="h6"
+                        fontWeight="bold"
+                        gutterBottom
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
-                        <ListItemText
-                          primary={
-                            <Box display="flex" alignItems="center" gap={2}>
-                              <Typography variant="h6" fontWeight="bold">
-                                {discount.code}
-                              </Typography>
-                              <Chip
-                                label={`${discount.discount}% OFF`}
+                        <LocalOffer color="primary" />
+                        Clothes Vouchers (
+                        {
+                          myVouchers.filter((v) => v.voucher_type === "clothes")
+                            .length
+                        }
+                        )
+                      </Typography>
+                      <Divider sx={{ mb: 2 }} />
+                      {myVouchers.filter((v) => v.voucher_type === "clothes")
+                        .length === 0 ? (
+                        <Paper
+                          elevation={1}
+                          sx={{ p: 3, textAlign: "center", bgcolor: "#f9f9f9" }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            No clothes vouchers collected yet
+                          </Typography>
+                        </Paper>
+                      ) : (
+                        <>
+                          <Box display="flex" justifyContent="center" mb={4}>
+                            <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                              {getPaginatedItems(
+                                myVouchers.filter((v) => v.voucher_type === "clothes"),
+                                myVouchersClothesPage
+                              ).map((voucher) => (
+                                <Grid item xs={12} sm={6} md={2.4} key={voucher.id}>
+                                  <VoucherCard
+                                    voucher={voucher}
+                                    showCollectButton={false}
+                                    isMyVoucher={true}
+                                  />
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+                          
+                          {/* Pagination for My Clothes Vouchers */}
+                          {getTotalPages(myVouchers.filter((v) => v.voucher_type === "clothes")) > 1 && (
+                            <Box display="flex" justifyContent="center" mt={2}>
+                              <Pagination
+                                count={getTotalPages(myVouchers.filter((v) => v.voucher_type === "clothes"))}
+                                page={myVouchersClothesPage}
+                                onChange={(e, page) => setMyVouchersClothesPage(page)}
                                 color="primary"
-                                size="small"
-                              />
-                              <Chip
-                                label={discount.status.toUpperCase()}
-                                color={getStatusColor(discount.status)}
-                                size="small"
+                                size="medium"
+                                sx={{
+                                  '& .MuiPaginationItem-root': {
+                                    color: '#4a5d3a',
+                                    fontWeight: 600,
+                                    '&.Mui-selected': {
+                                      backgroundColor: '#4a5d3a',
+                                      color: '#ffffff',
+                                      '&:hover': {
+                                        backgroundColor: '#3a4d2a',
+                                      },
+                                    },
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                    },
+                                  },
+                                }}
                               />
                             </Box>
-                          }
-                          secondary={
-                            <Box sx={{ mt: 1 }}>
-                              <Typography variant="body2" gutterBottom>
-                                {discount.description}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                Valid until:{" "}
-                                {new Date(
-                                  discount.validUntil
-                                ).toLocaleDateString()}
-                                {discount.usedDate && (
-                                  <>
-                                    {" "}
-                                    • Used on:{" "}
-                                    {new Date(
-                                      discount.usedDate
-                                    ).toLocaleDateString()}
-                                  </>
-                                )}
-                              </Typography>
+                          )}
+                        </>
+                      )}
+                    </Box>
+
+                    {/* Shipping Vouchers Section */}
+                    <Box>
+                      <Typography
+                        variant="h6"
+                        fontWeight="bold"
+                        gutterBottom
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <LocalShipping color="info" />
+                        Shipping Vouchers (
+                        {
+                          myVouchers.filter(
+                            (v) => v.voucher_type === "shipping"
+                          ).length
+                        }
+                        )
+                      </Typography>
+                      <Divider sx={{ mb: 2 }} />
+                      {myVouchers.filter((v) => v.voucher_type === "shipping")
+                        .length === 0 ? (
+                        <Paper
+                          elevation={1}
+                          sx={{ p: 3, textAlign: "center", bgcolor: "#f9f9f9" }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            No shipping vouchers collected yet
+                          </Typography>
+                        </Paper>
+                      ) : (
+                        <>
+                          <Box display="flex" justifyContent="center" mb={4}>
+                            <Grid container spacing={3} sx={{ maxWidth: "1200px" }}>
+                              {getPaginatedItems(
+                                myVouchers.filter((v) => v.voucher_type === "shipping"),
+                                myVouchersShippingPage,
+                                SHIPPING_ITEMS_PER_PAGE
+                              ).map((voucher) => (
+                                <Grid item xs={12} sm={6} md={3} key={voucher.id}>
+                                  <VoucherCard
+                                    voucher={voucher}
+                                    showCollectButton={false}
+                                    isMyVoucher={true}
+                                  />
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Box>
+                          
+                          {/* Pagination for My Shipping Vouchers */}
+                          {getTotalPages(myVouchers.filter((v) => v.voucher_type === "shipping"), SHIPPING_ITEMS_PER_PAGE) > 1 && (
+                            <Box display="flex" justifyContent="center" mt={2}>
+                              <Pagination
+                                count={getTotalPages(myVouchers.filter((v) => v.voucher_type === "shipping"), SHIPPING_ITEMS_PER_PAGE)}
+                                page={myVouchersShippingPage}
+                                onChange={(e, page) => setMyVouchersShippingPage(page)}
+                                color="primary"
+                                size="medium"
+                                sx={{
+                                  '& .MuiPaginationItem-root': {
+                                    color: '#4a5d3a',
+                                    fontWeight: 600,
+                                    '&.Mui-selected': {
+                                      backgroundColor: '#4a5d3a',
+                                      color: '#ffffff',
+                                      '&:hover': {
+                                        backgroundColor: '#3a4d2a',
+                                      },
+                                    },
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(74, 93, 58, 0.1)',
+                                    },
+                                  },
+                                }}
+                              />
                             </Box>
-                          }
-                        />
-                        <Box display="flex" gap={1}>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<ContentCopy />}
-                            onClick={() => copyDiscountCode(discount.code)}
-                            disabled={
-                              discount.status === "used" ||
-                              isExpired(discount.validUntil)
-                            }
-                          >
-                            Copy
-                          </Button>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => navigate("/cart")}
-                            disabled={
-                              discount.status === "used" ||
-                              isExpired(discount.validUntil)
-                            }
-                            sx={{
-                              bgcolor: "#2e7d32",
-                              "&:hover": { bgcolor: "#1b5e20" },
-                            }}
-                          >
-                            Use Now
-                          </Button>
-                        </Box>
-                      </ListItem>
-                      {index < userDiscounts.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
+                          )}
+                        </>
+                      )}
+                    </Box>
+                  </>
+                )}
+              </Box>
             </TabPanel>
           </Paper>
         </motion.div>
       </Container>
 
-      {/* Create Custom Discount Dialog */}
-      <Dialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Create Custom Discount</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Discount Code"
-                fullWidth
-                value={newDiscount.code}
-                onChange={(e) =>
-                  setNewDiscount({ ...newDiscount, code: e.target.value })
-                }
-                placeholder="e.g., MYCODE20"
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Description"
-                fullWidth
-                multiline
-                rows={2}
-                value={newDiscount.description}
-                onChange={(e) =>
-                  setNewDiscount({
-                    ...newDiscount,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Describe your discount..."
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Discount Percentage"
-                type="number"
-                fullWidth
-                value={newDiscount.discount}
-                onChange={(e) =>
-                  setNewDiscount({ ...newDiscount, discount: e.target.value })
-                }
-                inputProps={{ min: 1, max: 100 }}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Minimum Purchase ($)"
-                type="number"
-                fullWidth
-                value={newDiscount.minPurchase}
-                onChange={(e) =>
-                  setNewDiscount({
-                    ...newDiscount,
-                    minPurchase: e.target.value,
-                  })
-                }
-                inputProps={{ min: 0 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Valid Until"
-                type="date"
-                fullWidth
-                value={newDiscount.validUntil}
-                onChange={(e) =>
-                  setNewDiscount({ ...newDiscount, validUntil: e.target.value })
-                }
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button onClick={createCustomDiscount} variant="contained">
-            Create Discount
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
@@ -634,4 +1160,7 @@ const DiscountsPage = () => {
   );
 };
 
+
+
 export default DiscountsPage;
+
