@@ -159,6 +159,27 @@ const Dashboard = () => {
         {/* Header Actions */}
         <Box display="flex" alignItems="center" gap={2}>
           <Button
+            onClick={() => navigate("/payment-manager")}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
+            Payment Manager
+          </Button>
+          <Button
             onClick={() => navigate("/products")}
             variant="outlined"
             sx={{

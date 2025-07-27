@@ -637,9 +637,6 @@ const AddressManagement = ({ onAddressSelect }) => {
 
   // Enhanced address selection handler
   const handleAddressSelection = (addressId) => {
-    console.log("=== ADDRESS SELECTION TRIGGERED ===");
-    console.log("Selected address ID:", addressId);
-
     setSelectedAddressId(addressId);
     const selectedAddress = savedAddresses.find(
       (addr) => addr._id === addressId

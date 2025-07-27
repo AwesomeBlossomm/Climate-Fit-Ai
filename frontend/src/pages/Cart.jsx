@@ -18,6 +18,7 @@ import {
 import { Delete } from "@mui/icons-material";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -25,6 +26,7 @@ const Cart = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [sizeUpdates, setSizeUpdates] = useState({});
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   const fetchCart = async () => {
     try {
@@ -208,6 +210,42 @@ const Cart = () => {
     }
   };
 
+  // Handler for proceeding with selected items
+  const handleProceedWithSelected = () => {
+    const selectedCartItems = cartItems.filter((item) =>
+      selectedItems.includes(item.product_id)
+    );
+
+    const subtotal = selectedCartItems.reduce(
+      (total, item) => total + item.unit_price * item.quantity,
+      0
+    );
+
+    // Pass product_id, size, color for deletion after payment
+    navigate("/payment", {
+      state: {
+        cartItems: selectedCartItems.map((item) => ({
+          id: item.product_id,
+          name: item.product_name,
+          price: item.unit_price,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+          image: item.image_url || "default-image-url",
+          // Add these for deletion
+          product_id: item.product_id,
+          size: item.size,
+          color: item.color,
+        })),
+        subtotal,
+        discount: 0,
+        total: subtotal,
+        appliedDiscount: null,
+        selectedItemIds: selectedItems,
+      },
+    });
+  };
+
   useEffect(() => {
     fetchCart();
   }, []);
@@ -385,6 +423,7 @@ const Cart = () => {
               fullWidth
               size="large"
               disabled={selectedItems.length === 0}
+              onClick={handleProceedWithSelected}
             >
               Proceed with Selected Items
             </Button>

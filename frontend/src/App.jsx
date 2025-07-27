@@ -12,7 +12,8 @@ import Register from "./components/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Cart from "./pages/Cart";
-import PaymentPage from "./pages/PaymentPage";
+import Payment from "./pages/Payment";
+import PaymentManager from "./pages/PaymentManager";
 import DiscountsPage from "./pages/DiscountsPage";
 import ProductDetail from "./pages/ProductDetail";
 import SellerProfile from "./pages/SellerProfile";
@@ -73,7 +74,15 @@ function App() {
                 path="/payment"
                 element={
                   <ProtectedRoute>
-                    <PaymentPage />
+                    <Payment />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-manager"
+                element={
+                  <ProtectedRoute>
+                    <PaymentManager />
                   </ProtectedRoute>
                 }
               />

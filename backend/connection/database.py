@@ -18,6 +18,7 @@ try:
     discounts_collection = db.discounts  # Added discounts collection
     payments_collection = db.payments  # Added payments collection
     carts_collection = db.carts  # Added carts collection
+    order_collection = db.orders  # Added orders collection
 except Exception as e:
     print(f"MongoDB connection failed: {e}")
     raise

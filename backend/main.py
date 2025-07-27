@@ -14,7 +14,7 @@ app = FastAPI(title="Climate Fit AI", description="Clothing recommendation API")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # Vite and React dev servers
+    allow_origins=[ "http://localhost:5173","http://localhost:8000","http://localhost:3000" ],  # Vite and React dev servers
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,43 +93,72 @@ async def serve_image_file(filename: str):
 # Include routers with error handling for missing modules
 try:
     from routes import auth
-    app.include_router(auth.router, prefix="/api/v1")
-except ImportError:
-    print("Warning: auth module not found, skipping auth routes")
+    app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+    print("✓ Auth router loaded successfully")
+except ImportError as e:
+    print(f"Warning: auth module not found, skipping auth routes: {e}")
 
 try:
     from routes import api
-    app.include_router(api.router, prefix="/api/v1")
-except ImportError:
-    print("Warning: api module not found, skipping api routes")
+    app.include_router(api.router, prefix="/api/v1", tags=["api"])
+    print("✓ API router loaded successfully")
+except ImportError as e:
+    print(f"Warning: api module not found, skipping api routes: {e}")
 
 try:
     from routes import discounts
-    app.include_router(discounts.router, prefix="/discounts")
-except ImportError:
-    print("Warning: discounts module not found, skipping discount routes")
+    app.include_router(discounts.router, prefix="/api/v1", tags=["discounts"])
+    print("✓ Discounts router loaded successfully")
+except ImportError as e:
+    print(f"Warning: discounts module not found, skipping discount routes: {e}")
 
 try:
-    from routes import payments
-    app.include_router(payments.router, prefix="/api")
-except ImportError:
-    print("Warning: payments module not found, skipping payment routes")
+    from routes.payments import router as payments_router
+    app.include_router(payments_router, prefix="/api/v1", tags=["payments"])
+    print("✓ Payments router loaded successfully")
+    print("  Available payment endpoints:")
+    print("    - GET /api/v1/payments/all-shipping-statuses")
+    print("    - GET /api/v1/debug/routes")
+    print("    - GET /api/v1/payment-status-overview")
+except ImportError as e:
+    print(f"Warning: payments module not found, skipping payments routes: {e}")
 
 try:
     from routes import cart
-    app.include_router(cart.router, prefix="/api")
-except ImportError:
-    print("Warning: cart module not found, skipping cart routes")
+    app.include_router(cart.router, prefix="/api/v1", tags=["cart"])
+    print("✓ Cart router loaded successfully")
+except ImportError as e:
+    print(f"Warning: cart module not found, skipping cart routes: {e}")
 
 @app.get("/")
 async def root():
-    return {"message": "ClimateAI Fashion API", "status": "running"}
+    return {"message": "ClimateAI Fashion API", "status": "running", "version": "1.0"}
 
 # Health check endpoint
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "Climate Fit AI API is running"}
 
+# Debug endpoint to list all routes
+@app.get("/api/v1/debug/all-routes")
+async def debug_all_routes():
+    """List all available routes for debugging"""
+    routes_info = []
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            routes_info.append({
+                "path": route.path,
+                "methods": list(route.methods),
+                "name": getattr(route, 'name', 'unnamed')
+            })
+    return {
+        "message": "All available routes",
+        "routes": routes_info,
+        "total_routes": len(routes_info)
+    }
+
 if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

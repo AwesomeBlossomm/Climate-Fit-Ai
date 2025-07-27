@@ -1,15 +1,23 @@
 from fastapi import APIRouter, HTTPException, Depends
-from connection.database import payments_collection, users_collection, discounts_collection
+from connection.database import payments_collection, users_collection, discounts_collection, order_collection
 from models.payment import (
     PaymentCreate, PaymentUpdate, Payment, PaymentResponse, 
-    PaymentStatus, PaymentMethod, Currency
+    PaymentStatus, PaymentMethod, Currency, ShippingStatus
 )
+import os
+from models.payment import ShippingStatus
 from routes.auth import verify_token, verify_admin
 from datetime import datetime
 from bson import ObjectId
 import uuid
 import random
 from typing import List, Dict, Any
+from fastapi import Body, Request
+from models.mongodb_models import MongoDBConnection, ProductModel
+import logging
+
+# Initialize MongoDB for product lookups
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -135,49 +143,57 @@ def simulate_payment_processing(payment_method: PaymentMethod):
 async def create_payment(payment_data: PaymentCreate, current_user: str = Depends(verify_token)):
     """Create a new payment transaction"""
     try:
-        # Get user information
+        print("Received payment data:", payment_data.dict())
+
+        # Step 1: Fetch user
         user = users_collection.find_one({"username": current_user})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        # Calculate amounts
+
+        # Step 2: Calculate subtotal
         subtotal = sum(item.total_price for item in payment_data.items)
-        
-        # Apply discount if provided
+
+        # Step 3: Apply discount(s)
         discount_amount = 0.0
-        discount_description = ""
-        discount_info = {}
-        if payment_data.discount_code:
-            discount_amount, discount_description, discount_info = await apply_discount_to_payment(
-                payment_data.discount_code, subtotal, current_user
-            )
-        
-        # Calculate tax and shipping
+        applied_codes = payment_data.discount_code or []
+        discount_infos = []
+        for code in applied_codes:
+            amt, desc, info = await apply_discount_to_payment(code, subtotal, current_user)
+            discount_amount += amt
+            discount_infos.append({
+                "code": code,
+                "amount": amt,
+                "description": desc,
+                "info": info
+            })
+
+        # Step 4: Calculate final amounts
         discounted_subtotal = subtotal - discount_amount
         tax_amount = calculate_tax(discounted_subtotal)
         shipping_amount = calculate_shipping(discounted_subtotal)
         total_amount = discounted_subtotal + tax_amount + shipping_amount
-        
-        # Generate payment ID
+
+        # Step 5: Generate payment ID
         payment_id = generate_payment_id()
-        
-        # Create payment document
+
+        # Step 6: Build document
         payment_doc = {
             "payment_id": payment_id,
             "user_id": str(user["_id"]),
             "username": current_user,
             "items": [item.dict() for item in payment_data.items],
             "subtotal": round(subtotal, 2),
-            "discount_amount": discount_amount,
-            "tax_amount": tax_amount,
-            "shipping_amount": shipping_amount,
+            "discount_amount": round(discount_amount, 2),
+            "tax_amount": round(tax_amount, 2),
+            "shipping_amount": round(shipping_amount, 2),
             "total_amount": round(total_amount, 2),
-            "currency": payment_data.currency,
-            "payment_method": payment_data.payment_method,
-            "payment_status": PaymentStatus.PENDING,
+            "currency": payment_data.currency.value,
+            "payment_method": payment_data.payment_method.value,
+            "payment_status": PaymentStatus.PENDING.value,
+            "shipping_status": ShippingStatus.NOT_SHIPPED.value,  # Ensure shipping status is set
             "billing_address": payment_data.billing_address.dict(),
-            "discount_code": payment_data.discount_code,
-            "discount_info": discount_info,  # Store discount type and details
+            "discount_code": applied_codes,
+            "discount_info": discount_infos,
             "created_at": datetime.utcnow(),
             "updated_at": None,
             "completed_at": None,
@@ -185,12 +201,13 @@ async def create_payment(payment_data: PaymentCreate, current_user: str = Depend
             "payment_details": {},
             "notes": payment_data.notes
         }
-        
-        # Insert payment
+
+        # Step 7: Insert into database
         result = payments_collection.insert_one(payment_doc)
         if not result.inserted_id:
             raise HTTPException(status_code=500, detail="Failed to create payment")
-        
+
+        # Step 8: Return response
         return PaymentResponse(
             payment_id=payment_id,
             status=PaymentStatus.PENDING,
@@ -198,9 +215,10 @@ async def create_payment(payment_data: PaymentCreate, current_user: str = Depend
             currency=payment_data.currency,
             payment_method=payment_data.payment_method,
             created_at=payment_doc["created_at"].isoformat(),
-            message="Payment created successfully"
+            message="Payment created successfully",
+            billing_address=payment_data.billing_address
         )
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -405,6 +423,48 @@ async def refund_payment(payment_id: str, admin_user: str = Depends(verify_admin
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to refund payment: {str(e)}")
 
+@router.put("/admin/update-payment-status/{payment_id}")
+async def admin_update_payment_status(
+    payment_id: str,
+    status: str,
+    admin_user: str = Depends(verify_admin)
+):
+    """Admin function to update payment status"""
+    try:
+        if status not in [s.value for s in PaymentStatus]:
+            raise HTTPException(status_code=400, detail="Invalid payment status")
+        result = payments_collection.update_one(
+            {"payment_id": payment_id},
+            {"$set": {"payment_status": status, "updated_at": datetime.utcnow()}}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        return {"message": "Payment status updated", "payment_id": payment_id, "new_status": status}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update payment status: {str(e)}")
+
+@router.put("/orders/update-status/{order_id}")
+async def update_order_status(
+    order_id: str,
+    status: ShippingStatus = Body(..., embed=True),
+    admin_user: str = Depends(verify_admin)
+):
+    """Update order status (admin only)"""
+    try:
+        result = order_collection.update_one(
+            {"order_id": order_id},
+            {"$set": {"order_status": status.value, "updated_at": datetime.utcnow()}}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return {"message": "Order status updated", "order_id": order_id, "new_status": status.value}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update order status: {str(e)}")
+
 @router.get("/payment-stats")
 async def get_payment_statistics(current_user: str = Depends(verify_token)):
     """Get payment statistics for the current user"""
@@ -429,3 +489,371 @@ async def get_payment_statistics(current_user: str = Depends(verify_token)):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch payment statistics: {str(e)}")
+
+@router.get("/payment-status-overview")
+async def get_payment_status_overview(
+    request: Request, 
+    current_user: str = Depends(verify_token)
+):
+    """Get overview of all payment statuses with product details and shipping status"""
+    try:
+        # Initialize MongoDB connection for product lookups
+        db_connection = MongoDBConnection()
+        
+        # Get all payments for the user
+        payments = list(payments_collection.find({"username": current_user}))
+        
+        # Initialize status overview with shipping status
+        status_overview = {
+            "PENDING": {"count": 0, "total_amount": 0.0, "payments": []},
+            "PROCESSING": {"count": 0, "total_amount": 0.0, "payments": []},
+            "COMPLETED": {"count": 0, "total_amount": 0.0, "payments": []},
+            "CANCELLED": {"count": 0, "total_amount": 0.0, "payments": []},
+            "REFUNDED": {"count": 0, "total_amount": 0.0, "payments": []},
+        }
+        
+        # Process each payment
+        for payment in payments:
+            status = payment["payment_status"].upper()
+            if status in status_overview:
+                # Fetch product details for each item
+                items_with_details = []
+                for item in payment.get("items", []):
+                    product_details = await get_product_details(item["product_id"], db_connection)
+                    
+                    item_with_details = {
+                        "product_id": item["product_id"],
+                        "product_name": product_details["name"],
+                        "product_image": process_product_image_url(product_details["image_path"], request),
+                        "quantity": item["quantity"],
+                        "unit_price": item["unit_price"],
+                        "total_price": item["total_price"]
+                    }
+                    items_with_details.append(item_with_details)
+                
+                # Ensure shipping status exists, default to not_shipped if missing
+                shipping_status = payment.get("shipping_status", ShippingStatus.NOT_SHIPPED.value)
+                
+                payment_info = {
+                    "payment_id": payment["payment_id"],
+                    "total_amount": payment["total_amount"],
+                    "created_at": payment["created_at"].isoformat(),
+                    "payment_method": payment["payment_method"],
+                    "payment_status": payment["payment_status"],
+                    "transaction_id": payment.get("transaction_id"),
+                    "items": items_with_details,
+                    "shipping_status": shipping_status,
+                    "billing_address": payment.get("billing_address", {}),
+                    "discount_amount": payment.get("discount_amount", 0.0),
+                    "tax_amount": payment.get("tax_amount", 0.0),
+                    "shipping_amount": payment.get("shipping_amount", 0.0)
+                }
+                
+                status_overview[status]["count"] += 1
+                status_overview[status]["total_amount"] += payment["total_amount"]
+                status_overview[status]["payments"].append(payment_info)
+        
+        # Round total amounts
+        for status in status_overview:
+            status_overview[status]["total_amount"] = round(status_overview[status]["total_amount"], 2)
+        
+        # Close database connection
+        db_connection.close()
+        
+        return {
+            "user": current_user,
+            "total_payments": len(payments),
+            "status_breakdown": status_overview,
+            "summary": {
+                "pending": status_overview["PENDING"]["count"],
+                "processing": status_overview["PROCESSING"]["count"],
+                "completed": status_overview["COMPLETED"]["count"],
+                "cancelled": status_overview["CANCELLED"]["count"],
+                "refunded": status_overview["REFUNDED"]["count"]
+            }
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in payment status overview: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch payment status overview: {str(e)}")
+
+@router.put("/admin/update-shipping-status/{payment_id}")
+async def update_shipping_status(
+    payment_id: str,
+    shipping_status: ShippingStatus,
+    admin_user: str = Depends(verify_admin)
+):
+    """Admin function to update shipping status"""
+    try:
+        # Update shipping status
+        result = payments_collection.update_one(
+            {"payment_id": payment_id},
+            {
+                "$set": {
+                    "shipping_status": shipping_status.value,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        
+        # Don't update payment status to SHIPPED since it doesn't exist
+        # The payment status should remain as COMPLETED when items are shipped
+        
+        return {
+            "message": "Shipping status updated successfully",
+            "payment_id": payment_id,
+            "shipping_status": shipping_status.value,
+            "updated_by": admin_user
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update shipping status: {str(e)}")
+
+@router.get("/debug/routes")
+async def debug_routes():
+    """Debug endpoint to check if payments router is working"""
+    return {"message": "Payments router is working", "available_routes": [
+        "/payments",
+        "/payments/{payment_id}",
+        "/payment-status-overview",
+        "/payments/all-shipping-statuses",
+        "/payments/shipping-status/{shipping_status}",
+        "/create-payment",
+        "/process-payment/{payment_id}"
+    ]}
+
+async def get_product_details(product_id: str, db_connection):
+    """Fetch product details including image, name, and price"""
+    try:
+        product_model = ProductModel(db_connection)
+        product = await product_model.get_product_by_id(product_id)
+        if product:
+            return {
+                "name": product.get("name", "Unknown Product"),
+                "image_path": product.get("image_path", ""),
+                "price_php": product.get("price_php", 0.0)
+            }
+    except Exception as e:
+        logger.error(f"Error fetching product details for {product_id}: {str(e)}")
+    
+    return {
+        "name": "Product Not Found",
+        "image_path": "",
+        "price_php": 0.0
+    }
+
+def process_product_image_url(image_path: str, request: Request) -> str:
+    """Process product image URL to serve from backend"""
+    if not image_path:
+        return "https://via.placeholder.com/300x400?text=Fashion+Item"
+    
+    if image_path.startswith(("http://", "https://")):
+        return image_path
+    
+    base_url = f"{request.url.scheme}://{request.url.netloc}"
+    filename = os.path.basename(image_path)
+    
+    if not filename:
+        return "https://via.placeholder.com/300x400?text=Fashion+Item"
+    
+    return f"{base_url}/api/v1/serve-image/{filename}"
+
+@router.get("/payments/shipping-status/{shipping_status}")
+async def get_payments_by_shipping_status_v2(
+    shipping_status: str,
+    request: Request,
+    current_user: str = Depends(verify_token)
+):
+    """Enhanced endpoint to get payments filtered by shipping status with product details"""
+    try:
+        # Validate shipping status
+        valid_statuses = [status.value for status in ShippingStatus]
+        if shipping_status not in valid_statuses:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid shipping status. Valid options: {valid_statuses}"
+            )
+        
+        # Initialize MongoDB connection for product lookups
+        db_connection = MongoDBConnection()
+        
+        # Query payments by shipping status for the current user
+        payments = list(payments_collection.find({
+            "username": current_user,
+            "shipping_status": shipping_status
+        }).sort("created_at", -1))
+        
+        # Process each payment to include product details
+        processed_payments = []
+        for payment in payments:
+            # Fetch product details for each item
+            items_with_details = []
+            for item in payment.get("items", []):
+                product_details = await get_product_details(item["product_id"], db_connection)
+                
+                item_with_details = {
+                    "product_id": item["product_id"],
+                    "product_name": product_details["name"],
+                    "product_image": process_product_image_url(product_details["image_path"], request),
+                    "quantity": item["quantity"],
+                    "unit_price": item["unit_price"],
+                    "total_price": item["total_price"]
+                }
+                items_with_details.append(item_with_details)
+            
+            # Serialize payment and add product details
+            serialized_payment = serialize_payment(payment.copy())
+            serialized_payment["items"] = items_with_details
+            processed_payments.append(serialized_payment)
+        
+        # Close database connection
+        db_connection.close()
+        
+        return {
+            "success": True,
+            "shipping_status": shipping_status,
+            "count": len(processed_payments),
+            "payments": processed_payments,
+            "user": current_user
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching payments by shipping status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch payments: {str(e)}")
+
+@router.get("/payments/all-shipping-statuses")
+async def get_all_shipping_status_payments(
+    request: Request,
+    current_user: str = Depends(verify_token)
+):
+    """Get all payments grouped by shipping status for the current user"""
+    try:
+        logger.info(f"Fetching all shipping status payments for user: {current_user}")
+        
+        # Initialize MongoDB connection for product lookups
+        try:
+            db_connection = MongoDBConnection()
+        except Exception as db_error:
+            logger.error(f"Failed to connect to database: {str(db_error)}")
+            raise HTTPException(status_code=500, detail="Database connection failed")
+        
+        shipping_data = {}
+        
+        # Fetch payments for each shipping status
+        for status in ShippingStatus:
+            try:
+                logger.info(f"Processing shipping status: {status.value}")
+                
+                # Find payments with specific shipping status, including null/missing values for not_shipped
+                if status == ShippingStatus.NOT_SHIPPED:
+                    query = {
+                        "username": current_user,
+                        "$or": [
+                            {"shipping_status": status.value},
+                            {"shipping_status": {"$exists": False}},
+                            {"shipping_status": None}
+                        ]
+                    }
+                else:
+                    query = {
+                        "username": current_user,
+                        "shipping_status": status.value
+                    }
+                
+                payments = list(payments_collection.find(query).sort("created_at", -1))
+                logger.info(f"Found {len(payments)} payments for status {status.value}")
+                
+                # Process each payment to include product details
+                processed_payments = []
+                for payment in payments:
+                    try:
+                        # Fetch product details for each item
+                        items_with_details = []
+                        for item in payment.get("items", []):
+                            try:
+                                product_details = await get_product_details(item["product_id"], db_connection)
+                                
+                                item_with_details = {
+                                    "product_id": item["product_id"],
+                                    "product_name": product_details["name"],
+                                    "product_image": process_product_image_url(product_details["image_path"], request),
+                                    "quantity": item["quantity"],
+                                    "unit_price": item["unit_price"],
+                                    "total_price": item["total_price"]
+                                }
+                                items_with_details.append(item_with_details)
+                            except Exception as item_error:
+                                logger.error(f"Error processing item {item.get('product_id')}: {str(item_error)}")
+                                # Add item with basic info if product details fail
+                                items_with_details.append({
+                                    "product_id": item.get("product_id", "unknown"),
+                                    "product_name": item.get("product_name", "Unknown Product"),
+                                    "product_image": "https://via.placeholder.com/300x400?text=Fashion+Item",
+                                    "quantity": item.get("quantity", 1),
+                                    "unit_price": item.get("unit_price", 0),
+                                    "total_price": item.get("total_price", 0)
+                                })
+                        
+                        # Serialize payment and add product details
+                        serialized_payment = serialize_payment(payment.copy())
+                        serialized_payment["items"] = items_with_details
+                        # Ensure shipping_status is set
+                        serialized_payment["shipping_status"] = payment.get("shipping_status", ShippingStatus.NOT_SHIPPED.value)
+                        processed_payments.append(serialized_payment)
+                        
+                    except Exception as payment_error:
+                        logger.error(f"Error processing payment {payment.get('payment_id')}: {str(payment_error)}")
+                        # Add payment with minimal info to avoid complete failure
+                        try:
+                            minimal_payment = serialize_payment(payment.copy())
+                            minimal_payment["items"] = []
+                            minimal_payment["shipping_status"] = payment.get("shipping_status", ShippingStatus.NOT_SHIPPED.value)
+                            processed_payments.append(minimal_payment)
+                        except:
+                            continue
+                
+                shipping_data[status.value] = {
+                    "count": len(processed_payments),
+                    "payments": processed_payments,
+                    "total_amount": round(sum(p.get("total_amount", 0) for p in processed_payments), 2)
+                }
+                
+            except Exception as e:
+                logger.error(f"Error fetching {status.value} payments: {str(e)}")
+                shipping_data[status.value] = {
+                    "count": 0,
+                    "payments": [],
+                    "total_amount": 0.0
+                }
+        
+        # Close database connection
+        try:
+            db_connection.close()
+        except Exception as close_error:
+            logger.warning(f"Error closing database connection: {str(close_error)}")
+        
+        total_payments = sum(data["count"] for data in shipping_data.values())
+        total_amount = round(sum(data["total_amount"] for data in shipping_data.values()), 2)
+        
+        logger.info(f"Successfully processed shipping data for {len(shipping_data)} statuses. Total: {total_payments} payments, Amount: {total_amount}")
+        
+        return {
+            "success": True,
+            "user": current_user,
+            "shipping_data": shipping_data,
+            "total_payments": total_payments,
+            "total_amount": total_amount
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching all shipping status payments: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch shipping payments: {str(e)}")

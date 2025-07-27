@@ -49,7 +49,7 @@ export const discountAPI = {
         total_amount: totalAmount,
       }),
     });
-
+    debugger;
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || "Failed to apply discount");
