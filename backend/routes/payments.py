@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from connection.database import payments_collection, users_collection, discounts_collection, order_collection
+from connection.database import payments_collection, users_collection, discounts_collection
 from models.payment import (
     PaymentCreate, PaymentUpdate, Payment, PaymentResponse, 
     PaymentStatus, PaymentMethod, Currency, ShippingStatus
@@ -424,46 +424,41 @@ async def refund_payment(payment_id: str, admin_user: str = Depends(verify_admin
         raise HTTPException(status_code=500, detail=f"Failed to refund payment: {str(e)}")
 
 @router.put("/admin/update-payment-status/{payment_id}")
-async def admin_update_payment_status(
-    payment_id: str,
-    status: str,
-    admin_user: str = Depends(verify_admin)
-):
-    """Admin function to update payment status"""
+async def update_payment_status(payment_id: str, payload: PaymentUpdate):
+    """
+    Update the payment status of a specific payment.
+    Admins can update the status, transaction ID, and payment details.
+    """
     try:
-        if status not in [s.value for s in PaymentStatus]:
-            raise HTTPException(status_code=400, detail="Invalid payment status")
+        # Validate the status field if provided
+        if payload.status and payload.status not in [s.value for s in PaymentStatus]:
+            raise HTTPException(status_code=400, detail="Invalid payment status.")
+
+        # Prepare the update data
+        update_data = {"updated_at": datetime.utcnow()}
+        if payload.status:
+            update_data["payment_status"] = payload.status
+        if payload.transaction_id:
+            update_data["transaction_id"] = payload.transaction_id
+        if payload.payment_details:
+            update_data["payment_details"] = payload.payment_details
+
+        # Update the payment in the database
         result = payments_collection.update_one(
             {"payment_id": payment_id},
-            {"$set": {"payment_status": status, "updated_at": datetime.utcnow()}}
+            {"$set": update_data}
         )
-        if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Payment not found")
-        return {"message": "Payment status updated", "payment_id": payment_id, "new_status": status}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update payment status: {str(e)}")
 
-@router.put("/orders/update-status/{order_id}")
-async def update_order_status(
-    order_id: str,
-    status: ShippingStatus = Body(..., embed=True),
-    admin_user: str = Depends(verify_admin)
-):
-    """Update order status (admin only)"""
-    try:
-        result = order_collection.update_one(
-            {"order_id": order_id},
-            {"$set": {"order_status": status.value, "updated_at": datetime.utcnow()}}
-        )
+        # Check if the update was successful
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Order not found")
-        return {"message": "Order status updated", "order_id": order_id, "new_status": status.value}
+            raise HTTPException(status_code=404, detail="Payment not found.")
+
+        return {"success": True, "message": "Payment updated successfully.", "payment_id": payment_id}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update order status: {str(e)}")
+        logger.error(f"Error updating payment: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update payment: {str(e)}")
 
 @router.get("/payment-stats")
 async def get_payment_statistics(current_user: str = Depends(verify_token)):
@@ -578,40 +573,38 @@ async def get_payment_status_overview(
         raise HTTPException(status_code=500, detail=f"Failed to fetch payment status overview: {str(e)}")
 
 @router.put("/admin/update-shipping-status/{payment_id}")
-async def update_shipping_status(
-    payment_id: str,
-    shipping_status: ShippingStatus,
-    admin_user: str = Depends(verify_admin)
-):
-    """Admin function to update shipping status"""
+async def update_shipping_status(payment_id: str, payload: dict = Body(...)):
+    """
+    Update the shipping status of a specific payment.
+    Admins can update the shipping status.
+    """
     try:
-        # Update shipping status
+        # Extract and validate the shipping_status field
+        shipping_status = payload.get("shipping_status")
+        if not shipping_status or shipping_status not in [s.value for s in ShippingStatus]:
+            raise HTTPException(status_code=400, detail="Invalid or missing shipping status.")
+
+        # Prepare the update data
+        update_data = {
+            "shipping_status": shipping_status,
+            "updated_at": datetime.utcnow()
+        }
+
+        # Update the shipping status in the database
         result = payments_collection.update_one(
             {"payment_id": payment_id},
-            {
-                "$set": {
-                    "shipping_status": shipping_status.value,
-                    "updated_at": datetime.utcnow()
-                }
-            }
+            {"$set": update_data}
         )
-        
+
+        # Check if the update was successful
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Payment not found")
-        
-        # Don't update payment status to SHIPPED since it doesn't exist
-        # The payment status should remain as COMPLETED when items are shipped
-        
-        return {
-            "message": "Shipping status updated successfully",
-            "payment_id": payment_id,
-            "shipping_status": shipping_status.value,
-            "updated_by": admin_user
-        }
-    
+            raise HTTPException(status_code=404, detail="Payment not found.")
+
+        return {"success": True, "message": "Shipping status updated successfully.", "payment_id": payment_id, "new_shipping_status": shipping_status}
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error updating shipping status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to update shipping status: {str(e)}")
 
 @router.get("/debug/routes")
@@ -857,3 +850,79 @@ async def get_all_shipping_status_payments(
     except Exception as e:
         logger.error(f"Error fetching all shipping status payments: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch shipping payments: {str(e)}")
+    
+@router.get("/admin/orders")
+async def get_orders():
+    """
+    Fetch all orders for the admin, including associated product details.
+    """
+    try:
+        db_connection = MongoDBConnection()
+        payments_collection = db_connection.db.payments
+        products_collection = db_connection.db.products
+
+        # Fetch all payments (orders)
+        orders = list(payments_collection.find())
+
+        # Enrich each order with product details
+        for order in orders:
+            order["_id"] = str(order["_id"])
+            order["products"] = []
+
+            # Fetch product details for each item in the order
+            for item in order.get("items", []):
+                product_id = item.get("product_id")
+                if not product_id:
+                    logger.warning(f"Missing product_id in order item: {item}")
+                    continue
+
+                try:
+                    product = products_collection.find_one({"_id": ObjectId(product_id)})
+                    if product:
+                        product["_id"] = str(product["_id"])
+                        order["products"].append(product)
+                    else:
+                        logger.warning(f"Product not found for product_id: {product_id}")
+                except Exception as e:
+                    logger.error(f"Error fetching product with product_id {product_id}: {str(e)}")
+
+        return {"success": True, "orders": orders}
+    except Exception as e:
+        logger.error(f"Error fetching orders: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@router.put("/admin/admin-update-payment-status/{payment_id}")
+async def update_payment_status(payment_id: str, payload: PaymentUpdate):
+    """
+    Update the payment status of a specific order.
+    """
+    try:
+        # Validate the status field
+        if not payload.status:
+            raise HTTPException(status_code=422, detail="Field 'status' is required.")
+
+        # Validate the status value
+        if payload.status not in [s.value for s in PaymentStatus]:
+            raise HTTPException(status_code=400, detail="Invalid payment status.")
+
+        # Connect to the database
+        db_connection = MongoDBConnection()
+        orders_collection = db_connection.db.payments
+
+        # Update the payment status in the database
+        result = orders_collection.update_one(
+            {"payment_id": payment_id},
+            {"$set": {"payment_status": payload.status, "updated_at": datetime.utcnow()}}
+        )
+
+        # Check if the update was successful
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Order not found.")
+
+        return {"success": True, "message": "Payment status updated successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating payment status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update payment status: {str(e)}")

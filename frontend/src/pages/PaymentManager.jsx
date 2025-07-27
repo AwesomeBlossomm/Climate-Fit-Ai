@@ -22,6 +22,10 @@ import {
   Card,
   CardContent,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { ArrowBack, Refresh } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -56,6 +60,7 @@ const PaymentManager = () => {
   const [error, setError] = useState(null);
   const [shippingDataLoaded, setShippingDataLoaded] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState(0); // 0 = Payment Status, 1 = Shipping Status
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
   const paymentStatuses = [
     { value: "pending", label: "Pending", color: "#ff9800" },
@@ -339,6 +344,14 @@ const PaymentManager = () => {
     navigate("/login");
   };
 
+  const handleRowClick = (payment) => {
+    setSelectedPayment(payment);
+  };
+
+  const closePaymentDetails = () => {
+    setSelectedPayment(null);
+  };
+
   const getFilteredPayments = () => {
     const currentStatus = paymentStatuses[activeTab].value;
     return Array.isArray(payments[currentStatus])
@@ -585,6 +598,7 @@ const PaymentManager = () => {
                               "&:hover": { bgcolor: "#f5f5f5" },
                               cursor: "pointer",
                             }}
+                            onClick={() => handleRowClick(payment)}
                           >
                             <TableCell>
                               <Typography
@@ -729,6 +743,44 @@ const PaymentManager = () => {
                 );
               })}
             </Grid>
+          )}
+
+          {/* Payment Details Dialog */}
+          {selectedPayment && (
+            <Dialog open={true} onClose={closePaymentDetails} maxWidth="md" fullWidth>
+              <DialogTitle>Payment Details</DialogTitle>
+              <DialogContent>
+                <Typography variant="h6">Payment ID: {selectedPayment.payment_id}</Typography>
+                <Typography>User ID: {selectedPayment.user_id}</Typography>
+                <Typography>Username: {selectedPayment.username}</Typography>
+                <Typography>Subtotal: {formatCurrency(selectedPayment.subtotal)}</Typography>
+                <Typography>Discount Amount: {formatCurrency(selectedPayment.discount_amount)}</Typography>
+                <Typography>Tax Amount: {formatCurrency(selectedPayment.tax_amount)}</Typography>
+                <Typography>Shipping Amount: {formatCurrency(selectedPayment.shipping_amount)}</Typography>
+                <Typography>Total Amount: {formatCurrency(selectedPayment.total_amount)}</Typography>
+                <Typography>Currency: {selectedPayment.currency}</Typography>
+                <Typography>Payment Method: {selectedPayment.payment_method}</Typography>
+                <Typography>Payment Status: {selectedPayment.payment_status}</Typography>
+                <Typography>Shipping Status: {selectedPayment.shipping_status}</Typography>
+                <Typography>Billing Address: {JSON.stringify(selectedPayment.billing_address)}</Typography>
+                <Typography>Transaction ID: {selectedPayment.transaction_id}</Typography>
+                <Typography>Discount Codes: {selectedPayment.discount_code?.join(", ")}</Typography>
+                <Typography>Created At: {formatDate(selectedPayment.created_at)}</Typography>
+                <Typography>Updated At: {selectedPayment.updated_at ? formatDate(selectedPayment.updated_at) : "N/A"}</Typography>
+                <Typography>Completed At: {selectedPayment.completed_at ? formatDate(selectedPayment.completed_at) : "N/A"}</Typography>
+                <Typography>Notes: {selectedPayment.notes || "N/A"}</Typography>
+                <Typography>Payment Details: {JSON.stringify(selectedPayment.payment_details)}</Typography>
+                <Typography>Items:</Typography>
+                <ul>
+                  {selectedPayment.items.map((item, index) => (
+                    <li key={index}>{JSON.stringify(item)}</li>
+                  ))}
+                </ul>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={closePaymentDetails} color="primary">Close</Button>
+              </DialogActions>
+            </Dialog>
           )}
         </motion.div>
       </Container>

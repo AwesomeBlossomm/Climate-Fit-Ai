@@ -8,6 +8,7 @@ import tempfile
 import logging
 from dotenv import load_dotenv
 import models.user as user_module
+from bson import ObjectId
 
 # Load environment variables
 load_dotenv()
@@ -1045,6 +1046,7 @@ async def get_users():
     except Exception as e:
         logger.error(f"Error fetching users: {str(e)}")
         return {"success": False, "error": str(e)}
+
 @router.put("/admin/users/{user_id}/is_active")
 async def update_user_is_active(user_id: str, payload: dict):
     """

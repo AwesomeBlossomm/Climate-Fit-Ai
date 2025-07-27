@@ -31,6 +31,7 @@ const AdminGraphs = () => {
   const { user, logout, token } = useAuth();
   const navigate = useNavigate();
   const [userSellerData, setUserSellerData] = useState({ users: [], sellers: [] });
+  const [salesData, setSalesData] = useState({ labels: [], datasets: [] });
 
   const handleLogout = () => {
     logout();
@@ -56,6 +57,32 @@ const AdminGraphs = () => {
     fetchUserSellerGrowth();
   }, []);
 
+  useEffect(() => {
+    const fetchMonthlySales = async () => {
+      try {
+        const response = await axios.get("http://localhost:8000/api/v1/analytics/monthly-sales");
+        const salesData = response.data.sales_data;
+
+        setSalesData({
+          labels: salesData.map((item) => item.month),
+          datasets: [
+            {
+              label: "Profit (in ₱)",
+              data: salesData.map((item) => item.profit),
+              backgroundColor: "rgba(54, 162, 235, 0.2)",
+              borderColor: "rgba(54, 162, 235, 1)",
+              borderWidth: 1,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Error fetching monthly sales data:", error);
+      }
+    };
+
+    fetchMonthlySales();
+  }, []);
+
   const chartData = {
     labels: userSellerData.labels,
     datasets: [
@@ -72,19 +99,6 @@ const AdminGraphs = () => {
         borderColor: "rgba(255, 99, 132, 1)",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
         tension: 0.4,
-      },
-    ],
-  };
-
-  const salesData = {
-    labels: ["January", "February", "March", "April", "May", "June"],
-    datasets: [
-      {
-        label: "Sales (in ₱)",
-        data: [500, 700, 400, 800, 600, 900],
-        backgroundColor: "rgba(54, 162, 235, 0.2)",
-        borderColor: "rgba(54, 162, 235, 1)",
-        borderWidth: 1,
       },
     ],
   };
