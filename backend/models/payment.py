@@ -4,13 +4,8 @@ from typing import Optional, List, Dict, Any
 from enum import Enum
 
 class PaymentMethod(str, Enum):
-    CREDIT_CARD = "credit_card"
-    DEBIT_CARD = "debit_card"
-    PAYPAL = "paypal"
-    STRIPE = "stripe"
     GCASH = "gcash"
     PAYMAYA = "paymaya"
-    BANK_TRANSFER = "bank_transfer"
     CASH_ON_DELIVERY = "cash_on_delivery"
 
 class PaymentStatus(str, Enum):
