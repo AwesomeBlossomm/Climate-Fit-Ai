@@ -17,6 +17,13 @@ import DiscountsPage from "./pages/DiscountsPage";
 import ProductDetail from "./pages/ProductDetail";
 import SellerProfile from "./pages/SellerProfile";
 import BodyScan from "./pages/BodyScan";
+// Importing the AdminD
+import AdminDashboard from "./admin/AdminDashboard";
+import AdminGraphs from "./admin/AdminGraphs";
+import UserTable from "./admin/UserTable";
+import ProductTable from "./admin/ProductTable";
+import SellerTable from "./admin/SellerTable";
+import OrdersTable from "./admin/OrdersTable";
 
 const theme = createTheme();
 
@@ -95,6 +102,54 @@ function App() {
               />
               <Route path="/products/:productId" element={<ProductDetail />} />
               <Route path="/seller/:sellerId" element={<SellerProfile />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                
+                    <AdminDashboard />
+                 
+                }
+              />
+              <Route
+                path="/admin/graphs"
+                element={
+                  
+                    <AdminGraphs />
+                  
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  
+                    <UserTable />
+                  
+                }
+              />
+              <Route
+                path="/admin/products"
+                element={
+                  
+                    <ProductTable />
+                  
+                }
+              />
+              <Route
+                path="/admin/sellers"
+                element={
+                  
+                    <SellerTable />
+                  
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  
+                    <OrdersTable />
+                  
+                }
+              />
             </Routes>
           </Router>
         </CartProvider>

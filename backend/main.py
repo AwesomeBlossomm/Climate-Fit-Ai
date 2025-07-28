@@ -14,7 +14,11 @@ app = FastAPI(title="Climate Fit AI", description="Clothing recommendation API")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # Vite and React dev servers
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://localhost:5173", 
+        "http://localhost:8000"
+    ],  # Vite and React dev servers
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -120,6 +124,9 @@ try:
     app.include_router(cart.router, prefix="/api")
 except ImportError:
     print("Warning: cart module not found, skipping cart routes")
+
+from routes.analytics import router as analytics_router
+app.include_router(analytics_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():

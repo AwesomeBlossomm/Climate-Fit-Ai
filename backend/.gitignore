@@ -1,2 +1,5 @@
 /routes/images/
 /__pycache__/
+/services/__pycache__/
+/routes/__pycache__/
+/models/__pycache__/

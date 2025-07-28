@@ -2,6 +2,14 @@ from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from enum import Enum
 import re
+from pymongo import MongoClient
+from bson import ObjectId
+import os
+from dotenv import load_dotenv
+import asyncio
+
+# Load environment variables
+load_dotenv()
 
 class UserRole(str, Enum):
     USER = "user"
@@ -65,3 +73,62 @@ class Address(BaseModel):
     contact_number: str
     recipient_name: str
     address_type: Optional[str] = "Home"  # Can be Home, Work, etc.
+
+class UserModel:
+    def __init__(self):
+        connection_string = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+        self.client = MongoClient(connection_string)
+        self.db = self.client.climateFitAi
+        self.users_collection = self.db.users
+
+    async def get_all_users(self, limit: int = 1000, offset: int = 0):
+        """
+        Fetch all users from the database with pagination.
+        """
+        def _convert_objectid_to_str(data):
+            if isinstance(data, list):
+                return [_convert_objectid_to_str(item) for item in data]
+            elif isinstance(data, dict):
+                return {key: _convert_objectid_to_str(value) for key, value in data.items()}
+            elif isinstance(data, ObjectId):
+                return str(data)
+            else:
+                return data
+
+        def _fetch_users():
+            users = list(self.users_collection.find().skip(offset).limit(limit))
+            return [_convert_objectid_to_str(user) for user in users]
+
+        return await asyncio.get_event_loop().run_in_executor(None, _fetch_users)
+
+    def update_is_active(self, user_id: str, is_active: bool):
+        """
+        Update the `is_active` status of a user using their ID.
+        """
+        try:
+            object_id = ObjectId(user_id)  # Convert the string ID to ObjectId
+        except Exception:
+            raise ValueError("Invalid user ID format.")
+
+        result = self.users_collection.update_one(
+            {"_id": object_id},
+            {"$set": {"is_active": is_active}}
+        )
+        if result.modified_count == 1:
+            return {"message": "User's is_active status updated successfully."}
+        raise ValueError("Failed to update user's is_active status or user not found.")
+
+    def close_connection(self):
+        self.client.close()
+
+# Example usage (for testing purposes only)
+if __name__ == "__main__":
+    import asyncio
+
+    async def main():
+        user_model = UserModel()
+        users = await user_model.get_all_users()
+        print(users)
+        user_model.close_connection()
+
+    asyncio.run(main())

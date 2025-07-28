@@ -142,6 +142,18 @@ class ProductModel:
             return products
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_all)
+    
+    async def get_all_products_admin(self, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
+        """
+        Get all products
+        """
+        def _get_all():
+            products = list(self.collection.find().skip(offset).limit(limit))
+            for product in products:
+                product["_id"] = str(product["_id"])
+            return products
+        
+        return await asyncio.get_event_loop().run_in_executor(None, _get_all)
 
     async def get_products_by_category_id(self, category_id: int, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
         """
@@ -821,6 +833,28 @@ class ProductModel:
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_products_by_seller)
 
+    async def find_products_by_season(self, season: str) -> List[Dict[str, Any]]:
+        """
+        Find products by season. Matches any product where the season field contains the given season.
+        """
+        def _find_products_by_season():
+            try:
+                # Use regex to match the season field case-insensitively
+                regex_pattern = f".*{season}.*"
+                query = {"season": {"$regex": regex_pattern, "$options": "i"}}
+                
+                # Fetch matching products
+                products = list(self.collection.find(query))
+                for product in products:
+                    product["_id"] = str(product["_id"])
+                
+                return products
+            except Exception as e:
+                logger.error(f"Error finding products by season: {str(e)}")
+                return []
+
+        return await asyncio.get_event_loop().run_in_executor(None, _find_products_by_season)
+    
 class SellerModel:
     def __init__(self, db_connection: MongoDBConnection):
         self.collection = db_connection.sellers_collection
@@ -886,6 +920,22 @@ class SellerModel:
                 raise Exception(f"Failed to update seller: {str(e)}")
         
         await asyncio.get_event_loop().run_in_executor(None, _update_seller)
+
+    async def get_all_sellers(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all sellers from the database.
+        """
+        def _get_all_sellers():
+            try:
+                sellers = list(self.collection.find())
+                for seller in sellers:
+                    seller["_id"] = str(seller["_id"])
+                return sellers
+            except Exception as e:
+                logger.error(f"Error retrieving sellers: {str(e)}")
+                return []
+
+        return await asyncio.get_event_loop().run_in_executor(None, _get_all_sellers)
 
 class CommentModel:
     def __init__(self, db_connection: MongoDBConnection):
@@ -1011,3 +1061,83 @@ class CommentModel:
                 return []
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_products_by_seller)
+
+# class UserModel:
+#     def __init__(self, db_connection: MongoDBConnection):
+#         self.collection = db_connection.users_collection
+#         self.db = db_connection.db
+
+#     async def get_all_users(self) -> List[Dict[str, Any]]:
+#         """
+#         Retrieve all users from the database.
+#         """
+#         def _get_all_users():
+#             try:
+#                 users = list(self.collection.find())
+#                 for user in users:
+#                     user ["_id"] = str(user["_id"])  # Convert ObjectId to string
+#                 return users
+#             except Exception as e:
+#                 logger.error(f"Error retrieving users: {str(e)}")
+#                 return []
+
+#         return await asyncio.get_event_loop().run_in_executor(None, _get_all_users)
+    
+#     async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+#         """
+#         Retrieve a user by their ID.
+#         """
+#         def _get_user():
+#             try:
+#                 user = self.collection.find_one({"_id": ObjectId(user_id)})
+#                 if user:
+#                     user["_id"] = str(user["_id"])  # Convert ObjectId to string
+#                 return user
+#             except Exception as e:
+#                 logger.error(f"Error retrieving user by ID: {str(e)}")
+#                 return None
+
+#         return await asyncio.get_event_loop().run_in_executor(None, _get_user)
+
+#     async def create_user(self, user_data: Dict[str, Any]) -> str:
+#         """
+#         Create a new user in the database.
+#         """
+#         def _create_user():
+#             try:
+#                 result = self.collection.insert_one(user_data)
+#                 logger.info(f"Created user with ID: {result.inserted_id}")
+#                 return str(result.inserted_id)
+#             except Exception as e:
+#                 logger.error(f"Error creating user: {str(e)}")
+#                 raise Exception(f"Failed to create user: {str(e)}")
+
+#         return await asyncio.get_event_loop().run_in_executor(None, _create_user)
+
+#     async def update_user(self, user_id: str, update_data: Dict[str, Any]) -> bool:
+#         """
+#         Update a user's information in the database.
+#         """
+#         def _update_user():
+#             try:
+#                 result = self.collection.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
+#                 return result.modified_count > 0
+#             except Exception as e:
+#                 logger.error(f"Error updating user: {str(e)}")
+#                 return False
+
+#         return await asyncio.get_event_loop().run_in_executor(None, _update_user)
+
+#     async def delete_user(self, user_id: str) -> bool:
+#         """
+#         Delete a user from the database.
+#         """
+#         def _delete_user():
+#             try:
+#                 result = self.collection.delete_one({"_id": ObjectId(user_id)})
+#                 return result.deleted_count > 0
+#             except Exception as e:
+#                 logger.error(f"Error deleting user: {str(e)}")
+#                 return False
+
+#         return await asyncio.get_event_loop().run_in_executor(None, _delete_user)

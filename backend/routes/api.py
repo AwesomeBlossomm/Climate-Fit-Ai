@@ -7,6 +7,7 @@ import os
 import tempfile
 import logging
 from dotenv import load_dotenv
+import models.user as user_module
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +30,7 @@ except ImportError:
         async def search_products(self, query: str, limit: int, offset: int): return []
         async def get_products_by_category(self, category: str, limit: int, offset: int): return []
         async def get_all_products(self, limit: int, offset: int): return []
+        async def get_all_products_unlimited(self): return []
         async def get_products_by_category_id(self, category_id: int, limit: int, offset: int): return []
         async def get_categories(self): return []
         async def create_product(self, product_data: dict, seller_id: str): return "placeholder_id"
@@ -37,6 +39,7 @@ except ImportError:
         async def get_all_products_with_sellers(self, limit: int, offset: int): return []
         async def get_all_products_with_sellers_unlimited(self): return []
         async def search_products_unlimited(self, query: str): return []
+        async def find_products_by_season(self, season: str,limit: int, offset: int): return []
         async def get_products_by_seller(self, seller_id: str, limit: int, offset: int): return []
         # Add missing filter methods as placeholders
         async def search_products_paginated_with_filters(self, query: str, limit: int, offset: int, filters: dict): return []
@@ -49,12 +52,18 @@ except ImportError:
         async def get_seller_by_id(self, seller_id: str): return None
         async def create_seller(self, seller_data: dict): return "placeholder_seller_id"
         async def update_seller_products(self, seller_id: str, category: str): pass
+        async def get_all_sellers(self, limit: int, offset: int): return []
+        
+    class UserModel:
+        async def get_all_users(self, limit: int, offset: int = 0): return []
+        async def update_is_active(self, username: str, is_active: bool): return {"message": "User's is_active status updated successfully."}
 
     class CommentModel:
         def __init__(self, db_connection): pass
         async def create_comment(self, comment_data: dict): return "placeholder_comment_id"
         async def get_comments_by_product(self, product_id: str, limit: int, offset: int): return []
 
+            
 try:
     from routes.auth import verify_token
 except ImportError:
@@ -1056,3 +1065,85 @@ async def get_seller_products(
     except Exception as e:
         logger.error(f"Error fetching seller products: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch seller products: {str(e)}")
+    
+@router.get("/products")
+async def find_products_by_season(season: str):
+    """
+    Fetch products based on the season category.
+    Returns all products where the season field contains the specified season.
+    Handles cases where season field contains multiple comma-separated values.
+    """
+    try:
+        if not season:
+            raise HTTPException(status_code=400, detail="Season is required")
+
+        # Clean and prepare the season input
+        season_clean = season.strip().lower()
+        
+        # Query products where the season field contains the requested season
+        products = await product_model.find_products_by_season(season_clean)
+
+        if not products:
+            return {"products": []}
+        
+        return {"products": products}
+    except Exception as e:
+        logger.error(f"Error fetching products for season {season}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Admin routes
+
+@router.get("/admin/sellers")
+async def get_sellers():
+    """
+    Fetch all sellers.
+    """
+    try:
+        db_connection = MongoDBConnection()  # Initialize the database connection
+        sellers = await SellerModel(db_connection).get_all_sellers()
+        return {"success": True, "sellers": sellers}
+    except Exception as e:
+        logger.error(f"Error fetching sellers: {str(e)}")
+        return {"success": False, "error": str(e)}
+    
+@router.get("/admin/users")
+async def get_users():
+    """
+    Fetch all users.
+    """
+    try:
+        user_model = user_module.UserModel()
+        users = await user_model.get_all_users()  # Removed db_connection
+        return {"success": True, "users": users}
+    except Exception as e:
+        logger.error(f"Error fetching users: {str(e)}")
+        return {"success": False, "error": str(e)}
+@router.put("/admin/users/{user_id}/is_active")
+async def update_user_is_active(user_id: str, payload: dict):
+    """
+    Update the is_active status of a user.
+    """
+    try:
+        is_active = payload.get("is_active")
+        if is_active is None:
+            raise ValueError("Missing 'is_active' in request body.")
+
+        user_model = user_module.UserModel()
+        result = user_model.update_is_active(user_id, is_active)
+        return result
+    except Exception as e:
+        logger.error(f"Error updating user is_active status: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@router.get("/admin/products")
+async def get_products():
+    """
+    Fetch all products.
+    """
+    try:
+        db_connection = MongoDBConnection() 
+        products = await ProductModel(db_connection).get_all_products_unlimited()
+        return {"success": True, "products": products}
+    except Exception as e:
+        logger.error(f"Error fetching products: {str(e)}")
+        return {"success": False, "error": str(e)}

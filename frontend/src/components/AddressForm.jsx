@@ -658,11 +658,21 @@ const AddressManagement = ({ onAddressSelect }) => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
+    <Box sx={{ 
+      maxWidth: 1400, 
+      mx: "auto", 
+      p: 3,
+      mt: 4,
+      backgroundColor: "transparent"
+    }}>
       {notification.show && (
         <Alert
           severity={notification.type}
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 3,
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)"
+          }}
           onClose={() =>
             setNotification({ show: false, message: "", type: "success" })
           }
@@ -674,24 +684,50 @@ const AddressManagement = ({ onAddressSelect }) => {
       <Typography
         variant="h4"
         gutterBottom
-        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        sx={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: 1,
+          fontWeight: 700,
+          color: "#4a5d3a",
+          fontSize: "2rem",
+          letterSpacing: 1,
+          mb: 4
+        }}
       >
-        <LocationOn color="primary" />
+        <LocationOn sx={{ color: "#4a5d3a", fontSize: "2rem" }} />
         Address Management
       </Typography>
 
       {/* Saved Addresses Section */}
-      <Card sx={{ mb: 3 }}>
+      <Card sx={{ 
+        mb: 3,
+        borderRadius: "20px",
+        background: "#ffffff",
+        boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
+        border: "none"
+      }}>
         <CardContent>
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              mb: 2,
+              mb: 3,
+              p: 3,
+              pb: 2
             }}
           >
-            <Typography variant="h6">Saved Addresses</Typography>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 700,
+                color: "#4a5d3a",
+                fontSize: "1.3rem"
+              }}
+            >
+              Saved Addresses
+            </Typography>
             <Button
               variant="contained"
               startIcon={<Add />}
@@ -699,6 +735,23 @@ const AddressManagement = ({ onAddressSelect }) => {
                 resetForm();
                 setEditingAddress(null);
                 setShowAddForm(true);
+              }}
+              sx={{
+                backgroundColor: "#4a5d3a",
+                color: "#ffffff",
+                borderRadius: "25px",
+                px: 4,
+                py: 1.5,
+                fontWeight: 600,
+                textTransform: "none",
+                fontSize: "0.9rem",
+                boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                "&:hover": {
+                  backgroundColor: "#3a4d2a",
+                  boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
+                  transform: "translateY(-1px)"
+                },
+                transition: "all 0.2s ease",
               }}
             >
               Add New Address
@@ -727,12 +780,15 @@ const AddressManagement = ({ onAddressSelect }) => {
                         position: "relative",
                         border:
                           selectedAddressId === address._id
-                            ? "2px solid #1976d2"
+                            ? "2px solid #4a5d3a"
                             : "1px solid #e0e0e0",
+                        borderRadius: "16px",
                         transition: "all 0.3s ease",
+                        background: selectedAddressId === address._id ? "rgba(74, 93, 58, 0.05)" : "#ffffff",
                         "&:hover": {
-                          boxShadow: 2,
-                          borderColor: "#1976d2",
+                          boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
+                          borderColor: "#4a5d3a",
+                          transform: "translateY(-2px)"
                         },
                       }}
                     >
@@ -746,8 +802,13 @@ const AddressManagement = ({ onAddressSelect }) => {
                         >
                           <Radio
                             value={address._id}
-                            sx={{ mt: -1 }}
-                            color="primary"
+                            sx={{ 
+                              mt: -1,
+                              color: "#4a5d3a",
+                              "&.Mui-checked": {
+                                color: "#4a5d3a"
+                              }
+                            }}
                           />
                           <Box sx={{ flex: 1 }}>
                             <Box
@@ -764,20 +825,25 @@ const AddressManagement = ({ onAddressSelect }) => {
                               {address.is_default && (
                                 <Chip
                                   label="Default"
-                                  color="primary"
                                   size="small"
-                                  sx={{ fontWeight: "bold" }}
+                                  sx={{ 
+                                    fontWeight: "bold",
+                                    backgroundColor: "#4a5d3a",
+                                    color: "#ffffff",
+                                    fontSize: "0.7rem"
+                                  }}
                                 />
                               )}
                               <Chip
                                 label={address.address_type || "Home"}
                                 variant="outlined"
                                 size="small"
-                                color={
-                                  address.address_type === "Work"
-                                    ? "secondary"
-                                    : "default"
-                                }
+                                sx={{
+                                  borderColor: address.address_type === "Work" ? "#8fa876" : "#4a5d3a",
+                                  color: address.address_type === "Work" ? "#8fa876" : "#4a5d3a",
+                                  fontSize: "0.7rem",
+                                  fontWeight: 500
+                                }}
                               />
                             </Box>
 
@@ -831,10 +897,11 @@ const AddressManagement = ({ onAddressSelect }) => {
                               <IconButton
                                 size="small"
                                 onClick={() => handleEdit(address)}
-                                color="primary"
                                 sx={{
+                                  color: "#4a5d3a",
                                   "&:hover": {
-                                    backgroundColor: "#e3f2fd",
+                                    backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                    color: "#3a4d2a"
                                   },
                                 }}
                               >
@@ -845,10 +912,11 @@ const AddressManagement = ({ onAddressSelect }) => {
                               <IconButton
                                 size="small"
                                 onClick={() => handleDelete(address._id)}
-                                color="error"
                                 sx={{
+                                  color: "#d32f2f",
                                   "&:hover": {
-                                    backgroundColor: "#ffebee",
+                                    backgroundColor: "rgba(211, 47, 47, 0.1)",
+                                    color: "#b71c1c"
                                   },
                                 }}
                               >
@@ -865,10 +933,15 @@ const AddressManagement = ({ onAddressSelect }) => {
                             sx={{
                               mt: 1,
                               textTransform: "none",
+                              color: "#4a5d3a",
+                              borderColor: "#4a5d3a",
+                              fontWeight: 500,
                               "&:hover": {
-                                backgroundColor: "#e8f5e8",
+                                backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                borderColor: "#3a4d2a"
                               },
                             }}
+                            variant="outlined"
                             startIcon={<LocationOn fontSize="small" />}
                           >
                             Set as Default
@@ -889,21 +962,50 @@ const AddressManagement = ({ onAddressSelect }) => {
         <Card
           sx={{
             mb: 3,
-            bgcolor: "linear-gradient(45deg, #f5f5f5 30%, #e8f5e8 90%)",
-            borderLeft: "4px solid #4caf50",
+            borderRadius: "20px",
+            background: "linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%)",
+            border: "2px solid #4a5d3a",
+            boxShadow: "0 10px 30px rgba(74, 93, 58, 0.2)",
+            position: "relative",
+            overflow: "hidden",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "4px",
+              background: "linear-gradient(90deg, #4a5d3a 0%, #8fa876 100%)"
+            }
           }}
         >
-          <CardContent>
+          <CardContent sx={{ pt: 3, px: 4, pb: 3 }}>
             <Typography
               variant="h6"
               gutterBottom
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 1,
+                gap: 1.5,
+                fontWeight: 700,
+                color: "#4a5d3a",
+                fontSize: "1.3rem",
+                mb: 3
               }}
             >
-              <LocationOn color="primary" />
+              <Box
+                sx={{
+                  backgroundColor: "#4a5d3a",
+                  borderRadius: "50%",
+                  width: 40,
+                  height: 40,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <LocationOn sx={{ color: "#ffffff", fontSize: "1.2rem" }} />
+              </Box>
               Selected Address for Weather & Delivery
             </Typography>
             {(() => {
@@ -911,35 +1013,143 @@ const AddressManagement = ({ onAddressSelect }) => {
                 (addr) => addr._id === selectedAddressId
               );
               return selected ? (
-                <Box>
+                <Box
+                  sx={{
+                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                    borderRadius: "16px",
+                    p: 3,
+                    border: "1px solid rgba(74, 93, 58, 0.2)",
+                    backdropFilter: "blur(10px)"
+                  }}
+                >
                   <Typography
-                    variant="subtitle1"
+                    variant="h6"
                     fontWeight="bold"
-                    color="primary"
+                    sx={{
+                      color: "#4a5d3a",
+                      mb: 2,
+                      fontSize: "1.1rem"
+                    }}
                   >
                     {selected.recipient_name}
                   </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    📍 {formatAddress(selected)}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    📞 {selected.contact_number}
-                  </Typography>
+                  
+                  <Box sx={{ mb: 2 }}>
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        mb: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        color: "#2c3e2c",
+                        fontWeight: 500
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: "#8fa876",
+                          borderRadius: "50%",
+                          width: 24,
+                          height: 24,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.8rem"
+                        }}
+                      >
+                        📍
+                      </Box>
+                      {formatAddress(selected)}
+                    </Typography>
+                    
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        mb: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        color: "#2c3e2c",
+                        fontWeight: 500
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: "#8fa876",
+                          borderRadius: "50%",
+                          width: 24,
+                          height: 24,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.8rem"
+                        }}
+                      >
+                        📞
+                      </Box>
+                      {selected.contact_number}
+                    </Typography>
+                    
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        color: "#2c3e2c",
+                        fontWeight: 500
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: "#8fa876",
+                          borderRadius: "50%",
+                          width: 24,
+                          height: 24,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.8rem"
+                        }}
+                      >
+                        📮
+                      </Box>
+                      {selected.postal_code}
+                    </Typography>
+                  </Box>
+                  
                   <Box
                     sx={{
                       display: "flex",
-                      gap: 1,
-                      mt: 1,
+                      gap: 1.5,
+                      mt: 2,
+                      flexWrap: "wrap"
                     }}
                   >
                     <Chip
                       label={selected.address_type || "Home"}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
+                      size="medium"
+                      sx={{
+                        backgroundColor: "#4a5d3a",
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        fontSize: "0.8rem",
+                        px: 1
+                      }}
                     />
                     {selected.is_default && (
-                      <Chip label="Default" size="small" color="success" />
+                      <Chip 
+                        label="✨ Default" 
+                        size="medium"
+                        sx={{
+                          backgroundColor: "#8fa876",
+                          color: "#ffffff",
+                          fontWeight: 600,
+                          fontSize: "0.8rem",
+                          px: 1
+                        }}
+                      />
                     )}
                   </Box>
                 </Box>
@@ -959,13 +1169,37 @@ const AddressManagement = ({ onAddressSelect }) => {
         }}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "20px",
+            background: "linear-gradient(135deg, #ffffff 0%, #f8fdf8 100%)",
+            boxShadow: "0 20px 40px rgba(74, 93, 58, 0.2)",
+            border: "1px solid rgba(74, 93, 58, 0.1)"
+          }
+        }}
       >
-        <DialogTitle>
-          {editingAddress ? "Edit Address" : "Add New Address"}
+        <DialogTitle
+          sx={{
+            background: "linear-gradient(135deg, #4a5d3a 0%, #5c7349 100%)",
+            color: "#ffffff",
+            fontWeight: 700,
+            fontSize: "1.3rem",
+            textAlign: "center",
+            py: 3,
+            borderRadius: "20px 20px 0 0"
+          }}
+        >
+          {editingAddress ? "✏️ Edit Address" : "📍 Add New Address"}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent
+          sx={{
+            background: "linear-gradient(135deg, #ffffff 0%, #f8fdf8 100%)",
+            px: 4,
+            py: 3
+          }}
+        >
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
               {/* Recipient Name */}
               <Grid item xs={12}>
                 <TextField
@@ -975,19 +1209,63 @@ const AddressManagement = ({ onAddressSelect }) => {
                   value={formData.recipient_name}
                   onChange={handleChange}
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#4a5d3a',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': {
+                        color: '#4a5d3a',
+                      },
+                    },
+                  }}
                 />
               </Grid>
 
               {/* Region Dropdown */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={8}>
                 <FormControl fullWidth>
-                  <InputLabel>Region</InputLabel>
+                  <InputLabel 
+                    sx={{ 
+                      color: '#4a5d3a', 
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': { color: '#4a5d3a' } 
+                    }}
+                  >
+                    Region
+                  </InputLabel>
                   <Select
                     name="region"
                     value={formData.region}
                     onChange={handleChange}
                     disabled={loadingStates.regions}
                     required
+                    sx={{
+                      borderRadius: '12px',
+                      minWidth: '300px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                    }}
                   >
                     {options.regions.map((r) => (
                       <MenuItem key={r.code} value={r.code}>
@@ -1001,15 +1279,37 @@ const AddressManagement = ({ onAddressSelect }) => {
 
               {/* Province Dropdown - only show if region is not NCR */}
               {!isNCR && (
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={8}>
                   <FormControl fullWidth>
-                    <InputLabel>Province</InputLabel>
+                    <InputLabel 
+                      sx={{ 
+                        color: '#4a5d3a', 
+                        fontWeight: 600,
+                        fontSize: '1rem',
+                        '&.Mui-focused': { color: '#4a5d3a' } 
+                      }}
+                    >
+                      Province
+                    </InputLabel>
                     <Select
                       name="province"
                       value={formData.province}
                       onChange={handleChange}
                       disabled={!formData.region || loadingStates.provinces}
                       required
+                      sx={{
+                        borderRadius: '12px',
+                        minWidth: '300px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(74, 93, 58, 0.3)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#4a5d3a',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#4a5d3a',
+                        },
+                      }}
                     >
                       {options.provinces.map((p) => (
                         <MenuItem key={p.code} value={p.code}>
@@ -1023,9 +1323,18 @@ const AddressManagement = ({ onAddressSelect }) => {
               )}
 
               {/* City Dropdown */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={8}>
                 <FormControl fullWidth>
-                  <InputLabel>City/Municipality</InputLabel>
+                  <InputLabel 
+                    sx={{ 
+                      color: '#4a5d3a', 
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': { color: '#4a5d3a' } 
+                    }}
+                  >
+                    City/Municipality
+                  </InputLabel>
                   <Select
                     name="city"
                     value={formData.city}
@@ -1036,6 +1345,19 @@ const AddressManagement = ({ onAddressSelect }) => {
                       (!isNCR && !formData.province)
                     }
                     required
+                    sx={{
+                      borderRadius: '12px',
+                      minWidth: '300px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                    }}
                   >
                     {options.cities.map((c) => (
                       <MenuItem key={c.code} value={c.code}>
@@ -1048,15 +1370,37 @@ const AddressManagement = ({ onAddressSelect }) => {
               </Grid>
 
               {/* Barangay Dropdown */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={8}>
                 <FormControl fullWidth>
-                  <InputLabel>Barangay</InputLabel>
+                  <InputLabel 
+                    sx={{ 
+                      color: '#4a5d3a', 
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': { color: '#4a5d3a' } 
+                    }}
+                  >
+                    Barangay
+                  </InputLabel>
                   <Select
                     name="barangay"
                     value={formData.barangay}
                     onChange={handleChange}
                     disabled={!formData.city || loadingStates.barangays}
                     required
+                    sx={{
+                      borderRadius: '12px',
+                      minWidth: '300px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                    }}
                   >
                     {options.barangays.map((b) => {
                       const displayName = b.name.match(/^\d+$/)
@@ -1083,6 +1427,28 @@ const AddressManagement = ({ onAddressSelect }) => {
                   value={formData.street}
                   onChange={handleChange}
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#4a5d3a',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': {
+                        color: '#4a5d3a',
+                      },
+                    },
+                  }}
                 />
               </Grid>
 
@@ -1095,6 +1461,28 @@ const AddressManagement = ({ onAddressSelect }) => {
                   value={formData.postal_code}
                   onChange={handleChange}
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#4a5d3a',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': {
+                        color: '#4a5d3a',
+                      },
+                    },
+                  }}
                 />
               </Grid>
 
@@ -1107,17 +1495,60 @@ const AddressManagement = ({ onAddressSelect }) => {
                   value={formData.contact_number}
                   onChange={handleChange}
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#4a5d3a',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#4a5d3a',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': {
+                        color: '#4a5d3a',
+                      },
+                    },
+                  }}
                 />
               </Grid>
 
               {/* Address Type */}
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
-                  <InputLabel>Address Type</InputLabel>
+                  <InputLabel 
+                    sx={{ 
+                      color: '#4a5d3a', 
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      '&.Mui-focused': { color: '#4a5d3a' } 
+                    }}
+                  >
+                    Address Type
+                  </InputLabel>
                   <Select
                     name="address_type"
                     value={formData.address_type}
                     onChange={handleChange}
+                    sx={{
+                      borderRadius: '12px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(74, 93, 58, 0.3)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#4a5d3a',
+                      },
+                    }}
                   >
                     <MenuItem value="Home">Home</MenuItem>
                     <MenuItem value="Work">Work</MenuItem>
@@ -1142,19 +1573,63 @@ const AddressManagement = ({ onAddressSelect }) => {
             </Grid>
           </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions
+          sx={{
+            background: "linear-gradient(135deg, #f8fdf8 0%, #ffffff 100%)",
+            px: 4,
+            py: 3,
+            gap: 2,
+            borderTop: "1px solid rgba(74, 93, 58, 0.1)"
+          }}
+        >
           <Button
             onClick={() => {
               setShowAddForm(false);
               setEditingAddress(null);
               resetForm();
             }}
+            variant="outlined"
+            sx={{
+              borderColor: "#4a5d3a",
+              color: "#4a5d3a",
+              borderRadius: "25px",
+              px: 4,
+              py: 1.5,
+              fontWeight: 600,
+              textTransform: "none",
+              "&:hover": {
+                backgroundColor: "rgba(74, 93, 58, 0.1)",
+                borderColor: "#3a4d2a"
+              }
+            }}
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={loading}>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
+            disabled={loading}
+            sx={{
+              backgroundColor: "#4a5d3a",
+              color: "#ffffff",
+              borderRadius: "25px",
+              px: 4,
+              py: 1.5,
+              fontWeight: 600,
+              textTransform: "none",
+              boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+              "&:hover": {
+                backgroundColor: "#3a4d2a",
+                boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)"
+              },
+              "&:disabled": {
+                backgroundColor: "#a0a0a0",
+                color: "#ffffff"
+              }
+            }}
+          >
             {loading ? (
-              <CircularProgress size={24} />
+              <CircularProgress size={24} sx={{ color: "#ffffff" }} />
             ) : editingAddress ? (
               "Update Address"
             ) : (
@@ -1168,3 +1643,8 @@ const AddressManagement = ({ onAddressSelect }) => {
 };
 
 export default AddressManagement;
+
+
+
+
+//AddressForm.jsx

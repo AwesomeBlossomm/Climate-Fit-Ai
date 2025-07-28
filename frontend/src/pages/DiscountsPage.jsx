@@ -55,7 +55,7 @@ const DiscountsPage = () => {
   const [myVouchersClothesPage, setMyVouchersClothesPage] = useState(1);
   const [myVouchersShippingPage, setMyVouchersShippingPage] = useState(1);
   
-  const ITEMS_PER_PAGE = 10; // 2 rows * 5 columns for clothes
+  const ITEMS_PER_PAGE = 8; // Exactly 2 rows * 4 columns for clothes vouchers
   const SHIPPING_ITEMS_PER_PAGE = 4; // 1 row * 4 columns for shipping
   
   const [snackbar, setSnackbar] = useState({
@@ -212,8 +212,11 @@ const DiscountsPage = () => {
       <Card
         elevation={3}
         sx={{
-          height: "400px", // Fixed height for consistency
+          height: "450px", // Increased fixed height for longer content
           width: "100%", // Full width of grid item
+          minWidth: "280px", // Minimum width to accommodate content
+          maxWidth: "320px", // Maximum width for consistency
+          margin: "0 auto", // Center the card in its grid item
           borderRadius: 3,
           opacity:
             isMyVoucher && (voucher.is_used || voucher.is_expired) ? 0.7 : 1,
@@ -232,8 +235,9 @@ const DiscountsPage = () => {
           flex: 1, 
           display: "flex", 
           flexDirection: "column",
-          p: 2,
-          "&:last-child": { pb: 2 }
+          p: 2.5,
+          "&:last-child": { pb: 2.5 },
+          minHeight: "400px", // Ensure consistent internal height
         }}>
           <Box
             display="flex"
@@ -268,34 +272,49 @@ const DiscountsPage = () => {
             />
           </Box>
 
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+          <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{
+            minHeight: "48px", // Reserve space for 2 lines of text
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            lineHeight: 1.2,
+          }}>
             {voucher.description}
           </Typography>
 
           {voucher.detailed_description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ 
+              mb: 2,
+              minHeight: "40px", // Reserve space for detailed description
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              lineHeight: 1.3,
+            }}>
               {voucher.detailed_description}
             </Typography>
           )}
 
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>
+          <Box sx={{ mb: 2, minHeight: "120px", display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography variant="body2" gutterBottom sx={{ fontSize: "0.875rem" }}>
               <strong>Code:</strong> {voucher.code}
             </Typography>
             {voucher.expires_at && (
-              <Typography variant="body2" gutterBottom>
+              <Typography variant="body2" gutterBottom sx={{ fontSize: "0.875rem" }}>
                 <strong>Expires:</strong>{" "}
                 {new Date(voucher.expires_at).toLocaleDateString()}
               </Typography>
             )}
             {isMyVoucher && voucher.collected_at && (
-              <Typography variant="body2" gutterBottom>
+              <Typography variant="body2" gutterBottom sx={{ fontSize: "0.875rem" }}>
                 <strong>Collected:</strong>{" "}
                 {new Date(voucher.collected_at).toLocaleDateString()}
               </Typography>
             )}
             {isMyVoucher && voucher.is_used && voucher.used_at && (
-              <Typography variant="body2" gutterBottom color="success.main">
+              <Typography variant="body2" gutterBottom color="success.main" sx={{ fontSize: "0.875rem" }}>
                 <strong>Used:</strong>{" "}
                 {new Date(voucher.used_at).toLocaleDateString()}
               </Typography>
@@ -304,7 +323,7 @@ const DiscountsPage = () => {
 
           {/* Status chips for my vouchers */}
           {isMyVoucher && (
-            <Box display="flex" gap={1} mb={2}>
+            <Box display="flex" gap={1} mb={2} sx={{ minHeight: "32px", alignItems: "flex-start" }}>
               {voucher.is_used && (
                 <Chip 
                   label="USED" 
@@ -344,7 +363,12 @@ const DiscountsPage = () => {
             </Box>
           )}
 
-          <Box display="flex" gap={1} sx={{ mt: "auto" }}>
+          {/* Spacer for non-myVoucher cards */}
+          {!isMyVoucher && (
+            <Box sx={{ minHeight: "32px", mb: 2 }} />
+          )}
+
+          <Box display="flex" gap={1} sx={{ mt: "auto", minHeight: "48px", alignItems: "flex-end" }}>
             {showCollectButton ? (
               <Button
                 variant="contained"
@@ -355,8 +379,10 @@ const DiscountsPage = () => {
                   bgcolor: "#4a5d3a",
                   borderRadius: "25px",
                   px: 3,
-                  py: 1,
+                  py: 1.2,
                   fontWeight: 600,
+                  fontSize: "0.875rem",
+                  minHeight: "44px",
                   boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
                   "&:hover": { 
                     bgcolor: "#3a4d2a",
@@ -381,8 +407,10 @@ const DiscountsPage = () => {
                     borderColor: "#4a5d3a",
                     borderRadius: "25px",
                     px: 3,
-                    py: 1,
+                    py: 1.2,
                     fontWeight: 600,
+                    fontSize: "0.875rem",
+                    minHeight: "44px",
                     "&:hover": {
                       backgroundColor: "rgba(74, 93, 58, 0.1)",
                       borderColor: "#4a5d3a",
@@ -736,7 +764,7 @@ const DiscountsPage = () => {
                                     item
                                     xs={12}
                                     sm={6}
-                                    md={2.4}
+                                    md={3}
                                     key={voucher._id}
                                   >
                                     <VoucherCard
@@ -1019,7 +1047,7 @@ const DiscountsPage = () => {
                                 myVouchers.filter((v) => v.voucher_type === "clothes"),
                                 myVouchersClothesPage
                               ).map((voucher) => (
-                                <Grid item xs={12} sm={6} md={2.4} key={voucher.id}>
+                                <Grid item xs={12} sm={6} md={3} key={voucher.id}>
                                   <VoucherCard
                                     voucher={voucher}
                                     showCollectButton={false}
