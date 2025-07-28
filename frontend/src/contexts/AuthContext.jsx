@@ -61,14 +61,15 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authAPI.login(credentials);
-      const { access_token, token_type } = response;
+      const { access_token, token_type, role } = response;
 
       if (!access_token) {
         throw new Error("No access token received");
       }
 
-      // Store token
+      // Store token and role
       localStorage.setItem("access_token", access_token);
+      localStorage.setItem("role", role); // Store role in localStorage
       setToken(access_token); // Set token in state
 
       // Get user profile
@@ -120,6 +121,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null); // Clear token from state
     localStorage.removeItem("access_token");
     localStorage.removeItem("user");
+    localStorage.removeItem("role"); // Remove role from localStorage
   };
 
   const value = {

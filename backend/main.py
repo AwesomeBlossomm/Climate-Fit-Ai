@@ -97,46 +97,70 @@ async def serve_image_file(filename: str):
 # Include routers with error handling for missing modules
 try:
     from routes import auth
-    app.include_router(auth.router, prefix="/api/v1")
-except ImportError:
-    print("Warning: auth module not found, skipping auth routes")
+    app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+except ImportError as e:
+    print(f"Warning: auth module not found, skipping auth routes: {e}")
 
 try:
     from routes import api
-    app.include_router(api.router, prefix="/api/v1")
-except ImportError:
-    print("Warning: api module not found, skipping api routes")
+    app.include_router(api.router, prefix="/api/v1", tags=["api"])
+except ImportError as e:
+    print(f"Warning: api module not found, skipping api routes: {e}")
 
 try:
     from routes import discounts
-    app.include_router(discounts.router, prefix="/discounts")
-except ImportError:
-    print("Warning: discounts module not found, skipping discount routes")
+    app.include_router(discounts.router, prefix="/discounts", tags=["discounts"])
+    print("✓ Discounts router loaded successfully")
+except ImportError as e:
+    print(f"Warning: discounts module not found, skipping discount routes: {e}")
 
 try:
-    from routes import payments
-    app.include_router(payments.router, prefix="/api")
-except ImportError:
-    print("Warning: payments module not found, skipping payment routes")
+    from routes.payments import router as payments_router
+    app.include_router(payments_router, prefix="/api/v1", tags=["payments"])
+except ImportError as e:
+    print(f"Warning: payments module not found, skipping payments routes: {e}")
 
 try:
     from routes import cart
-    app.include_router(cart.router, prefix="/api")
-except ImportError:
-    print("Warning: cart module not found, skipping cart routes")
+    app.include_router(cart.router, prefix="/api", tags=["cart"])
+except ImportError as e:
+    print(f"Warning: cart module not found, skipping cart routes: {e}")
+
+from routes.analytics import router as analytics_router
+app.include_router(analytics_router, prefix="/api/v1")
 
 from routes.analytics import router as analytics_router
 app.include_router(analytics_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"message": "ClimateAI Fashion API", "status": "running"}
+    return {"message": "ClimateAI Fashion API", "status": "running", "version": "1.0"}
 
 # Health check endpoint
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "Climate Fit AI API is running"}
 
+# Debug endpoint to list all routes
+@app.get("/api/v1/debug/all-routes")
+async def debug_all_routes():
+    """List all available routes for debugging"""
+    routes_info = []
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            routes_info.append({
+                "path": route.path,
+                "methods": list(route.methods),
+                "name": getattr(route, 'name', 'unnamed')
+            })
+    return {
+        "message": "All available routes",
+        "routes": routes_info,
+        "total_routes": len(routes_info)
+    }
+
 if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,40 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Typography, 
-  Button, 
-  MenuItem, 
-  Select,
-  Box,
-  Chip,
-  Avatar,
-  IconButton
-} from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, AppBar, Toolbar, Typography, Button, MenuItem, Select } from "@mui/material";
 import { Link } from "react-router-dom";
-import { 
-  Receipt,
-  Payment,
-  Person,
-  AttachMoney,
-  Check,
-  Close,
-  Pending,
-  Cancel,
-  Dashboard as DashboardIcon,
-  People,
-  Store,
-  ShoppingBag,
-  BarChart,
-  Save
-} from "@mui/icons-material";
-import { motion } from "framer-motion";
+import axios from "axios";
+import { styled } from "@mui/material/styles";
 
 const handleLogout = () => {
   localStorage.removeItem("access_token");
@@ -43,27 +12,40 @@ const handleLogout = () => {
   window.location.href = "/login";
 };
 
-const mockOrders = [
-  {
-    transaction_id: "PAY12345",
-    payment_id: "PAY12345",
-    username: "john_doe",
-    total_amount: 150.75,
-    currency: "USD",
-    payment_status: "completed",
+const StyledTableCell = styled(TableCell)(({ theme }) => ({
+  fontWeight: "bold",
+  backgroundColor: theme.palette.grey[200],
+  textAlign: "center",
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  backgroundColor: theme.palette.success.main,
+  color: "white",
+  "&:hover": {
+    backgroundColor: theme.palette.success.dark,
   },
-  {
-    transaction_id: "PAY12345",
-    payment_id: "PAY67890",
-    username: "jane_smith",
-    total_amount: 89.99,
-    currency: "USD",
-    payment_status: "pending",
-  },
-];
+  margin: theme.spacing(0.5),
+}));
 
 const OrdersTable = () => {
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await axios.get("http://localhost:8000/api/v1/admin/orders");
+        setOrders(response.data.orders);
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to fetch orders.");
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   const handleStatusChange = (event, paymentId) => {
     const newStatus = event.target.value;
@@ -74,717 +56,151 @@ const OrdersTable = () => {
     );
   };
 
-  const saveStatus = (paymentId) => {
+  const saveStatus = async (paymentId) => {
     const updatedOrder = orders.find((order) => order.payment_id === paymentId);
-    console.log("Saving status for order:", updatedOrder);
-    // Add API call here to save the updated status to the backend
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "completed":
-        return { bg: "rgba(76, 175, 80, 0.2)", color: "#4caf50", icon: <Check sx={{ fontSize: 16 }} /> };
-      case "pending":
-        return { bg: "rgba(255, 193, 7, 0.2)", color: "#ff9800", icon: <Pending sx={{ fontSize: 16 }} /> };
-      case "failed":
-        return { bg: "rgba(244, 67, 54, 0.2)", color: "#f44336", icon: <Close sx={{ fontSize: 16 }} /> };
-      case "cancelled":
-        return { bg: "rgba(158, 158, 158, 0.2)", color: "#9e9e9e", icon: <Cancel sx={{ fontSize: 16 }} /> };
-      default:
-        return { bg: "rgba(158, 158, 158, 0.2)", color: "#9e9e9e", icon: <Pending sx={{ fontSize: 16 }} /> };
+    try {
+      await axios.put(`http://localhost:8000/api/v1/admin/update-payment-status/${paymentId}`, {
+        status: updatedOrder.payment_status,
+      });
+      alert("Status updated successfully.");
+    } catch (err) {
+      alert("Failed to update status.");
     }
   };
 
-  const getTotalRevenue = () => {
-    return orders
-      .filter(order => order.payment_status === "completed")
-      .reduce((sum, order) => sum + order.total_amount, 0);
+  const handleShippingStatusChange = (event, paymentId) => {
+    const newShippingStatus = event.target.value;
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.payment_id === paymentId ? { ...order, shipping_status: newShippingStatus } : order
+      )
+    );
   };
 
-  const getPendingCount = () => {
-    return orders.filter(order => order.payment_status === "pending").length;
+  const saveShippingStatus = async (paymentId) => {
+    const updatedOrder = orders.find((order) => order.payment_id === paymentId);
+    try {
+      await axios.put(`http://localhost:8000/api/v1/admin/update-shipping-status/${paymentId}`, {
+        shipping_status: updatedOrder.shipping_status,
+      });
+      alert("Shipping status updated successfully.");
+    } catch (err) {
+      alert("Failed to update shipping status.");
+    }
   };
+
+  if (loading) return <p>Loading orders...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
     <>
-      {/* Fixed Header */}
-      <Box
-        component="header"
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        width="100%"
-        sx={{
-          px: 4,
-          py: 2,
-          backgroundColor: "#4a5d3a", // Dark green matching Dashboard.jsx
-          position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: 1100,
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-        }}
-      >
-        {/* Logo and Title */}
-        <Box display="flex" alignItems="center">
-          <Box
-            display="flex"
-            alignItems="center"
-            sx={{
-              textDecoration: "none",
-              cursor: "pointer",
-              "&:hover": {
-                opacity: 0.9,
-              },
-              transition: "opacity 0.2s ease",
-            }}
-          >
-            <Box
-              component="img"
-              src="/src/assets/ClimateFitLogo.png"
-              alt="Climate Fit Logo"
-              sx={{
-                width: "50px",
-                height: "30px",
-                objectFit: "cover",
-                mr: 2,
-              }}
-            />
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                color: "#ffffff",
-                fontSize: "1.2rem",
-              }}
-            >
-              ADMIN - ORDER MANAGEMENT
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Header Navigation */}
-        <Box display="flex" alignItems="center" gap={2}>
-          <Button
-            component={Link}
-            to="/admin/dashboard"
-            startIcon={<DashboardIcon />}
-            sx={{
-              backgroundColor: "transparent",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: "25px",
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "0.85rem",
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "#ffffff",
-              },
-            }}
-          >
+      <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Admin Dashboard
+          </Typography>
+          <Button color="inherit" component={Link} to="/admin/dashboard">
             Dashboard
           </Button>
-          <Button
-            component={Link}
-            to="/admin/users"
-            startIcon={<People />}
-            sx={{
-              backgroundColor: "transparent",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: "25px",
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "0.85rem",
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "#ffffff",
-              },
-            }}
-          >
-            Users
+          <Button color="inherit" component={Link} to="/admin/users">
+            User
           </Button>
-          <Button
-            component={Link}
-            to="/admin/sellers"
-            startIcon={<Store />}
-            sx={{
-              backgroundColor: "transparent",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: "25px",
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "0.85rem",
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "#ffffff",
-              },
-            }}
-          >
-            Sellers
+          <Button color="inherit" component={Link} to="/admin/sellers">
+            Seller
           </Button>
-          <Button
-            component={Link}
-            to="/admin/products"
-            startIcon={<ShoppingBag />}
-            sx={{
-              backgroundColor: "transparent",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: "25px",
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "0.85rem",
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "#ffffff",
-              },
-            }}
-          >
-            Products
+          <Button color="inherit" component={Link} to="/admin/products">
+            Product
           </Button>
-          <Button
-            component={Link}
-            to="/admin/graphs"
-            startIcon={<BarChart />}
-            sx={{
-              backgroundColor: "transparent",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: "25px",
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "0.85rem",
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "#ffffff",
-              },
-            }}
-          >
-            Analytics
+          <Button color="inherit" component={Link} to="/admin/graphs">
+            Graphs
           </Button>
-          <Button
-            onClick={() => {
-              localStorage.removeItem('token');
-              window.location.href = '/';
-            }}
-            sx={{
-              backgroundColor: "transparent",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: "25px",
-              px: 2,
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "0.85rem",
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderColor: "#ffffff",
-              },
-            }}
-          >
+          <Button color="inherit" onClick={handleLogout}>
             Logout
           </Button>
-        </Box>
-      </Box>
+        </Toolbar>
+      </AppBar>
 
-      {/* Main Content with Dashboard.jsx background */}
-      <Box
-        sx={{
-          pt: 12, // Account for fixed header height
-          mt: 10, // Add top margin for extra spacing
-          minHeight: "100vh",
-          backgroundColor: "#f0f8f0", // Light green background matching Dashboard.jsx
-          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)", // Light green gradient matching Dashboard.jsx
-          px: { xs: 2, md: 4 },
-          py: 4,
-        }}
-      >
-        {/* Page Header */}
-        <Box
-          component={motion.div}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          sx={{
-            maxWidth: 1400,
-            mx: "auto",
-            mb: 4,
-          }}
-        >
-          <Box
-            sx={{
-              background: "#4a5d3a", // Dark green background matching Dashboard.jsx
-              borderRadius: "24px",
-              p: 4,
-              boxShadow: "0 10px 30px rgba(74, 93, 58, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-            }}
-          >
-            <Box
-              sx={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: "16px",
-                p: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Receipt sx={{ fontSize: 40, color: "#ffffff" }} />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 700,
-                  color: "#ffffff",
-                  fontSize: "2rem",
-                  mb: 1,
-                  lineHeight: 1.2,
-                }}
-              >
-                Order Management 🛒
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "rgba(255, 255, 255, 0.9)",
-                  fontSize: "1rem",
-                  lineHeight: 1.5,
-                }}
-              >
-                Monitor and manage customer orders, payments, and transaction statuses
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                gap: 3,
-                alignItems: "center",
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  borderRadius: "12px",
-                  px: 3,
-                  py: 2,
-                  backdropFilter: "blur(10px)",
-                  textAlign: "center",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: "#ffffff",
-                    fontWeight: 700,
-                    fontSize: "1.3rem",
-                  }}
-                >
-                  {orders.length}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  Total Orders
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  borderRadius: "12px",
-                  px: 3,
-                  py: 2,
-                  backdropFilter: "blur(10px)",
-                  textAlign: "center",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: "#ffffff",
-                    fontWeight: 700,
-                    fontSize: "1.3rem",
-                  }}
-                >
-                  ${getTotalRevenue().toFixed(2)}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  Total Revenue
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  borderRadius: "12px",
-                  px: 3,
-                  py: 2,
-                  backdropFilter: "blur(10px)",
-                  textAlign: "center",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: "#ffffff",
-                    fontWeight: 700,
-                    fontSize: "1.3rem",
-                  }}
-                >
-                  {getPendingCount()}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  Pending Orders
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Orders Table */}
-        <Box
-          component={motion.div}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          sx={{
-            maxWidth: 1400,
-            mx: "auto",
-          }}
-        >
-          <TableContainer 
-            component={Paper}
-            sx={{
-              borderRadius: "20px",
-              boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
-              overflow: "hidden",
-              background: "#ffffff",
-            }}
-          >
-            <Table>
-              <TableHead>
-                <TableRow
-                  sx={{
-                    background: "linear-gradient(135deg, #4a5d3a 0%, #5c7349 100%)",
-                  }}
-                >
-                  <TableCell
-                    sx={{
-                      color: "#ffffff",
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      borderBottom: "none",
-                      py: 3,
-                    }}
+      <TableContainer component={Paper} sx={{ marginTop: 2, boxShadow: 3 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <StyledTableCell>Payment ID</StyledTableCell>
+              <StyledTableCell>Username</StyledTableCell>
+              <StyledTableCell>User ID</StyledTableCell>
+              <StyledTableCell>Total Amount</StyledTableCell>
+              <StyledTableCell>Subtotal</StyledTableCell>
+              <StyledTableCell>Discount Amount</StyledTableCell>
+              <StyledTableCell>Tax Amount</StyledTableCell>
+              <StyledTableCell>Shipping Amount</StyledTableCell>
+              <StyledTableCell>Currency</StyledTableCell>
+              <StyledTableCell>Payment Status</StyledTableCell>
+              <StyledTableCell>Shipping Status</StyledTableCell>
+              <StyledTableCell>Discount Codes</StyledTableCell>
+              <StyledTableCell>Notes</StyledTableCell>
+              <StyledTableCell>Actions</StyledTableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {orders.map((order) => (
+              <TableRow key={order.payment_id} hover>
+                <TableCell>{order.payment_id}</TableCell>
+                <TableCell>{order.username}</TableCell>
+                <TableCell>{order.user_id}</TableCell>
+                <TableCell>{order.total_amount.toFixed(2)}</TableCell>
+                <TableCell>{order.subtotal.toFixed(2)}</TableCell>
+                <TableCell>{order.discount_amount.toFixed(2)}</TableCell>
+                <TableCell>{order.tax_amount.toFixed(2)}</TableCell>
+                <TableCell>{order.shipping_amount.toFixed(2)}</TableCell>
+                <TableCell>{order.currency}</TableCell>
+                <TableCell>
+                  <Select
+                    value={order.payment_status}
+                    onChange={(event) => handleStatusChange(event, order.payment_id)}
+                    sx={{ minWidth: 120 }}
                   >
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Receipt sx={{ fontSize: 20 }} />
-                      Transaction
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#ffffff",
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      borderBottom: "none",
-                      py: 3,
-                    }}
+                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="completed">Completed</MenuItem>
+                    <MenuItem value="failed">Failed</MenuItem>
+                    <MenuItem value="cancelled">Cancelled</MenuItem>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={order.shipping_status || "not_shipped"}
+                    onChange={(event) => handleShippingStatusChange(event, order.payment_id)}
+                    sx={{ minWidth: 120 }}
                   >
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Person sx={{ fontSize: 20 }} />
-                      Customer
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#ffffff",
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      borderBottom: "none",
-                      py: 3,
-                    }}
+                    <MenuItem value="not_shipped">Not Shipped</MenuItem>
+                    <MenuItem value="shipped">Shipped</MenuItem>
+                    <MenuItem value="in_transit">In Transit</MenuItem>
+                    <MenuItem value="delivered">Delivered</MenuItem>
+                  </Select>
+                </TableCell>
+                <TableCell>{order.discount_code?.join(", ") || "N/A"}</TableCell>
+                <TableCell>{order.notes || "N/A"}</TableCell>
+                <TableCell>
+                  <StyledButton
+                    variant="contained"
+                    onClick={() => saveStatus(order.payment_id)}
                   >
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <AttachMoney sx={{ fontSize: 20 }} />
-                      Amount
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#ffffff",
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      borderBottom: "none",
-                      py: 3,
-                    }}
+                    Save Payment
+                  </StyledButton>
+                  <StyledButton
+                    variant="contained"
+                    onClick={() => saveShippingStatus(order.payment_id)}
                   >
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Payment sx={{ fontSize: 20 }} />
-                      Status
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "#ffffff",
-                      fontWeight: 700,
-                      fontSize: "1rem",
-                      borderBottom: "none",
-                      py: 3,
-                    }}
-                  >
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {orders.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: 2,
-                          color: "#4a5d3a",
-                        }}
-                      >
-                        <Receipt sx={{ fontSize: 60, opacity: 0.5 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          No Orders Found
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.7 }}>
-                          Orders will appear here once customers make purchases
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  orders.map((order, index) => (
-                    <TableRow 
-                      key={order.payment_id}
-                      component={motion.tr}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "rgba(74, 93, 58, 0.05)",
-                        },
-                        transition: "background-color 0.2s ease",
-                      }}
-                    >
-                      <TableCell sx={{ py: 3, borderBottom: "1px solid rgba(74, 93, 58, 0.1)" }}>
-                        <Box>
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontWeight: 600,
-                              color: "#4a5d3a",
-                              fontSize: "0.9rem",
-                            }}
-                          >
-                            {order.transaction_id}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "rgba(74, 93, 58, 0.6)",
-                              fontSize: "0.75rem",
-                              fontFamily: "monospace",
-                            }}
-                          >
-                            ID: {order.payment_id}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 3, borderBottom: "1px solid rgba(74, 93, 58, 0.1)" }}>
-                        <Box display="flex" alignItems="center" gap={2}>
-                          <Avatar
-                            sx={{
-                              bgcolor: "#8fa876",
-                              width: 35,
-                              height: 35,
-                              fontSize: "0.9rem",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {order.username.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Box>
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                fontWeight: 600,
-                                color: "#4a5d3a",
-                                fontSize: "0.9rem",
-                              }}
-                            >
-                              {order.username}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: "rgba(74, 93, 58, 0.7)",
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              Customer
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 3, borderBottom: "1px solid rgba(74, 93, 58, 0.1)" }}>
-                        <Box>
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontWeight: 700,
-                              color: "#4a5d3a",
-                              fontSize: "1rem",
-                            }}
-                          >
-                            ${order.total_amount.toFixed(2)}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "rgba(74, 93, 58, 0.6)",
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            {order.currency}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 3, borderBottom: "1px solid rgba(74, 93, 58, 0.1)" }}>
-                        <Select
-                          value={order.payment_status}
-                          onChange={(event) => handleStatusChange(event, order.payment_id)}
-                          size="small"
-                          sx={{
-                            minWidth: 120,
-                            backgroundColor: getStatusColor(order.payment_status).bg,
-                            color: getStatusColor(order.payment_status).color,
-                            borderRadius: "12px",
-                            "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "transparent",
-                            },
-                            "&:hover .MuiOutlinedInput-notchedOutline": {
-                              borderColor: getStatusColor(order.payment_status).color,
-                            },
-                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                              borderColor: getStatusColor(order.payment_status).color,
-                            },
-                          }}
-                        >
-                          <MenuItem value="pending">
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Pending sx={{ fontSize: 16 }} />
-                              Pending
-                            </Box>
-                          </MenuItem>
-                          <MenuItem value="completed">
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Check sx={{ fontSize: 16 }} />
-                              Completed
-                            </Box>
-                          </MenuItem>
-                          <MenuItem value="failed">
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Close sx={{ fontSize: 16 }} />
-                              Failed
-                            </Box>
-                          </MenuItem>
-                          <MenuItem value="cancelled">
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Cancel sx={{ fontSize: 16 }} />
-                              Cancelled
-                            </Box>
-                          </MenuItem>
-                        </Select>
-                      </TableCell>
-                      <TableCell sx={{ py: 3, borderBottom: "1px solid rgba(74, 93, 58, 0.1)" }}>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          startIcon={<Save sx={{ fontSize: 16 }} />}
-                          onClick={() => saveStatus(order.payment_id)}
-                          sx={{
-                            backgroundColor: "#8fa876",
-                            color: "#ffffff",
-                            borderRadius: "12px",
-                            px: 2,
-                            py: 1,
-                            fontWeight: 600,
-                            textTransform: "none",
-                            fontSize: "0.8rem",
-                            "&:hover": {
-                              backgroundColor: "#7a956a",
-                            },
-                          }}
-                        >
-                          Save
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      </Box>
+                    Save Shipping
+                  </StyledButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </>
   );
 };
 
-OrdersTable.propTypes = {
-  orders: PropTypes.arrayOf(
-    PropTypes.shape({
-      transaction_id: PropTypes.string.isRequired,
-      payment_id: PropTypes.string.isRequired,
-      username: PropTypes.string.isRequired,
-      total_amount: PropTypes.number.isRequired,
-      currency: PropTypes.string.isRequired,
-      payment_status: PropTypes.string.isRequired,
-      created_at: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-};
+OrdersTable.propTypes = {};
 
 export default OrdersTable;

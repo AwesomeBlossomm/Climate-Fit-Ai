@@ -190,7 +190,7 @@ async def create_payment(payment_data: PaymentCreate, current_user: str = Depend
             "currency": payment_data.currency.value,
             "payment_method": payment_data.payment_method.value,
             "payment_status": PaymentStatus.PENDING.value,
-            "shipping_status": ShippingStatus.NOT_SHIPPED.value,  # Ensure shipping status is set
+            "shipping_status": ShippingStatus.PREPARING.value,  # Ensure shipping status is set
             "billing_address": payment_data.billing_address.dict(),
             "discount_code": applied_codes,
             "discount_info": discount_infos,

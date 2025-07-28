@@ -409,6 +409,26 @@ const BodyScan = () => {
             Logout
           </Button>
         </Box>
+        <Box sx={{ width: "80%", maxWidth: 800, bgcolor: "#fff", borderRadius: 2, boxShadow: 3, p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2, color: "#2e7d32" }}>Product Recommendations</Typography>
+          {/* Display product recommendations as cards or a list */}
+          {Array.isArray(productRecommendations) && productRecommendations.length > 0 ? (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              {productRecommendations.map((product) => (
+                <Box key={product._id} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, p: 2, minWidth: 200, maxWidth: 250, flex: '1 1 200px', bgcolor: '#fafafa' }}>
+                  <Typography variant="subtitle1" sx={{ color: '#2e7d32', fontWeight: 600 }}>{product.name}</Typography>
+                  <Typography variant="body2" sx={{ color: '#555' }}>{product.description}</Typography>
+                  <Typography variant="body2" sx={{ color: '#888', mt: 1 }}>Category: {product.category}</Typography>
+                  <Typography variant="body2" sx={{ color: '#888' }}>Price: ₱{product.price_php}</Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Typography variant="body1" sx={{ color: "#2e7d32" }}>
+              No product recommendations found.
+            </Typography>
+          )}
+        </Box>
       </Box>
       {/* Main Content with Dashboard.jsx background */}
       <Box sx={{ 

@@ -100,12 +100,16 @@ async def login(user: UserLogin):
     db_user = users_collection.find_one({"username": user.username})
     if not db_user or not verify_password(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
     if not db_user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Account deactivated")
-    
-    access_token = create_access_token(data={"sub": user.username})
-    
+
+    # Fetch the user's role
+    user_role = db_user.get("role", "user")  # Default to 'user' if role is not set
+
+    # Include the role in the access token
+    access_token = create_access_token(data={"sub": user.username, "role": user_role})
+
     # Check if this is the first login and assign welcome vouchers
     if not db_user.get("welcome_vouchers_assigned", False):
         try:
@@ -117,23 +121,25 @@ async def login(user: UserLogin):
                         {"username": user.username},
                         {"$set": {"welcome_vouchers_assigned": True}}
                     )
-                    
+
                     voucher_data = voucher_response.json()
                     return {
                         "access_token": access_token,
                         "token_type": "bearer",
                         "vouchers_assigned": voucher_data.get("assigned_count", 0),
                         "voucher_message": "Welcome! 20 vouchers assigned for your first login!",
-                        "first_login": True
+                        "first_login": True,
+                        "role": user_role
                     }
         except Exception as e:
             # If voucher assignment fails, still return login success but don't mark as assigned
             pass
-    
+
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "token_type": "bearer",
-        "first_login": False
+        "first_login": False,
+        "role": user_role
     }
 
 @router.get("/profile")

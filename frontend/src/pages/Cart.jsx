@@ -1,250 +1,434 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
   Container,
   Paper,
-  TextField,
   Button,
   Divider,
-  Alert,
+  Checkbox,
+  FormControlLabel,
   CircularProgress,
-  Chip,
   IconButton,
+  MenuItem,
+  Select,
+  TextField,
+  CardMedia,
 } from "@mui/material";
-import { LocalOffer, Close } from "@mui/icons-material";
-import { useCart } from "../contexts/CartContext";
-import { useDiscount } from "../contexts/DiscountContext";
-import { motion } from "framer-motion";
+import { Delete } from "@mui/icons-material";
+import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
-  const { cartItems, updateQuantity, removeFromCart, getTotalPrice } =
-    useCart();
-  const {
-    appliedDiscount,
-    isApplying,
-    applyDiscount,
-    removeDiscount,
-    calculateDiscountedTotal,
-  } = useDiscount();
-  const [discountCode, setDiscountCode] = useState("");
-  const [discountError, setDiscountError] = useState("");
-  const [discountSuccess, setDiscountSuccess] = useState("");
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [sizeUpdates, setSizeUpdates] = useState({});
+  const { token } = useAuth();
+  const navigate = useNavigate();
 
-  const originalTotal = getTotalPrice();
-  const finalTotal = calculateDiscountedTotal(originalTotal);
-
-  const handleApplyDiscount = async () => {
-    if (!discountCode.trim()) {
-      setDiscountError("Please enter a discount code");
-      return;
-    }
-
+  const fetchCart = async () => {
     try {
-      setDiscountError("");
-      setDiscountSuccess("");
+      const response = await axios.get("http://localhost:8000/api/cart", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      await applyDiscount(discountCode.trim(), originalTotal);
+      // Fetch detailed product information for each cart item
+      const itemsWithDetails = await Promise.all(
+        response.data.items?.map(async (item) => {
+          try {
+            const productResponse = await axios.get(
+              `http://localhost:8000/api/v1/products/${item.product_id}`
+            );
+            return {
+              ...item,
+              productDetails: productResponse.data,
+            };
+          } catch (error) {
+            console.error(
+              `Failed to fetch details for product ${item.product_id}:`,
+              error
+            );
+            return item; // Return the original item if details fetch fails
+          }
+        }) || []
+      );
 
-      setDiscountSuccess(`Discount "${discountCode}" applied successfully!`);
-      setDiscountCode("");
+      setCartItems(itemsWithDetails);
+      // Initialize all items as selected by default
+      setSelectedItems(itemsWithDetails.map((item) => item.product_id) || []);
+      // Initialize size updates with current sizes
+      const initialSizes = {};
+      itemsWithDetails.forEach((item) => {
+        initialSizes[item.product_id] = item.size || "";
+      });
+      setSizeUpdates(initialSizes);
     } catch (error) {
-      setDiscountError(error.message || "Invalid discount code");
+      console.error("Failed to load cart:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRemoveDiscount = () => {
-    removeDiscount();
-    setDiscountSuccess("");
-    setDiscountError("");
+  const updateQuantity = async (productId, newQuantity, size, color) => {
+    try {
+      await axios.put(
+        `http://localhost:8000/api/cart/item/${productId}`,
+        { quantity: newQuantity, size, color },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchCart();
+    } catch (err) {
+      console.error("Update failed", err);
+    }
   };
+
+  const updateSize = async (
+    productId,
+    newSize,
+    currentColor,
+    currentQuantity
+  ) => {
+    try {
+      setSizeUpdates((prev) => ({ ...prev, [productId]: newSize }));
+
+      const currentItem = cartItems.find(
+        (item) => item.product_id === productId
+      );
+      if (!currentItem) {
+        throw new Error("Item not found in local cart");
+      }
+
+      // Send old_size and old_color as query params for backend matching
+      await axios.put(
+        `http://localhost:8000/api/cart/item/${productId}?old_size=${encodeURIComponent(
+          currentItem.size || ""
+        )}&old_color=${encodeURIComponent(currentItem.color || "")}`,
+        {
+          quantity: currentQuantity,
+          size: newSize,
+          color: currentColor,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      await fetchCart();
+    } catch (err) {
+      console.error("Size update failed", err);
+      setSizeUpdates((prev) => ({ ...prev, [productId]: currentItem.size }));
+
+      alert("Failed to update size. Please try again.");
+    }
+  };
+
+  const removeFromCart = async (productId, size, color) => {
+    try {
+      await axios.delete(`http://localhost:8000/api/cart/item/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { size, color },
+      });
+      fetchCart();
+      // Remove from selected items if it was selected
+      setSelectedItems((prev) => prev.filter((id) => id !== productId));
+    } catch (err) {
+      console.error("Remove failed", err);
+    }
+  };
+
+  const clearCart = async () => {
+    try {
+      await axios.delete("http://localhost:8000/api/cart/clear", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchCart();
+      setSelectedItems([]);
+    } catch (err) {
+      console.error("Clear cart error:", err);
+    }
+  };
+
+  const handleSelectItem = (productId) => {
+    setSelectedItems((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const calculateSelectedTotal = () => {
+    return cartItems
+      .filter((item) => selectedItems.includes(item.product_id))
+      .reduce((total, item) => total + item.unit_price * item.quantity, 0);
+  };
+
+  const addToCart = async (productId, size, color) => {
+    try {
+      // Find if the product with the same size and color is already in the cart
+      const existingItem = cartItems.find(
+        (item) =>
+          item.product_id === productId &&
+          item.size === size &&
+          item.color === color
+      );
+
+      if (existingItem) {
+        // If exists, increase quantity by 1
+        await axios.put(
+          `http://localhost:8000/api/cart/item/${productId}`,
+          {
+            quantity: existingItem.quantity + 1,
+            size,
+            color,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        // If not, add as new item
+        await axios.post(
+          `http://localhost:8000/api/cart/item`,
+          {
+            product_id: productId,
+            quantity: 1,
+            size,
+            color,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+      fetchCart();
+    } catch (err) {
+      console.error("Add to cart failed", err);
+    }
+  };
+
+  // Handler for proceeding with selected items
+  const handleProceedWithSelected = () => {
+    const selectedCartItems = cartItems.filter((item) =>
+      selectedItems.includes(item.product_id)
+    );
+
+    const subtotal = selectedCartItems.reduce(
+      (total, item) => total + item.unit_price * item.quantity,
+      0
+    );
+
+    // Pass product_id, size, color for deletion after payment
+    navigate("/payment", {
+      state: {
+        cartItems: selectedCartItems.map((item) => ({
+          id: item.product_id,
+          name: item.product_name,
+          price: item.unit_price,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+          image: item.image_url || "default-image-url",
+          // Add these for deletion
+          product_id: item.product_id,
+        })),
+        subtotal,
+        discount: 0,
+        total: subtotal,
+        appliedDiscount: null,
+        selectedItemIds: selectedItems,
+      },
+    });
+  };
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  if (loading) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography
-        variant="h4"
-        gutterBottom
-        sx={{ fontWeight: "bold", color: "#2e7d32" }}
-      >
-        🛒 Shopping Cart
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: "bold" }}>
+        Your Cart
       </Typography>
 
       {cartItems.length === 0 ? (
-        <Paper
-          elevation={2}
-          sx={{ p: 4, textAlign: "center", borderRadius: 3 }}
-        >
-          <Typography variant="h6" color="text.secondary">
-            Your cart is empty
-          </Typography>
+        <Paper elevation={2} sx={{ p: 4, textAlign: "center" }}>
+          <Typography variant="h6">Your cart is empty</Typography>
         </Paper>
       ) : (
         <>
           {/* Cart Items */}
-          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+          <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
             {cartItems.map((item) => (
               <Box
-                key={item.id}
-                sx={{ mb: 2, pb: 2, borderBottom: "1px solid #eee" }}
+                key={`${item.product_id}-${item.size}-${item.color}`}
+                sx={{
+                  mb: 2,
+                  pb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  borderBottom: "1px solid #eee",
+                }}
               >
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Box>
-                    <Typography variant="h6">{item.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      ${item.price} × {item.quantity}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={selectedItems.includes(item.product_id)}
+                      onChange={() => handleSelectItem(item.product_id)}
+                    />
+                  }
+                />
+
+                {/* Product Image */}
+                <CardMedia
+                  component="img"
+                  sx={{ width: 120, height: 120, objectFit: "cover", mr: 2 }}
+                  image={
+                    item.image_url ||
+                    item.productDetails?.image_url ||
+                    item.productDetails?.images?.[0] ||
+                    "https://via.placeholder.com/300x400?text=Fashion+Item"
+                  }
+                  alt={item.product_name}
+                  onError={(e) => {
+                    // Fallback logic for broken images
+                    if (
+                      item.productDetails?.images &&
+                      item.productDetails.images.length > 1 &&
+                      !e.target.src.includes("placeholder")
+                    ) {
+                      e.target.src = item.productDetails.images[1];
+                    } else if (!e.target.src.includes("placeholder")) {
+                      e.target.src =
+                        "https://via.placeholder.com/300x400?text=Fashion+Item";
+                    }
+                  }}
+                />
+
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6">{item.product_name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatCurrency(item.unit_price)} × {item.quantity}
+                    {item.color && ` • Color: ${item.color}`}
+                  </Typography>
+
+                  {/* Size Selector */}
+                  <Box sx={{ mt: 1, display: "flex", alignItems: "center" }}>
+                    <Typography variant="body2" sx={{ mr: 1 }}>
+                      Size:
                     </Typography>
-                  </Box>
-                  <Box>
-                    <Button
+                    <Select
+                      value={sizeUpdates[item.product_id] || item.size || ""}
+                      onChange={(e) => {
+                        const newSize = e.target.value;
+                        updateSize(
+                          item.product_id,
+                          newSize,
+                          item.color, // Current color
+                          item.quantity // Current quantity
+                        );
+                      }}
                       size="small"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      disabled={item.quantity <= 1}
+                      sx={{ minWidth: 80 }}
                     >
-                      -
-                    </Button>
-                    <Typography component="span" sx={{ mx: 2 }}>
-                      {item.quantity}
-                    </Typography>
-                    <Button
-                      size="small"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    >
-                      +
-                    </Button>
-                    <Button
-                      color="error"
-                      onClick={() => removeFromCart(item.id)}
-                      sx={{ ml: 2 }}
-                    >
-                      Remove
-                    </Button>
+                      {(
+                        item.productDetails?.size_available || [
+                          "S",
+                          "M",
+                          "L",
+                          "XL",
+                        ]
+                      ).map((size) => (
+                        <MenuItem key={size} value={size}>
+                          {size}
+                        </MenuItem>
+                      ))}
+                    </Select>
                   </Box>
+                </Box>
+
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  {/* Quantity Selector */}
+                  <TextField
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => {
+                      const newQuantity = Math.max(
+                        1,
+                        parseInt(e.target.value) || 1
+                      );
+                      // Use the current size/color for matching
+                      updateQuantity(
+                        item.product_id,
+                        newQuantity,
+                        item.size,
+                        item.color
+                      );
+                    }}
+                    inputProps={{ min: 1 }}
+                    size="small"
+                    sx={{ width: 70, mr: 1 }}
+                  />
+
+                  <IconButton
+                    color="error"
+                    onClick={() =>
+                      removeFromCart(item.product_id, item.size, item.color)
+                    }
+                    sx={{ ml: 1 }}
+                  >
+                    <Delete />
+                  </IconButton>
                 </Box>
               </Box>
             ))}
-          </Paper>
 
-          {/* Discount Section */}
-          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                fontWeight: "medium",
-              }}
-            >
-              <LocalOffer sx={{ mr: 1, color: "#2e7d32" }} />
-              Discount Code
-            </Typography>
-
-            {!appliedDiscount ? (
-              <Box display="flex" gap={2} alignItems="flex-start">
-                <TextField
-                  label="Enter discount code"
-                  value={discountCode}
-                  onChange={(e) => setDiscountCode(e.target.value)}
-                  size="small"
-                  sx={{ flexGrow: 1 }}
-                  onKeyPress={(e) => e.key === "Enter" && handleApplyDiscount()}
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleApplyDiscount}
-                  disabled={isApplying}
-                  sx={{
-                    bgcolor: "#2e7d32",
-                    "&:hover": { bgcolor: "#1b5e20" },
-                  }}
-                >
-                  {isApplying ? <CircularProgress size={20} /> : "Apply"}
-                </Button>
-              </Box>
-            ) : (
-              <Box>
-                <Chip
-                  label={`${appliedDiscount.code} - ${appliedDiscount.percentage}% OFF`}
-                  color="success"
-                  deleteIcon={<Close />}
-                  onDelete={handleRemoveDiscount}
-                  sx={{ mb: 1 }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {appliedDiscount.description}
-                </Typography>
-              </Box>
-            )}
-
-            {discountError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {discountError}
-              </Alert>
-            )}
-
-            {discountSuccess && (
-              <Alert severity="success" sx={{ mt: 2 }}>
-                {discountSuccess}
-              </Alert>
-            )}
+            <Box display="flex" justifyContent="flex-end" mt={2}>
+              <Button variant="outlined" color="error" onClick={clearCart}>
+                Clear Entire Cart
+              </Button>
+            </Box>
           </Paper>
 
           {/* Order Summary */}
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+          <Paper elevation={2} sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Order Summary
             </Typography>
 
-            <Box display="flex" justifyContent="space-between" mb={1}>
-              <Typography>Subtotal:</Typography>
-              <Typography>${originalTotal.toFixed(2)}</Typography>
+            <Box display="flex" justifyContent="space-between" mb={2}>
+              <Typography>Selected Items Total:</Typography>
+              <Typography fontWeight="bold">
+                {formatCurrency(calculateSelectedTotal())}
+              </Typography>
             </Box>
-
-            {appliedDiscount && (
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography color="success.main">
-                  Discount ({appliedDiscount.percentage}%):
-                </Typography>
-                <Typography color="success.main">
-                  -${appliedDiscount.discountAmount.toFixed(2)}
-                </Typography>
-              </Box>
-            )}
 
             <Divider sx={{ my: 2 }} />
 
-            <Box display="flex" justifyContent="space-between" mb={3}>
-              <Typography variant="h6" fontWeight="bold">
-                Total:
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="primary">
-                ${finalTotal.toFixed(2)}
-              </Typography>
-            </Box>
-
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                sx={{
-                  bgcolor: "#2e7d32",
-                  "&:hover": { bgcolor: "#1b5e20" },
-                  py: 1.5,
-                }}
-              >
-                Proceed to Checkout
-              </Button>
-            </motion.div>
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              disabled={selectedItems.length === 0}
+              onClick={handleProceedWithSelected}
+            >
+              Proceed with Selected Items
+            </Button>
           </Paper>
         </>
       )}
     </Container>
   );
 };
-
 export default Cart;

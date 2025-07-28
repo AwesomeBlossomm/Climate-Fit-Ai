@@ -41,9 +41,22 @@ const Login = () => {
 
     try {
       const result = await login(formData);
-
       if (result.success) {
-        navigate("/dashboard");
+        // Add a small delay to ensure localStorage is updated
+        setTimeout(() => {
+          const role = localStorage.getItem("role");
+          console.log("User role from localStorage:", role);
+          console.log("Role type:", typeof role);
+          console.log("Is admin?", role === "admin");
+          
+          if (role === "admin") {
+            console.log("Redirecting to admin dashboard");
+            navigate("/admin/dashboard");
+          } else {
+            console.log("Redirecting to user dashboard");
+            navigate("/dashboard");
+          }
+        }, 100);
       } else {
         setError(result.error);
       }

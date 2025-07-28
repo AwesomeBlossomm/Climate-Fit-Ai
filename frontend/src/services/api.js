@@ -145,9 +145,8 @@ class ClothingAPI {
   // Search products without pagination
   async searchProductsUnlimited(query = "") {
     const token = localStorage.getItem("token");
-    const endpoint = token
-      ? "/clothes/search/unlimited"
-      : "/clothes/search/unlimited/public";
+    const endpoint = token;
+    ("/clothes/search/unlimited");
     const params = query ? `?query=${encodeURIComponent(query)}` : "";
     return this.makeRequest(`${endpoint}${params}`);
   }
@@ -205,7 +204,8 @@ class ClothingAPI {
     page = 0,
     limit = 20,
     query = "",
-    filters = {}
+    filters = {},
+    weatherSuggestions = [] // Add this parameter
   ) {
     try {
       console.log("API: Searching with params:", {
@@ -230,21 +230,16 @@ class ClothingAPI {
         params.append("query", query.trim());
       }
 
-      // Add filter parameters
-      if (filters.priceMin !== undefined && filters.priceMin !== "") {
-        params.append("price_min", filters.priceMin);
-      }
-      if (filters.priceMax !== undefined && filters.priceMax !== "") {
-        params.append("price_max", filters.priceMax);
-      }
-      if (filters.category && filters.category !== "") {
-        params.append("category", filters.category);
-      }
-      if (filters.weather && filters.weather !== "") {
-        params.append("weather_suitable", filters.weather);
-      }
-      if (filters.rating && filters.rating !== "") {
-        params.append("min_rating", filters.rating);
+      if (query) params.append("query", query.trim());
+      if (filters.priceMin) params.append("price_min", filters.priceMin);
+      if (filters.priceMax) params.append("price_max", filters.priceMax);
+      if (filters.category) params.append("category", filters.category);
+      if (filters.weather) params.append("weather_suitable", filters.weather);
+      if (filters.rating) params.append("min_rating", filters.rating);
+
+      // Add weather suggestions if available and weather filter is on
+      if (filters.weather === "true" && weatherSuggestions.length > 0) {
+        params.append("weather_suggestions", weatherSuggestions.join(","));
       }
 
       const config = {
@@ -304,8 +299,8 @@ class ClothingAPI {
 
       const params = new URLSearchParams({
         page: "0",
-        limit: "10000",
-        get_all: "true",
+        limit: "20",
+        get_all: "false",
       });
 
       // Add query parameter
