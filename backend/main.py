@@ -98,20 +98,18 @@ async def serve_image_file(filename: str):
 try:
     from routes import auth
     app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
-    print("✓ Auth router loaded successfully")
 except ImportError as e:
     print(f"Warning: auth module not found, skipping auth routes: {e}")
 
 try:
     from routes import api
     app.include_router(api.router, prefix="/api/v1", tags=["api"])
-    print("✓ API router loaded successfully")
 except ImportError as e:
     print(f"Warning: api module not found, skipping api routes: {e}")
 
 try:
     from routes import discounts
-    app.include_router(discounts.router, prefix="/api/v1", tags=["discounts"])
+    app.include_router(discounts.router, prefix="/discounts", tags=["discounts"])
     print("✓ Discounts router loaded successfully")
 except ImportError as e:
     print(f"Warning: discounts module not found, skipping discount routes: {e}")
@@ -119,18 +117,12 @@ except ImportError as e:
 try:
     from routes.payments import router as payments_router
     app.include_router(payments_router, prefix="/api/v1", tags=["payments"])
-    print("✓ Payments router loaded successfully")
-    print("  Available payment endpoints:")
-    print("    - GET /api/v1/payments/all-shipping-statuses")
-    print("    - GET /api/v1/debug/routes")
-    print("    - GET /api/v1/payment-status-overview")
 except ImportError as e:
     print(f"Warning: payments module not found, skipping payments routes: {e}")
 
 try:
     from routes import cart
-    app.include_router(cart.router, prefix="/api/v1", tags=["cart"])
-    print("✓ Cart router loaded successfully")
+    app.include_router(cart.router, prefix="/api", tags=["cart"])
 except ImportError as e:
     print(f"Warning: cart module not found, skipping cart routes: {e}")
 

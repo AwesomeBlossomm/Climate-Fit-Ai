@@ -1079,30 +1079,6 @@ const Products = () => {
                             )}
                         </Stack>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Typography
-                          variant="subtitle2"
-                          gutterBottom
-                          sx={{ fontWeight: "bold" }}
-                        >
-                          ⭐ Min Rating
-                        </Typography>
-                        <FormControl size="small" fullWidth>
-                          <Select
-                            value={filters.rating}
-                            onChange={(e) =>
-                              handleFilterChange("rating", e.target.value)
-                            }
-                            displayEmpty
-                          >
-                            <MenuItem value="">Any Rating</MenuItem>
-                            <MenuItem value="4">4+ Stars</MenuItem>
-                            <MenuItem value="3">3+ Stars</MenuItem>
-                            <MenuItem value="2">2+ Stars</MenuItem>
-                            <MenuItem value="1">1+ Stars</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
                     </Grid>
 
                     {/* Active Filters Display */}
