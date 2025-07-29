@@ -438,7 +438,7 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
         >
           <Typography
             variant="h5"
-            sx={{ fontWeight: "bold", color: "#2e7d32" }}
+            sx={{ fontWeight: "bold", color: "#4a5d3a" }}
           >
             🌍 {selectedAddress ? "Selected Location" : "Current Location"} &
             Weather
@@ -457,17 +457,17 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
           </Tooltip>
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {/* Map Section */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={1} sx={{ height: 300, borderRadius: 2 }}>
+          <Grid item xs={12} sm={5} md={5}>
+            <Card elevation={1} sx={{ height: 400, borderRadius: 2 }}>
               <CardContent sx={{ height: "100%", p: 0 }}>
                 <Box
                   sx={{
                     height: "100%",
                     background: selectedAddress
-                      ? `linear-gradient(45deg, #2196f3 30%, #64b5f6 90%)`
-                      : `linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)`,
+                      ? `linear-gradient(45deg, #4a5d3a 30%, #6b8459 90%)`
+                      : `linear-gradient(45deg, #4a5d3a 30%, #8fa876 90%)`,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -477,8 +477,8 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
                     position: "relative",
                   }}
                 >
-                  <LocationOn sx={{ fontSize: 60, mb: 2 }} />
-                  <Typography variant="h6" fontWeight="bold" textAlign="center">
+                  <LocationOn sx={{ fontSize: 60, mb: 1 }} />
+                  <Typography variant="h6" fontWeight="bold" textAlign="center" sx={{ mb: 0.5, fontSize: "1.1rem" }}>
                     {weather?.location || "Loading location..."}
                   </Typography>
                   {selectedAddress && weather && (
@@ -486,9 +486,10 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
                       <Typography
                         variant="body2"
                         sx={{
-                          mt: 1,
+                          mt: 0.5,
                           opacity: 0.9,
                           textAlign: "center",
+                          fontSize: "0.8rem",
                         }}
                       >
                         📍 {weather.addressDetails}
@@ -496,33 +497,33 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
                       <Typography
                         variant="body2"
                         sx={{
-                          mt: 0.5,
+                          mt: 0.3,
                           opacity: 0.9,
                           textAlign: "center",
+                          fontSize: "0.8rem",
                         }}
                       >
                         📮 Postal Code: {weather.postalCode}
                       </Typography>
                     </>
                   )}
-                  <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
-                    Lat: {location?.lat.toFixed(4)}, Lng:{" "}
-                    {location?.lng.toFixed(4)}
+                  <Typography variant="body2" sx={{ mt: 1, opacity: 0.8, fontSize: "0.75rem" }}>
+                    Lat: {location?.lat.toFixed(4)}, Lng: {location?.lng.toFixed(4)}
                   </Typography>
 
                   <Box
                     sx={{
                       position: "absolute",
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
+                      bottom: 12,
+                      left: 12,
+                      right: 12,
                       bgcolor: "rgba(255,255,255,0.2)",
                       borderRadius: 1,
                       p: 1,
                       textAlign: "center",
                     }}
                   >
-                    <Typography variant="caption">
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
                       Real-time weather data from OpenWeatherMap
                     </Typography>
                   </Box>
@@ -532,16 +533,16 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
           </Grid>
 
           {/* Weather Section */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={1} sx={{ height: 300, borderRadius: 2 }}>
-              <CardContent sx={{ height: "100%", p: 3 }}>
+          <Grid item xs={12} sm={7} md={7}>
+            <Card elevation={1} sx={{ height: 400, borderRadius: 2 }}>
+              <CardContent sx={{ height: "100%", p: 2, display: "flex", flexDirection: "column" }}>
                 <Box
                   display="flex"
                   alignItems="center"
                   justifyContent="space-between"
-                  mb={2}
+                  mb={1}
                 >
-                  <Typography variant="h6" fontWeight="bold">
+                  <Typography variant="h6" fontWeight="bold" sx={{ fontSize: "1.1rem" }}>
                     Current Weather
                   </Typography>
                   {weather && (
@@ -551,7 +552,7 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
                         <img
                           src={`https://openweathermap.org/img/wn/${weather.icon}.png`}
                           alt={weather.description}
-                          style={{ width: 40, height: 40, marginLeft: 8 }}
+                          style={{ width: 32, height: 32, marginLeft: 6 }}
                         />
                       )}
                     </Box>
@@ -560,13 +561,14 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
 
                 {weather && (
                   <>
-                    <Box display="flex" alignItems="center" mb={2}>
+                    <Box display="flex" alignItems="center" mb={1.5}>
                       <Typography
-                        variant="h2"
+                        variant="h1"
                         sx={{
                           fontWeight: "bold",
-                          color: getTemperatureColor(weather.temperature),
-                          mr: 2,
+                          color: "#4a5d3a",
+                          mr: 1.5,
+                          fontSize: "2.5rem",
                         }}
                       >
                         {weather.temperature}°C
@@ -574,31 +576,31 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
                       <Box>
                         <Typography
                           variant="h6"
-                          sx={{ textTransform: "capitalize" }}
+                          sx={{ textTransform: "capitalize", fontSize: "1rem" }}
                         >
                           {weather.description}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>
                           Feels like {weather.feelsLike}°C
                         </Typography>
                       </Box>
                     </Box>
 
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid container spacing={0.5} sx={{ mb: 1.5 }}>
                       <Grid item xs={6}>
                         <Box display="flex" alignItems="center">
                           <Water
-                            sx={{ mr: 1, color: "#2196f3", fontSize: 20 }}
+                            sx={{ mr: 0.5, color: "#6b8459", fontSize: 16 }}
                           />
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
                             Humidity: {weather.humidity}%
                           </Typography>
                         </Box>
                       </Grid>
                       <Grid item xs={6}>
                         <Box display="flex" alignItems="center">
-                          <Air sx={{ mr: 1, color: "#607d8b", fontSize: 20 }} />
-                          <Typography variant="body2">
+                          <Air sx={{ mr: 0.5, color: "#6b8459", fontSize: 16 }} />
+                          <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
                             Wind: {weather.windSpeed} km/h
                           </Typography>
                         </Box>
@@ -606,9 +608,9 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
                       <Grid item xs={6}>
                         <Box display="flex" alignItems="center">
                           <Visibility
-                            sx={{ mr: 1, color: "#9e9e9e", fontSize: 20 }}
+                            sx={{ mr: 0.5, color: "#6b8459", fontSize: 16 }}
                           />
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
                             Visibility: {weather.visibility} km
                           </Typography>
                         </Box>
@@ -616,39 +618,75 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
                       <Grid item xs={6}>
                         <Box display="flex" alignItems="center">
                           <Thermostat
-                            sx={{ mr: 1, color: "#ff5722", fontSize: 20 }}
+                            sx={{ mr: 0.5, color: "#6b8459", fontSize: 16 }}
                           />
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
                             Pressure: {weather.pressure} hPa
                           </Typography>
                         </Box>
                       </Grid>
                     </Grid>
 
-                    <Box>
-                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    {/* AI Clothing Suggestions Bulletin - Embedded */}
+                    <Box
+                      sx={{
+                        flex: 1,
+                        mt: 1,
+                        p: 1.5,
+                        borderRadius: 2,
+                        bgcolor: "linear-gradient(45deg, #d4e9d4 30%, #e8f5e8 90%)",
+                        border: "2px solid #8fa876",
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
                         <Typography
                           variant="subtitle2"
-                          sx={{ fontWeight: "bold" }}
+                          sx={{
+                            fontWeight: "bold",
+                            color: "#4a5d3a",
+                            fontSize: "0.8rem",
+                          }}
                         >
-                          AI Climate-Fit Suggestions:
+                          🤖 AI Climate-Fit Clothing Bulletin
                         </Typography>
-                        {loadingSuggestions && <CircularProgress size={16} />}
+                        {loadingSuggestions && <CircularProgress size={12} />}
                       </Box>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                      
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block", fontSize: "0.65rem" }}>
+                        Based on current weather conditions in {weather.location}:
+                      </Typography>
+
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.3, mb: 0.5 }}>
                         {clothingSuggestions.map((suggestion, index) => (
                           <Chip
                             key={index}
                             label={suggestion}
                             size="small"
                             sx={{
-                              bgcolor: "#e8f5e8",
-                              color: "#2e7d32",
-                              fontSize: "0.75rem",
+                              bgcolor: "#d4e9d4",
+                              color: "#4a5d3a",
+                              fontSize: "0.65rem",
+                              height: 20,
                             }}
                           />
                         ))}
                       </Box>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontStyle: "italic",
+                          color: "#6b8459",
+                          display: "block",
+                          textAlign: "center",
+                          fontSize: "0.6rem",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        💡 These suggestions are generated by AI based on temperature (
+                        {weather.temperature}°C), humidity ({weather.humidity}%), and
+                        weather conditions ({weather.description})
+                      </Typography>
                     </Box>
                   </>
                 )}
@@ -656,82 +694,6 @@ const WeatherMapSection = ({ selectedAddress, onClothingSuggestions }) => {
             </Card>
           </Grid>
         </Grid>
-
-        {/* AI Clothing Suggestions Bulletin */}
-        {weather && (
-          <Paper
-            elevation={1}
-            sx={{
-              mt: 3,
-              p: 3,
-              borderRadius: 2,
-              bgcolor: "linear-gradient(45deg, #e8f5e8 30%, #f1f8e9 90%)",
-              border: "2px solid #4caf50",
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: "bold",
-                  color: "#2e7d32",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                🤖 AI Climate-Fit Clothing Bulletin
-              </Typography>
-              {loadingSuggestions && (
-                <CircularProgress size={20} color="success" />
-              )}
-            </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Based on current weather conditions in {weather.location}:
-            </Typography>
-
-            <Box
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 1,
-                mb: 2,
-              }}
-            >
-              {clothingSuggestions.map((suggestion, index) => (
-                <Chip
-                  key={index}
-                  label={suggestion}
-                  size="medium"
-                  sx={{
-                    bgcolor: "#c8e6c9",
-                    color: "#1b5e20",
-                    fontSize: "0.875rem",
-                    fontWeight: "medium",
-                    "&:hover": {
-                      bgcolor: "#a5d6a7",
-                    },
-                  }}
-                />
-              ))}
-            </Box>
-
-            <Typography
-              variant="caption"
-              sx={{
-                fontStyle: "italic",
-                color: "#558b2f",
-                display: "block",
-                textAlign: "center",
-              }}
-            >
-              💡 These suggestions are generated by AI based on temperature (
-              {weather.temperature}°C), humidity ({weather.humidity}%), and
-              weather conditions ({weather.description})
-            </Typography>
-          </Paper>
-        )}
 
         {error && (
           <Alert severity="warning" sx={{ mt: 2 }}>

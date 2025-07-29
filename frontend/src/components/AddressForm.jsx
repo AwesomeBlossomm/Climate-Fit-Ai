@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   TextField,
   Select,
@@ -27,7 +28,9 @@ import {
   Alert,
   Tooltip,
 } from "@mui/material";
-import { Edit, Delete, Add, LocationOn } from "@mui/icons-material";
+import { Edit, Delete, Add, LocationOn, ShoppingCart, LocalOffer, Storefront } from "@mui/icons-material";
+import SensorOccupiedIcon from "@mui/icons-material/SensorOccupied";
+import { motion } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:8000/api/v1";
 
@@ -72,11 +75,14 @@ const fetchBarangays = async (cityCode) => {
 
 const AddressManagement = ({ onAddressSelect }) => {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showAllAddresses, setShowAllAddresses] = useState(false); // New state for toggling view
+  const [showAddressModal, setShowAddressModal] = useState(false); // New state for address modal
   const [notification, setNotification] = useState({
     show: false,
     message: "",
@@ -112,6 +118,38 @@ const AddressManagement = ({ onAddressSelect }) => {
   });
 
   const [isNCR, setIsNCR] = useState(false);
+
+  // Quick Actions Configuration
+  const quickActions = [
+    {
+      title: "Browse Products",
+      description: "Explore our eco-friendly product collection",
+      icon: <Storefront sx={{ fontSize: 40, color: "#ffffff" }} />,
+      action: () => navigate("/products"),
+      gradient: "linear-gradient(135deg, #8fa876 0%, #7a956a 100%)",
+    },
+    {
+      title: "View Discounts",
+      description: "Check out available offers and discounts",
+      icon: <LocalOffer sx={{ fontSize: 40, color: "#ffffff" }} />,
+      action: () => navigate("/discounts"),
+      gradient: "linear-gradient(135deg, #7a956a 0%, #6b8459 100%)",
+    },
+    {
+      title: "Shopping Cart",
+      description: "Review items in your cart",
+      icon: <ShoppingCart sx={{ fontSize: 40, color: "#ffffff" }} />,
+      action: () => navigate("/cart"),
+      gradient: "linear-gradient(135deg, #6b8459 0%, #5c7349 100%)",
+    },
+    {
+      title: "3D Body Scan",
+      description: "Explore the Modern way of Shopping",
+      icon: <SensorOccupiedIcon sx={{ fontSize: 40, color: "#ffffff" }} />,
+      action: () => navigate("/bodyscan"),
+      gradient: "linear-gradient(135deg, #5c7349 0%, #4a5d3a 100%)",
+    },
+  ];
 
   // Enhanced authentication check
   const checkAuth = () => {
@@ -696,19 +734,31 @@ const AddressManagement = ({ onAddressSelect }) => {
 
   return (
     <Box sx={{ 
-      maxWidth: 1400, 
-      mx: "auto", 
-      p: 3,
-      mt: 4,
+      display: "flex",
+      gap: 3,
+      width: "100%",
+      p: 2,
+      mt: 2,
+      backgroundColor: "transparent"
+    }}>
+    <Box sx={{ 
+      display: "flex",
+      gap: 3,
+      width: "100%",
+      p: 2,
+      mt: 2,
       backgroundColor: "transparent"
     }}>
       {notification.show && (
         <Alert
           severity={notification.type}
           sx={{ 
-            mb: 3,
-            borderRadius: "12px",
-            boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)"
+            position: "fixed",
+            top: 20,
+            right: 20,
+            zIndex: 1000,
+            borderRadius: "8px",
+            boxShadow: "0 2px 8px rgba(74, 93, 58, 0.1)",
           }}
           onClose={() =>
             setNotification({ show: false, message: "", type: "success" })
@@ -718,145 +768,128 @@ const AddressManagement = ({ onAddressSelect }) => {
         </Alert>
       )}
 
-      <Typography
-        variant="h4"
-        gutterBottom
-        sx={{ 
-          display: "flex", 
-          alignItems: "center", 
-          gap: 1,
-          fontWeight: 700,
-          color: "#4a5d3a",
-          fontSize: "2rem",
-          letterSpacing: 1,
-          mb: 4
-        }}
-      >
-        <LocationOn sx={{ color: "#4a5d3a", fontSize: "2rem" }} />
-        Address Management
-      </Typography>
-
-      {/* Saved Addresses Section */}
-      <Card sx={{ 
-        mb: 3,
-        borderRadius: "20px",
-        background: "#ffffff",
-        boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
-        border: "none"
+      {/* Left Side - Address Management (1/4 of screen) */}
+      <Box sx={{ 
+        width: "25%", 
+        minWidth: "300px",
+        flexShrink: 0 
       }}>
-        <CardContent>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 3,
-              p: 3,
-              pb: 2
-            }}
-          >
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontWeight: 700,
-                color: "#4a5d3a",
-                fontSize: "1.3rem"
-              }}
-            >
-              Saved Addresses
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => {
-                resetForm();
-                setEditingAddress(null);
-                setShowAddForm(true);
-              }}
+        {/* Compact Address Management Section */}
+        <Card sx={{ 
+          borderRadius: "12px",
+          background: "#ffffff",
+          boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)",
+          border: "1px solid rgba(74, 93, 58, 0.1)"
+        }}>
+          <CardContent sx={{ p: 2 }}>
+            <Box
               sx={{
-                backgroundColor: "#4a5d3a",
-                color: "#ffffff",
-                borderRadius: "25px",
-                px: 4,
-                py: 1.5,
-                fontWeight: 600,
-                textTransform: "none",
-                fontSize: "0.9rem",
-                boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
-                "&:hover": {
-                  backgroundColor: "#3a4d2a",
-                  boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)",
-                  transform: "translateY(-1px)"
-                },
-                transition: "all 0.2s ease",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2
               }}
             >
-              Add New Address
-            </Button>
-          </Box>
-
-          {loading && savedAddresses.length === 0 ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-              <CircularProgress />
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: "#4a5d3a",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1
+                }}
+              >
+                <LocationOn sx={{ color: "#4a5d3a" }} />
+                Delivery Address
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Add />}
+                onClick={() => {
+                  resetForm();
+                  setEditingAddress(null);
+                  setShowAddForm(true);
+                }}
+                sx={{
+                  color: "#4a5d3a",
+                  borderColor: "#4a5d3a",
+                  borderRadius: "20px",
+                  px: 2,
+                  py: 0.5,
+                  fontWeight: 500,
+                  textTransform: "none",
+                  "&:hover": {
+                    backgroundColor: "rgba(74, 93, 58, 0.05)",
+                    borderColor: "#3a4d2a"
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Add New
+              </Button>
             </Box>
-          ) : savedAddresses.length === 0 ? (
-            <Typography color="textSecondary" textAlign="center" sx={{ py: 3 }}>
-              No saved addresses found. Add your first address to get started.
-            </Typography>
-          ) : (
-            <RadioGroup
-              value={selectedAddressId}
-              onChange={(e) => handleAddressSelection(e.target.value)}
-            >
-              <Grid container spacing={2}>
-                {savedAddresses.map((address) => (
-                  <Grid item xs={12} md={6} key={address._id}>
+
+            {loading && savedAddresses.length === 0 ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                <CircularProgress size={24} sx={{ color: "#4a5d3a" }} />
+              </Box>
+            ) : savedAddresses.length === 0 ? (
+              <Typography color="textSecondary" textAlign="center" sx={{ py: 2 }}>
+                No saved addresses. Add your first address to get started.
+              </Typography>
+            ) : (
+              <RadioGroup
+                value={selectedAddressId}
+                onChange={(e) => handleAddressSelection(e.target.value)}
+              >
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {/* Show first 2 addresses, but ensure selected address is visible */}
+                  {(() => {
+                    const firstTwo = savedAddresses.slice(0, 2);
+                    const selectedAddress = savedAddresses.find(addr => addr._id === selectedAddressId);
+                    
+                    let addressesToShow;
+                    if (selectedAddress && !firstTwo.some(addr => addr._id === selectedAddressId)) {
+                      // Replace the second address with the selected one if selected is not in first 2
+                      addressesToShow = [firstTwo[0], selectedAddress].filter(Boolean);
+                    } else {
+                      addressesToShow = firstTwo;
+                    }
+                    
+                    return addressesToShow.map((address) => (
                     <Card
+                      key={address._id}
                       variant="outlined"
                       sx={{
-                        position: "relative",
                         border:
                           selectedAddressId === address._id
-                            ? "2px solid #4a5d3a"
+                            ? "1.5px solid #4a5d3a"
                             : "1px solid #e0e0e0",
-                        borderRadius: "16px",
-                        transition: "all 0.3s ease",
-                        background: selectedAddressId === address._id ? "rgba(74, 93, 58, 0.05)" : "#ffffff",
+                        borderRadius: "8px",
+                        transition: "all 0.2s ease",
+                        background: selectedAddressId === address._id ? "rgba(74, 93, 58, 0.03)" : "#ffffff",
                         "&:hover": {
-                          boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
-                          borderColor: "#4a5d3a",
-                          transform: "translateY(-2px)"
+                          boxShadow: "0 2px 8px rgba(74, 93, 58, 0.1)",
+                          borderColor: "#4a5d3a"
                         },
                       }}
                     >
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 1,
-                          }}
-                        >
+                      <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
+                        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
                           <Radio
                             value={address._id}
+                            size="small"
                             sx={{ 
-                              mt: -1,
+                              mt: -0.5,
                               color: "#4a5d3a",
-                              "&.Mui-checked": {
-                                color: "#4a5d3a"
-                              }
+                              "&.Mui-checked": { color: "#4a5d3a" }
                             }}
                           />
-                          <Box sx={{ flex: 1 }}>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                mb: 1,
-                              }}
-                            >
-                              <Typography variant="subtitle1" fontWeight="bold">
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                              <Typography variant="subtitle2" fontWeight="600">
                                 {address.recipient_name}
                               </Typography>
                               {address.is_default && (
@@ -864,10 +897,9 @@ const AddressManagement = ({ onAddressSelect }) => {
                                   label="Default"
                                   size="small"
                                   sx={{ 
-                                    fontWeight: "bold",
+                                    height: 20,
                                     backgroundColor: "#4a5d3a",
-                                    color: "#ffffff",
-                                    fontSize: "0.7rem"
+                                    color: "#ffffff"
                                   }}
                                 />
                               )}
@@ -876,325 +908,250 @@ const AddressManagement = ({ onAddressSelect }) => {
                                 variant="outlined"
                                 size="small"
                                 sx={{
-                                  borderColor: address.address_type === "Work" ? "#8fa876" : "#4a5d3a",
-                                  color: address.address_type === "Work" ? "#8fa876" : "#4a5d3a",
-                                  fontSize: "0.7rem",
-                                  fontWeight: 500
+                                  height: 20,
+                                  borderColor: "#4a5d3a",
+                                  color: "#4a5d3a"
                                 }}
                               />
                             </Box>
-
                             <Typography
                               variant="body2"
                               color="textSecondary"
-                              gutterBottom
                               sx={{
                                 display: "-webkit-box",
                                 WebkitLineClamp: 2,
                                 WebkitBoxOrient: "vertical",
                                 overflow: "hidden",
+                                mb: 0.5
                               }}
                             >
-                              📍 {formatAddress(address)}
+                              {formatAddress(address)}
                             </Typography>
-
-                            <Typography
-                              variant="body2"
-                              color="textSecondary"
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                              }}
-                            >
-                              📞 {address.contact_number}
-                            </Typography>
-
-                            <Typography
-                              variant="body2"
-                              color="textSecondary"
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                              }}
-                            >
-                              📮 {address.postal_code}
+                            <Typography variant="body2" color="textSecondary">
+                              📞 {address.contact_number} • 📮 {address.postal_code}
                             </Typography>
                           </Box>
-
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 0.5,
-                            }}
-                          >
-                            <Tooltip title="Edit Address">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEdit(address)}
-                                sx={{
-                                  color: "#4a5d3a",
-                                  "&:hover": {
-                                    backgroundColor: "rgba(74, 93, 58, 0.1)",
-                                    color: "#3a4d2a"
-                                  },
-                                }}
-                              >
-                                <Edit fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete Address">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDelete(address._id)}
-                                sx={{
-                                  color: "#d32f2f",
-                                  "&:hover": {
-                                    backgroundColor: "rgba(211, 47, 47, 0.1)",
-                                    color: "#b71c1c"
-                                  },
-                                }}
-                              >
-                                <Delete fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEdit(address)}
+                              sx={{
+                                color: "#4a5d3a",
+                                p: 0.5,
+                                "&:hover": { backgroundColor: "rgba(74, 93, 58, 0.1)" }
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDelete(address._id)}
+                              sx={{
+                                color: "#d32f2f",
+                                p: 0.5,
+                                "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.1)" }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
                           </Box>
                         </Box>
-
                         {!address.is_default && (
                           <Button
                             size="small"
                             onClick={() => handleSetDefault(address._id)}
                             sx={{
                               mt: 1,
+                              ml: 4,
                               textTransform: "none",
                               color: "#4a5d3a",
-                              borderColor: "#4a5d3a",
-                              fontWeight: 500,
-                              "&:hover": {
-                                backgroundColor: "rgba(74, 93, 58, 0.1)",
-                                borderColor: "#3a4d2a"
-                              },
+                              p: 0.5,
+                              minHeight: "auto",
+                              "&:hover": { backgroundColor: "rgba(74, 93, 58, 0.05)" }
                             }}
-                            variant="outlined"
-                            startIcon={<LocationOn fontSize="small" />}
                           >
                             Set as Default
                           </Button>
                         )}
                       </CardContent>
                     </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </RadioGroup>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Selected Address Summary */}
-      {selectedAddressId && (
-        <Card
-          sx={{
-            mb: 3,
-            borderRadius: "20px",
-            background: "linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%)",
-            border: "2px solid #4a5d3a",
-            boxShadow: "0 10px 30px rgba(74, 93, 58, 0.2)",
-            position: "relative",
-            overflow: "hidden",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "4px",
-              background: "linear-gradient(90deg, #4a5d3a 0%, #8fa876 100%)"
-            }
-          }}
-        >
-          <CardContent sx={{ pt: 3, px: 4, pb: 3 }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1.5,
-                fontWeight: 700,
-                color: "#4a5d3a",
-                fontSize: "1.3rem",
-                mb: 3
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: "#4a5d3a",
-                  borderRadius: "50%",
-                  width: 40,
-                  height: 40,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >
-                <LocationOn sx={{ color: "#ffffff", fontSize: "1.2rem" }} />
-              </Box>
-              Selected Address for Weather & Delivery
-            </Typography>
-            {(() => {
-              const selected = savedAddresses.find(
-                (addr) => addr._id === selectedAddressId
-              );
-              return selected ? (
-                <Box
-                  sx={{
-                    backgroundColor: "rgba(255, 255, 255, 0.8)",
-                    borderRadius: "16px",
-                    p: 3,
-                    border: "1px solid rgba(74, 93, 58, 0.2)",
-                    backdropFilter: "blur(10px)"
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                    sx={{
-                      color: "#4a5d3a",
-                      mb: 2,
-                      fontSize: "1.1rem"
-                    }}
-                  >
-                    {selected.recipient_name}
-                  </Typography>
+                  ));
+                  })()}
                   
-                  <Box sx={{ mb: 2 }}>
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        mb: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        color: "#2c3e2c",
-                        fontWeight: 500
-                      }}
-                    >
-                      <Box
+                  {/* Show more button when there are more than 2 addresses */}
+                  {savedAddresses.length > 2 && (
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
+                      <Button
+                        size="small"
+                        onClick={() => setShowAddressModal(true)}
                         sx={{
-                          backgroundColor: "#8fa876",
-                          borderRadius: "50%",
-                          width: 24,
-                          height: 24,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "0.8rem"
+                          textTransform: "none",
+                          color: "#4a5d3a",
+                          fontWeight: 500,
+                          minHeight: "auto",
+                          py: 0.5,
+                          px: 2,
+                          "&:hover": { backgroundColor: "rgba(74, 93, 58, 0.05)" }
                         }}
                       >
-                        📍
-                      </Box>
-                      {formatAddress(selected)}
-                    </Typography>
-                    
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        mb: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        color: "#2c3e2c",
-                        fontWeight: 500
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          backgroundColor: "#8fa876",
-                          borderRadius: "50%",
-                          width: 24,
-                          height: 24,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "0.8rem"
-                        }}
-                      >
-                        📞
-                      </Box>
-                      {selected.contact_number}
-                    </Typography>
-                    
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        color: "#2c3e2c",
-                        fontWeight: 500
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          backgroundColor: "#8fa876",
-                          borderRadius: "50%",
-                          width: 24,
-                          height: 24,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "0.8rem"
-                        }}
-                      >
-                        📮
-                      </Box>
-                      {selected.postal_code}
-                    </Typography>
-                  </Box>
-                  
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 1.5,
-                      mt: 2,
-                      flexWrap: "wrap"
-                    }}
-                  >
-                    <Chip
-                      label={selected.address_type || "Home"}
-                      size="medium"
-                      sx={{
-                        backgroundColor: "#4a5d3a",
-                        color: "#ffffff",
-                        fontWeight: 600,
-                        fontSize: "0.8rem",
-                        px: 1
-                      }}
-                    />
-                    {selected.is_default && (
-                      <Chip 
-                        label="✨ Default" 
-                        size="medium"
-                        sx={{
-                          backgroundColor: "#8fa876",
-                          color: "#ffffff",
-                          fontWeight: 600,
-                          fontSize: "0.8rem",
-                          px: 1
-                        }}
-                      />
-                    )}
-                  </Box>
+                        View All {savedAddresses.length} Address{savedAddresses.length > 1 ? 'es' : ''}
+                      </Button>
+                    </Box>
+                  )}
                 </Box>
-              ) : null;
-            })()}
+              </RadioGroup>
+            )}
           </CardContent>
         </Card>
-      )}
+      </Box>
+
+      {/* Right Side - Quick Actions (3/4 of screen) */}
+      <Box sx={{ 
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        minHeight: "400px"
+      }}>
+        <Typography 
+          variant="h4"
+          sx={{ 
+            fontWeight: 700,
+            color: "#4a5d3a",
+            mb: 4,
+            fontSize: "1.5rem",
+            letterSpacing: 1,
+          }}
+        >
+          QUICK ACTIONS
+        </Typography>
+
+        {/* Quick Actions Cards in One Row */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 3,
+            justifyContent: "center",
+            flexWrap: "nowrap", // Ensure cards stay in one line
+            width: "100%",
+            maxWidth: "1000px"
+          }}
+        >
+          {quickActions.map((action, index) => (
+            <Box
+              key={index}
+              component={motion.div}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.03, y: -5 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{
+                duration: 0.6,
+                delay: index * 0.1,
+                hover: { duration: 0.2 },
+              }}
+              onClick={action.action}
+              sx={{
+                borderRadius: "20px",
+                background: action.gradient,
+                boxShadow: "0 8px 25px rgba(74, 93, 58, 0.25)",
+                cursor: "pointer",
+                p: 3,
+                flex: "1", // Equal width for all cards
+                minWidth: 0, // Allow shrinking if needed
+                maxWidth: "220px", // Maximum width to maintain proportion
+                height: "240px", // Fixed height for all cards
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "space-between",
+                textAlign: "center",
+                "&:hover": {
+                  boxShadow: "0 12px 35px rgba(74, 93, 58, 0.35)",
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              {/* Icon Container */}
+              <Box
+                sx={{
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  borderRadius: "50%",
+                  width: 70,
+                  height: 70,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backdropFilter: "blur(10px)",
+                  mb: 2,
+                }}
+              >
+                {React.cloneElement(action.icon, {
+                  sx: { fontSize: 35, color: "#ffffff" },
+                })}
+              </Box>
+
+              {/* Content */}
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    mb: 1,
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  {action.title}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "rgba(255,255,255,0.9)",
+                    fontSize: "0.85rem",
+                    lineHeight: 1.3,
+                    mb: 2,
+                  }}
+                >
+                  {action.description}
+                </Typography>
+              </Box>
+
+              {/* Action Button */}
+              <Button
+                variant="contained"
+                sx={{
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  color: "#ffffff",
+                  borderRadius: "16px",
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: "0.85rem",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  minWidth: "120px",
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.3)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Get Started
+              </Button>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
 
       {/* Add/Edit Address Dialog */}
       <Dialog
@@ -1208,22 +1165,21 @@ const AddressManagement = ({ onAddressSelect }) => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: "20px",
-            background: "linear-gradient(135deg, #ffffff 0%, #f8fdf8 100%)",
-            boxShadow: "0 20px 40px rgba(74, 93, 58, 0.2)",
-            border: "1px solid rgba(74, 93, 58, 0.1)"
+            borderRadius: "12px",
+            boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
+            minWidth: "900px",
+            width: "90vw"
           }
         }}
       >
         <DialogTitle
           sx={{
-            background: "linear-gradient(135deg, #4a5d3a 0%, #5c7349 100%)",
+            backgroundColor: "#4a5d3a",
             color: "#ffffff",
-            fontWeight: 700,
-            fontSize: "1.3rem",
+            fontWeight: 600,
+            fontSize: "1.1rem",
             textAlign: "center",
-            py: 3,
-            borderRadius: "20px 20px 0 0"
+            py: 2
           }}
         >
           {editingAddress ? "✏️ Edit Address" : "📍 Add New Address"}
@@ -1602,9 +1558,21 @@ const AddressManagement = ({ onAddressSelect }) => {
                       name="is_default"
                       checked={formData.is_default}
                       onChange={handleChange}
+                      sx={{
+                        color: '#4a5d3a',
+                        '&.Mui-checked': {
+                          color: '#4a5d3a',
+                        },
+                      }}
                     />
                   }
                   label="Set as default address"
+                  sx={{
+                    '& .MuiFormControlLabel-label': {
+                      color: '#2c3e2c',
+                      fontWeight: 500,
+                    },
+                  }}
                 />
               </Grid>
             </Grid>
@@ -1612,11 +1580,10 @@ const AddressManagement = ({ onAddressSelect }) => {
         </DialogContent>
         <DialogActions
           sx={{
-            background: "linear-gradient(135deg, #f8fdf8 0%, #ffffff 100%)",
-            px: 4,
-            py: 3,
-            gap: 2,
-            borderTop: "1px solid rgba(74, 93, 58, 0.1)"
+            px: 3,
+            py: 2,
+            gap: 1,
+            backgroundColor: "#f8f8f8"
           }}
         >
           <Button
@@ -1626,16 +1593,17 @@ const AddressManagement = ({ onAddressSelect }) => {
               resetForm();
             }}
             variant="outlined"
+            size="small"
             sx={{
               borderColor: "#4a5d3a",
               color: "#4a5d3a",
-              borderRadius: "25px",
-              px: 4,
-              py: 1.5,
-              fontWeight: 600,
+              borderRadius: "20px",
+              px: 3,
+              py: 1,
+              fontWeight: 500,
               textTransform: "none",
               "&:hover": {
-                backgroundColor: "rgba(74, 93, 58, 0.1)",
+                backgroundColor: "rgba(74, 93, 58, 0.05)",
                 borderColor: "#3a4d2a"
               }
             }}
@@ -1645,19 +1613,18 @@ const AddressManagement = ({ onAddressSelect }) => {
           <Button 
             onClick={handleSubmit} 
             variant="contained" 
+            size="small"
             disabled={loading}
             sx={{
               backgroundColor: "#4a5d3a",
               color: "#ffffff",
-              borderRadius: "25px",
-              px: 4,
-              py: 1.5,
-              fontWeight: 600,
+              borderRadius: "20px",
+              px: 3,
+              py: 1,
+              fontWeight: 500,
               textTransform: "none",
-              boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
               "&:hover": {
-                backgroundColor: "#3a4d2a",
-                boxShadow: "0 6px 20px rgba(74, 93, 58, 0.4)"
+                backgroundColor: "#3a4d2a"
               },
               "&:disabled": {
                 backgroundColor: "#a0a0a0",
@@ -1666,12 +1633,267 @@ const AddressManagement = ({ onAddressSelect }) => {
             }}
           >
             {loading ? (
-              <CircularProgress size={24} sx={{ color: "#ffffff" }} />
+              <CircularProgress size={16} sx={{ color: "#ffffff" }} />
             ) : editingAddress ? (
-              "Update Address"
+              "Update"
             ) : (
-              "Add Address"
+              "Add"
             )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* All Addresses Modal */}
+      <Dialog
+        open={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "12px",
+            boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15)",
+            maxHeight: "80vh"
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "#4a5d3a",
+            color: "#ffffff",
+            fontWeight: 600,
+            fontSize: "1.2rem",
+            textAlign: "center",
+            py: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}
+        >
+          <Typography variant="h6" sx={{ color: "#ffffff", fontWeight: 600 }}>
+            All Saved Addresses ({savedAddresses.length})
+          </Typography>
+          <IconButton
+            onClick={() => setShowAddressModal(false)}
+            sx={{ color: "#ffffff", p: 1 }}
+          >
+            <Delete sx={{ transform: "rotate(45deg)" }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2, maxHeight: "60vh", overflowY: "auto" }}>
+          <RadioGroup
+            value={selectedAddressId}
+            onChange={(e) => {
+              handleAddressSelection(e.target.value);
+              setShowAddressModal(false); // Close modal after selection
+            }}
+            sx={{ gap: 2 }}
+          >
+            {savedAddresses.map((address) => (
+              <Card
+                key={address._id}
+                variant="outlined"
+                sx={{
+                  border:
+                    selectedAddressId === address._id
+                      ? "2px solid #4a5d3a"
+                      : "1px solid #e0e0e0",
+                  borderRadius: "12px",
+                  transition: "all 0.2s ease",
+                  background: selectedAddressId === address._id ? "rgba(74, 93, 58, 0.05)" : "#ffffff",
+                  "&:hover": {
+                    boxShadow: "0 4px 12px rgba(74, 93, 58, 0.15)",
+                    borderColor: "#4a5d3a"
+                  },
+                  cursor: "pointer"
+                }}
+                onClick={() => {
+                  handleAddressSelection(address._id);
+                  setShowAddressModal(false);
+                }}
+              >
+                <CardContent sx={{ p: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                    <Radio
+                      value={address._id}
+                      sx={{ 
+                        mt: -0.5,
+                        color: "#4a5d3a",
+                        "&.Mui-checked": { color: "#4a5d3a" }
+                      }}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      {/* Header with name and badges */}
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                        <Typography variant="h6" fontWeight="600" sx={{ color: "#4a5d3a" }}>
+                          {address.recipient_name}
+                        </Typography>
+                        {address.is_default && (
+                          <Chip
+                            label="Default"
+                            size="small"
+                            sx={{ 
+                              backgroundColor: "#4a5d3a",
+                              color: "#ffffff",
+                              fontWeight: 600
+                            }}
+                          />
+                        )}
+                        <Chip
+                          label={address.address_type || "Home"}
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            borderColor: "#4a5d3a",
+                            color: "#4a5d3a"
+                          }}
+                        />
+                      </Box>
+
+                      {/* Full Address */}
+                      <Typography
+                        variant="body1"
+                        color="textPrimary"
+                        sx={{ mb: 1, lineHeight: 1.4 }}
+                      >
+                        {formatAddress(address)}
+                      </Typography>
+
+                      {/* Contact Info */}
+                      <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          📞 {address.contact_number}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          📮 {address.postal_code}
+                        </Typography>
+                      </Box>
+
+                      {/* Action buttons */}
+                      <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<Edit />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(address);
+                            setShowAddressModal(false);
+                          }}
+                          sx={{
+                            color: "#4a5d3a",
+                            borderColor: "#4a5d3a",
+                            textTransform: "none",
+                            "&:hover": {
+                              backgroundColor: "rgba(74, 93, 58, 0.05)",
+                              borderColor: "#3a4d2a"
+                            }
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<Delete />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(address._id);
+                            if (savedAddresses.length <= 3) {
+                              setShowAddressModal(false);
+                            }
+                          }}
+                          sx={{
+                            color: "#d32f2f",
+                            borderColor: "#d32f2f",
+                            textTransform: "none",
+                            "&:hover": {
+                              backgroundColor: "rgba(211, 47, 47, 0.05)",
+                              borderColor: "#b71c1c"
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                        {!address.is_default && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetDefault(address._id);
+                            }}
+                            sx={{
+                              backgroundColor: "#4a5d3a",
+                              color: "#ffffff",
+                              textTransform: "none",
+                              "&:hover": {
+                                backgroundColor: "#3a4d2a"
+                              }
+                            }}
+                          >
+                            Set as Default
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </RadioGroup>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            gap: 1,
+            backgroundColor: "#f8f8f8",
+            justifyContent: "space-between"
+          }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<Add />}
+            onClick={() => {
+              resetForm();
+              setEditingAddress(null);
+              setShowAddForm(true);
+              setShowAddressModal(false);
+            }}
+            sx={{
+              color: "#4a5d3a",
+              borderColor: "#4a5d3a",
+              borderRadius: "20px",
+              px: 3,
+              py: 1,
+              fontWeight: 500,
+              textTransform: "none",
+              "&:hover": {
+                backgroundColor: "rgba(74, 93, 58, 0.05)",
+                borderColor: "#3a4d2a"
+              }
+            }}
+          >
+            Add New Address
+          </Button>
+          <Button
+            onClick={() => setShowAddressModal(false)}
+            variant="contained"
+            sx={{
+              backgroundColor: "#4a5d3a",
+              color: "#ffffff",
+              borderRadius: "20px",
+              px: 3,
+              py: 1,
+              fontWeight: 500,
+              textTransform: "none",
+              "&:hover": {
+                backgroundColor: "#3a4d2a"
+              }
+            }}
+          >
+            Done
           </Button>
         </DialogActions>
       </Dialog>

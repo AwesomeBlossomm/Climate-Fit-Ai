@@ -467,23 +467,256 @@ const PaymentManager = () => {
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          backgroundColor: "#f0f8f0",
-          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Box textAlign="center">
-          <CircularProgress size={60} sx={{ color: "#4a5d3a" }} />
-          <Typography variant="h6" sx={{ mt: 2, color: "#4a5d3a" }}>
-            Loading payments...
-          </Typography>
+      <>
+        {/* Fixed Header - Show even during loading */}
+        <Box
+          component="header"
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          width="100%"
+          sx={{
+            px: 4,
+            py: 2,
+            backgroundColor: "#4a5d3a",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            zIndex: 1100,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          }}
+        >
+          {/* Logo and Title */}
+          <Box display="flex" alignItems="center">
+            <Box
+              onClick={() => navigate("/dashboard")}
+              display="flex"
+              alignItems="center"
+              sx={{
+                textDecoration: "none",
+                cursor: "pointer",
+                "&:hover": {
+                  opacity: 0.9,
+                },
+                transition: "opacity 0.2s ease",
+              }}
+            >
+              <Box
+                component="img"
+                src="src/assets/ClimateFitLogo.png"
+                alt="Climate Fit Logo"
+                sx={{
+                  width: "50px",
+                  height: "30px",
+                  objectFit: "cover",
+                  mr: 2,
+                }}
+              />
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  letterSpacing: 1.5,
+                  color: "#ffffff",
+                  fontSize: "1.2rem",
+                }}
+              >
+                ORDER MANAGER
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Header Actions - Disabled during loading */}
+          <Box display="flex" alignItems="center" gap={2}>
+            <Button
+              onClick={() => navigate("/dashboard")}
+              startIcon={<ArrowBack />}
+              variant="outlined"
+              sx={{
+                backgroundColor: "transparent",
+                color: "#ffffff",
+                border: "2px solid #ffffff",
+                borderRadius: "25px",
+                px: 3,
+                py: 1,
+                fontWeight: 600,
+                textTransform: "none",
+                fontSize: "0.9rem",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderColor: "#ffffff",
+                },
+              }}
+            >
+              Back
+            </Button>
+            <Button
+              disabled
+              startIcon={<Refresh />}
+              variant="outlined"
+              sx={{
+                backgroundColor: "transparent",
+                color: "rgba(255,255,255,0.5)",
+                border: "2px solid rgba(255,255,255,0.3)",
+                borderRadius: "25px",
+                px: 3,
+                py: 1,
+                fontWeight: 600,
+                textTransform: "none",
+                fontSize: "0.9rem",
+              }}
+            >
+              Loading...
+            </Button>
+          </Box>
         </Box>
-      </Box>
+
+        {/* Loading Content with ProductTable.jsx style */}
+        <Box
+          sx={{
+            pt: 12,
+            mt: 10,
+            minHeight: "100vh",
+            backgroundColor: "#f0f8f0",
+            background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)",
+            px: { xs: 2, md: 4 },
+            py: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Page Header with loading animation */}
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            sx={{
+              maxWidth: 1400,
+              width: "100%",
+              mx: "auto",
+              mb: 4,
+            }}
+          >
+            <Box
+              sx={{
+                background: "#4a5d3a",
+                borderRadius: "24px",
+                p: 4,
+                boxShadow: "0 10px 30px rgba(74, 93, 58, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "16px",
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Receipt sx={{ fontSize: 40, color: "#ffffff" }} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    fontSize: "2rem",
+                    mb: 1,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Order Manager 📋
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.9)",
+                    fontSize: "1rem",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Loading payment data and order information...
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "12px",
+                  px: 3,
+                  py: 1,
+                  backdropFilter: "blur(10px)",
+                  textAlign: "center",
+                }}
+              >
+                <CircularProgress size={24} sx={{ color: "#ffffff", mb: 1 }} />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.7)",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  Loading...
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Loading Content Area */}
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            sx={{
+              maxWidth: 1400,
+              width: "100%",
+              mx: "auto",
+            }}
+          >
+            <Paper
+              sx={{
+                borderRadius: "20px",
+                boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
+                overflow: "hidden",
+                background: "#ffffff",
+                p: 6,
+                textAlign: "center",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 3,
+                  color: "#4a5d3a",
+                }}
+              >
+                <CircularProgress size={80} sx={{ color: "#4a5d3a" }} />
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: "#4a5d3a",
+                  }}
+                >
+                  Loading Payment Manager
+                </Typography>
+              </Box>
+            </Paper>
+          </Box>
+        </Box>
+      </>
     );
   }
 
@@ -949,82 +1182,6 @@ const PaymentManager = () => {
                     )}
                   </Box>
                 </Paper>
-              </Box>
-            )}
-
-            {/* Payment Summary Cards - Show only on Payment Status tab */}
-            {activeMainTab === 0 && (
-              <Box
-                component={motion.div}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-              >
-                <Grid container spacing={3} sx={{ mb: 3 }}>
-                  {paymentStatuses.map((status) => {
-                    const statusPayments = Array.isArray(payments[status.value])
-                      ? payments[status.value]
-                      : [];
-                    const totalAmount = statusPayments.reduce(
-                      (sum, payment) => sum + Number(payment.total_amount || 0),
-                      0
-                    );
-
-                    return (
-                      <Grid item xs={12} sm={6} md={2.4} key={status.value}>
-                        <Card
-                          sx={{
-                            borderTop: `4px solid ${status.color}`,
-                            cursor: "pointer",
-                            borderRadius: "16px",
-                            background: "#ffffff",
-                            boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)",
-                            border: "1px solid rgba(74, 93, 58, 0.1)",
-                            "&:hover": {
-                              boxShadow: "0 8px 25px rgba(74, 93, 58, 0.2)",
-                              transform: "translateY(-4px)",
-                            },
-                            transition: "all 0.3s ease",
-                          }}
-                          onClick={() => {
-                            const tabIndex = paymentStatuses.findIndex(
-                              (s) => s.value === status.value
-                            );
-                            setActiveTab(tabIndex);
-                          }}
-                        >
-                          <CardContent sx={{ textAlign: "center" }}>
-                            <Typography
-                              variant="h4"
-                              sx={{
-                                fontWeight: 700,
-                                color: "#4a5d3a",
-                              }}
-                            >
-                              {statusPayments.length}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{ color: "#6b8459", fontWeight: 600 }}
-                            >
-                              {status.label}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                mt: 1,
-                                fontWeight: 700,
-                                color: "#4a5d3a",
-                              }}
-                            >
-                              {formatCurrency(totalAmount)}
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
               </Box>
             )}
 

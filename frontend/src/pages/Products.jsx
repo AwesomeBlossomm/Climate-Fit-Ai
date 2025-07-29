@@ -54,7 +54,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { clothingAPI } from "../services/api";
 import { discountAPI } from "../services/discountApi";
-import WeatherMapSection from "../components/WeatherMapSection";
+import WeatherWidget from "../components/WeatherWidget";
 import { useAddressSelection } from "../components/AddressForm";
 
 const Products = () => {
@@ -788,391 +788,670 @@ const Products = () => {
       </Box>
 
       <Container maxWidth="xl" sx={{ py: 4, pt: 12, mt: 8 }}>
-        {/* Weather Section */}
+        {/* Weather Widget and Search Section in one row */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <Box sx={{ mb: 4 }}>
-            <WeatherMapSection
-              selectedAddress={selectedAddress}
-              onClothingSuggestions={setClothingSuggestions} // <-- Add this prop
-            />
-          </Box>
-        </motion.div>
+          <Box sx={{ mb: 4, display: "flex", gap: 3, alignItems: "flex-start" }}>
+            {/* Weather Widget - Left side */}
+            <Box sx={{ minWidth: 400, maxWidth: 400, flexShrink: 0 }}>
+              <WeatherWidget
+                selectedAddress={selectedAddress}
+                onClothingSuggestions={setClothingSuggestions}
+              />
+            </Box>
 
-        {/* Search Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <Box sx={{ mb: 4 }}>
-            <Paper
-              elevation={3}
-              sx={{
-                p: 3,
-                borderRadius: 4,
-                background: "#ffffff",
-                boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
-              }}
-            >
-              <Typography
-                variant="h6"
-                gutterBottom
+            {/* Search Section - Right side */}
+            <Box sx={{ flex: 1 }}>
+              <Paper
+                elevation={3}
                 sx={{
-                  fontWeight: 700,
-                  color: "#4a5d3a",
-                  mb: 2,
-                  fontSize: "1.2rem",
-                  letterSpacing: 0.5,
+                  p: 3,
+                  borderRadius: 4,
+                  background: "linear-gradient(135deg, #4a5d3a 0%, #6b8459 100%)",
+                  boxShadow: "0 10px 30px rgba(74, 93, 58, 0.3)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  backdropFilter: "blur(10px)",
                 }}
               >
-                🔍 Search Fashion Items
-              </Typography>
-              <Box display="flex" gap={1} alignItems="center" mb={2}>
-                <TextField
-                  fullWidth
-                  value={tempSearchQuery}
-                  onChange={(e) => setTempSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                  placeholder="Search products..."
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    ),
-                    endAdornment: tempSearchQuery && (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleClearSearch} size="small">
-                          <Clear />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ borderRadius: 2 }}
-                  disabled={loading}
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleSearch}
-                  disabled={loading}
+                <Typography
+                  variant="h6"
+                  gutterBottom
                   sx={{
-                    bgcolor: "#4a5d3a",
-                    "&:hover": { bgcolor: "#3a4d2a" },
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: "25px",
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                    minWidth: "100px",
-                    boxShadow: "0 4px 15px rgba(74, 93, 58, 0.3)",
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    mb: 2,
+                    fontSize: "1.2rem",
+                    letterSpacing: 0.5,
                   }}
                 >
-                  {loading ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    "SEARCH"
-                  )}
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<TuneOutlined />}
-                  onClick={() => setShowFilters(!showFilters)}
-                  sx={{
-                    color: "#4a5d3a",
-                    borderColor: "#4a5d3a",
-                    borderRadius: "25px",
-                    px: 3,
-                    py: 1.5,
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                    minWidth: "120px",
-                    position: "relative",
-                    "&:hover": {
-                      backgroundColor: "rgba(74, 93, 58, 0.1)",
-                      borderColor: "#4a5d3a",
-                    },
-                  }}
-                >
-                  FILTERS
-                  {getActiveFiltersCount() > 0 && (
-                    <Badge
-                      badgeContent={getActiveFiltersCount()}
-                      color="error"
-                      sx={{
-                        position: "absolute",
-                        top: -8,
-                        right: -8,
-                      }}
-                    />
-                  )}
-                </Button>
-              </Box>
-
-              {/* Filters Section */}
-              {showFilters && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  style={{ overflow: "hidden" }}
-                >
-                  <Paper
-                    elevation={2}
+                  🔍 Search Fashion Items
+                </Typography>
+                <Box display="flex" gap={1} alignItems="center" mb={2}>
+                  <TextField
+                    fullWidth
+                    value={tempSearchQuery}
+                    onChange={(e) => setTempSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    placeholder="Search products..."
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search sx={{ color: "#4a5d3a" }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: tempSearchQuery && (
+                        <InputAdornment position="end">
+                          <IconButton onClick={handleClearSearch} size="small">
+                            <Clear sx={{ color: "#4a5d3a" }} />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{ 
+                      borderRadius: 2,
+                      backgroundColor: "rgba(255, 255, 255, 0.9)",
+                      backdropFilter: "blur(10px)",
+                      "& .MuiOutlinedInput-root": {
+                        "& fieldset": {
+                          borderColor: "rgba(255, 255, 255, 0.3)",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "rgba(255, 255, 255, 0.5)",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#ffffff",
+                        },
+                      },
+                      "& .MuiInputBase-input": {
+                        color: "#4a5d3a",
+                        fontWeight: 500,
+                      },
+                      "& .MuiInputBase-input::placeholder": {
+                        color: "#6b8459",
+                        opacity: 0.8,
+                      },
+                    }}
+                    disabled={loading}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleSearch}
+                    disabled={loading}
                     sx={{
-                      p: 3,
-                      mt: 2,
-                      bgcolor: "rgba(74, 93, 58, 0.05)",
-                      borderRadius: 3,
-                      border: "1px solid rgba(74, 93, 58, 0.1)",
+                      bgcolor: "rgba(255, 255, 255, 0.9)",
+                      color: "#4a5d3a",
+                      "&:hover": { 
+                        bgcolor: "rgba(255, 255, 255, 1)",
+                        boxShadow: "0 6px 20px rgba(255, 255, 255, 0.3)",
+                      },
+                      px: 3,
+                      py: 1.5,
+                      borderRadius: "25px",
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                      minWidth: "100px",
+                      boxShadow: "0 4px 15px rgba(255, 255, 255, 0.2)",
+                      backdropFilter: "blur(10px)",
+                      border: "1px solid rgba(255, 255, 255, 0.3)",
                     }}
                   >
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      mb={2}
-                    >
-                      <Typography
-                        variant="h6"
-                        sx={{ color: "#4a5d3a", fontWeight: 700 }}
-                      >
-                        <FilterList sx={{ mr: 1, verticalAlign: "middle" }} />
-                        Filter Products
-                      </Typography>
-                      <Button
-                        variant="text"
-                        onClick={handleClearFilters}
+                    {loading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      "SEARCH"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<TuneOutlined />}
+                    onClick={() => setShowFilters(!showFilters)}
+                    sx={{
+                      color: "#ffffff", 
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      backdropFilter: "blur(10px)",
+                      borderRadius: "25px",
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                      minWidth: "120px",
+                      position: "relative",
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 255, 255, 0.2)",
+                        borderColor: "rgba(255, 255, 255, 0.7)",
+                        boxShadow: "0 4px 15px rgba(255, 255, 255, 0.2)",
+                      },
+                    }}
+                  >
+                    FILTERS
+                    {getActiveFiltersCount() > 0 && (
+                      <Badge
+                        badgeContent={getActiveFiltersCount()}
+                        color="error"
                         sx={{
-                          color: "#d32f2f",
-                          fontWeight: 600,
-                          "&:hover": {
-                            backgroundColor: "rgba(211, 47, 47, 0.1)",
-                          },
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
                         }}
-                        disabled={getActiveFiltersCount() === 0}
+                      />
+                    )}
+                  </Button>
+                </Box>
+
+                {/* Filters Section */}
+                {showFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <Paper
+                      elevation={2}
+                      sx={{
+                        p: 3,
+                        mt: 2,
+                        background: "linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)",
+                        backdropFilter: "blur(15px)",
+                        borderRadius: 3,
+                        border: "2px solid rgba(74, 93, 58, 0.2)",
+                        boxShadow: "0 8px 25px rgba(74, 93, 58, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5)",
+                        position: "relative",
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: "linear-gradient(135deg, rgba(74, 93, 58, 0.05) 0%, rgba(107, 132, 89, 0.05) 100%)",
+                          borderRadius: 3,
+                          zIndex: 0,
+                        },
+                      }}
+                    >
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mb={2}
+                        sx={{ 
+                          position: "relative", 
+                          zIndex: 1,
+                          p: 2,
+                          mx: -1,
+                          borderRadius: 2,
+                          background: "linear-gradient(135deg, rgba(74, 93, 58, 0.1) 0%, rgba(107, 132, 89, 0.1) 100%)",
+                          border: "1px solid rgba(74, 93, 58, 0.2)",
+                        }}
                       >
-                        Clear All
-                      </Button>
-                    </Box>
+                        <Typography
+                          variant="h6"
+                          sx={{ 
+                            color: "#4a5d3a", 
+                            fontWeight: 700,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <FilterList sx={{ color: "#6b8459" }} />
+                          Filter Products
+                        </Typography>
+                        <Button
+                          variant="outlined"
+                          onClick={handleClearFilters}
+                          size="small"
+                          sx={{
+                            color: "#d32f2f",
+                            borderColor: "rgba(211, 47, 47, 0.3)",
+                            backgroundColor: "rgba(211, 47, 47, 0.05)",
+                            fontWeight: 600,
+                            fontSize: "0.8rem",
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: "20px",
+                            "&:hover": {
+                              backgroundColor: "rgba(211, 47, 47, 0.1)",
+                              borderColor: "rgba(211, 47, 47, 0.5)",
+                              boxShadow: "0 2px 8px rgba(211, 47, 47, 0.2)",
+                            },
+                          }}
+                          disabled={getActiveFiltersCount() === 0}
+                        >
+                          Clear All ({getActiveFiltersCount()})
+                        </Button>
+                      </Box>
 
-                    <Grid container spacing={2}>
-                      {/* Price Range Filter */}
-                      <Grid item xs={12} sm={6}>
-                        <Typography
-                          variant="subtitle2"
-                          gutterBottom
-                          sx={{ fontWeight: "bold" }}
-                        >
-                          💰 Price Range (₱)
-                        </Typography>
-                        <Box display="flex" gap={1} alignItems="center">
-                          <TextField
-                            size="small"
-                            type="number"
-                            placeholder="Min"
-                            value={filters.priceMin}
-                            onChange={(e) =>
-                              handleFilterChange("priceMin", e.target.value)
-                            }
-                            inputProps={{ min: 0 }}
-                            sx={{ width: "80px" }}
-                          />
-                          <Typography variant="body2">to</Typography>
-                          <TextField
-                            size="small"
-                            type="number"
-                            placeholder="Max"
-                            value={filters.priceMax}
-                            onChange={(e) =>
-                              handleFilterChange("priceMax", e.target.value)
-                            }
-                            inputProps={{ min: 0 }}
-                            sx={{ width: "80px" }}
-                          />
-                        </Box>
-                      </Grid>
-                      {/* Category Filter */}
-                      <Grid item xs={12} sm={6}>
-                        <Typography
-                          variant="subtitle2"
-                          gutterBottom
-                          sx={{ fontWeight: "bold" }}
-                        >
-                          👗 Category
-                        </Typography>
-                        <FormControl size="small" fullWidth>
-                          <Select
-                            value={filters.category}
-                            onChange={(e) =>
-                              handleFilterChange("category", e.target.value)
-                            }
-                            displayEmpty
+                      <Grid container spacing={3} sx={{ position: "relative", zIndex: 1, mt: 1 }}>
+                        {/* Price Range Filter */}
+                        <Grid item xs={12} sm={6}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
+                              background: "rgba(74, 93, 58, 0.05)",
+                              border: "1px solid rgba(74, 93, 58, 0.1)",
+                              backdropFilter: "blur(5px)",
+                            }}
                           >
-                            <MenuItem value="">All Categories</MenuItem>
-                            <MenuItem value="Dresses">Dresses</MenuItem>
-                            <MenuItem value="Shoes">Shoes</MenuItem>
-                            <MenuItem value="Accessories">Accessories</MenuItem>
-                            <MenuItem value="Shirts">Shirts</MenuItem>
-                            <MenuItem value="Pants">Pants</MenuItem>
-                            <MenuItem value="Skirts">Skirts</MenuItem>
-                            <MenuItem value="Womens">Womens</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                      {/* Weather and Rating in one row */}
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography
-                          variant="subtitle2"
-                          gutterBottom
-                          sx={{ fontWeight: "bold" }}
-                        >
-                          🌤️ Weather
-                        </Typography>
-                        <Stack direction="column" spacing={1}>
-                          <FormControl size="small" fullWidth>
-                            <Select
-                              value={filters.weather}
-                              onChange={(e) => {
-                                handleFilterChange("weather", e.target.value);
-                                // Clear suggestions when turning off weather filter
-                                if (e.target.value !== "true") {
-                                  setClothingSuggestions([]);
-                                }
+                            <Typography
+                              variant="subtitle2"
+                              gutterBottom
+                              sx={{ 
+                                fontWeight: "bold", 
+                                color: "#4a5d3a",
+                                mb: 1.5,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
                               }}
-                              displayEmpty
                             >
-                              <MenuItem value="">All Items</MenuItem>
-                              <MenuItem value="true">Weather Suitable</MenuItem>
-                            </Select>
-                          </FormControl>
-
-                          {filters.weather === "true" &&
-                            clothingSuggestions.length > 0 && (
-                              <Box
+                              💰 Price Range (₱)
+                            </Typography>
+                            <Box display="flex" gap={1} alignItems="center">
+                              <TextField
+                                size="small"
+                                type="number"
+                                placeholder="Min"
+                                value={filters.priceMin}
+                                onChange={(e) =>
+                                  handleFilterChange("priceMin", e.target.value)
+                                }
+                                inputProps={{ min: 0 }}
+                                sx={{ 
+                                  width: "80px",
+                                  "& .MuiOutlinedInput-root": {
+                                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                    "& fieldset": {
+                                      borderColor: "rgba(74, 93, 58, 0.3)",
+                                    },
+                                    "&:hover fieldset": {
+                                      borderColor: "rgba(74, 93, 58, 0.5)",
+                                    },
+                                    "&.Mui-focused fieldset": {
+                                      borderColor: "#4a5d3a",
+                                    },
+                                  },
+                                }}
+                              />
+                              <Typography variant="body2" sx={{ color: "#6b8459", fontWeight: 600 }}>to</Typography>
+                              <TextField
+                                size="small"
+                                type="number"
+                                placeholder="Max"
+                                value={filters.priceMax}
+                                onChange={(e) =>
+                                  handleFilterChange("priceMax", e.target.value)
+                                }
+                                inputProps={{ min: 0 }}
+                                sx={{ 
+                                  width: "80px",
+                                  "& .MuiOutlinedInput-root": {
+                                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                    "& fieldset": {
+                                      borderColor: "rgba(74, 93, 58, 0.3)",
+                                    },
+                                    "&:hover fieldset": {
+                                      borderColor: "rgba(74, 93, 58, 0.5)",
+                                    },
+                                    "&.Mui-focused fieldset": {
+                                      borderColor: "#4a5d3a",
+                                    },
+                                  },
+                                }}
+                              />
+                            </Box>
+                          </Box>
+                        </Grid>
+                        {/* Category Filter */}
+                        <Grid item xs={12} sm={6}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
+                              background: "rgba(74, 93, 58, 0.05)",
+                              border: "1px solid rgba(74, 93, 58, 0.1)",
+                              backdropFilter: "blur(5px)",
+                            }}
+                          >
+                            <Typography
+                              variant="subtitle2"
+                              gutterBottom
+                              sx={{ 
+                                fontWeight: "bold", 
+                                color: "#4a5d3a",
+                                mb: 1.5,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              👗 Category
+                            </Typography>
+                            <FormControl size="small" fullWidth>
+                              <Select
+                                value={filters.category}
+                                onChange={(e) =>
+                                  handleFilterChange("category", e.target.value)
+                                }
+                                displayEmpty
                                 sx={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: 1,
+                                  backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                  "& .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: "rgba(74, 93, 58, 0.3)",
+                                  },
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: "rgba(74, 93, 58, 0.5)",
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: "#4a5d3a",
+                                  },
                                 }}
                               >
-                                {clothingSuggestions.map(
-                                  (suggestion, index) => (
-                                    <Chip
-                                      key={index}
-                                      label={suggestion}
-                                      size="small"
-                                      sx={{
-                                        bgcolor: "#c8e6c9",
-                                        color: "#1b5e20",
-                                        "&:hover": { bgcolor: "#a5d6a7" },
-                                      }}
-                                    />
-                                  )
-                                )}
-                              </Box>
-                            )}
-                        </Stack>
+                              <MenuItem value="">All Categories</MenuItem>
+                              <MenuItem value="Dresses">Dresses</MenuItem>
+                              <MenuItem value="Shoes">Shoes</MenuItem>
+                              <MenuItem value="Accessories">Accessories</MenuItem>
+                              <MenuItem value="Shirts">Shirts</MenuItem>
+                              <MenuItem value="Pants">Pants</MenuItem>
+                              <MenuItem value="Skirts">Skirts</MenuItem>
+                              <MenuItem value="Womens">Womens</MenuItem>
+                            </Select>
+                          </FormControl>
+                          </Box>
+                        </Grid>
+                        {/* Weather Filter */}
+                        <Grid item xs={12} sm={6}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
+                              background: "rgba(74, 93, 58, 0.05)",
+                              border: "1px solid rgba(74, 93, 58, 0.1)",
+                              backdropFilter: "blur(5px)",
+                            }}
+                          >
+                            <Typography
+                              variant="subtitle2"
+                              gutterBottom
+                              sx={{ 
+                                fontWeight: "bold", 
+                                color: "#4a5d3a",
+                                mb: 1.5,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              🌤️ Weather
+                            </Typography>
+                            <Stack direction="column" spacing={1}>
+                              <FormControl size="small" fullWidth>
+                                <Select
+                                  value={filters.weather}
+                                  onChange={(e) => {
+                                    handleFilterChange("weather", e.target.value);
+                                    // Clear suggestions when turning off weather filter
+                                    if (e.target.value !== "true") {
+                                      setClothingSuggestions([]);
+                                    }
+                                  }}
+                                  displayEmpty
+                                  sx={{
+                                    backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                    "& .MuiOutlinedInput-notchedOutline": {
+                                      borderColor: "rgba(74, 93, 58, 0.3)",
+                                    },
+                                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                                      borderColor: "rgba(74, 93, 58, 0.5)",
+                                    },
+                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                      borderColor: "#4a5d3a",
+                                    },
+                                  }}
+                                >
+                                <MenuItem value="">All Items</MenuItem>
+                                <MenuItem value="true">Weather Suitable</MenuItem>
+                              </Select>
+                            </FormControl>
+
+                            {filters.weather === "true" &&
+                              clothingSuggestions.length > 0 && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 1,
+                                    p: 1,
+                                    borderRadius: 1,
+                                    background: "rgba(200, 230, 201, 0.3)",
+                                    border: "1px solid rgba(76, 175, 80, 0.2)",
+                                  }}
+                                >
+                                  {clothingSuggestions.map(
+                                    (suggestion, index) => (
+                                      <Chip
+                                        key={index}
+                                        label={suggestion}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: "#c8e6c9",
+                                          color: "#1b5e20",
+                                          fontWeight: 600,
+                                          "&:hover": { 
+                                            bgcolor: "#a5d6a7",
+                                            transform: "scale(1.05)",
+                                          },
+                                          transition: "all 0.2s ease",
+                                        }}
+                                      />
+                                    )
+                                  )}
+                                </Box>
+                              )}
+                          </Stack>
+                          </Box>
+                        </Grid>
                       </Grid>
-                    </Grid>
 
-                    {/* Active Filters Display */}
-                    {getActiveFiltersCount() > 0 && (
-                      <Box mt={2}>
-                        <Typography
-                          variant="subtitle2"
-                          gutterBottom
-                          sx={{ fontWeight: "bold" }}
+                      {/* Active Filters Display */}
+                      {getActiveFiltersCount() > 0 && (
+                        <Box 
+                          mt={3} 
+                          sx={{ 
+                            position: "relative", 
+                            zIndex: 1,
+                            p: 2,
+                            borderRadius: 2,
+                            background: "linear-gradient(135deg, rgba(143, 168, 118, 0.1) 0%, rgba(107, 132, 89, 0.1) 100%)",
+                            border: "1px solid rgba(143, 168, 118, 0.3)",
+                            backdropFilter: "blur(5px)",
+                          }}
                         >
-                          Active Filters:
-                        </Typography>
-                        <Box display="flex" flexWrap="wrap" gap={1}>
-                          {filters.priceMin && (
-                            <Chip
-                              label={`Min: ₱${filters.priceMin}`}
-                              size="small"
-                              onDelete={() =>
-                                handleFilterChange("priceMin", "")
-                              }
-                              color="primary"
-                              variant="outlined"
-                            />
-                          )}
-                          {filters.priceMax && (
-                            <Chip
-                              label={`Max: ₱${filters.priceMax}`}
-                              size="small"
-                              onDelete={() =>
-                                handleFilterChange("priceMax", "")
-                              }
-                              color="primary"
-                              variant="outlined"
-                            />
-                          )}
-                          {filters.category && (
-                            <Chip
-                              label={`Category: ${filters.category}`}
-                              size="small"
-                              onDelete={() =>
-                                handleFilterChange("category", "")
-                              }
-                              color="primary"
-                              variant="outlined"
-                            />
-                          )}
-                          {filters.weather && (
-                            <Chip
-                              label={`Weather: ${
-                                filters.weather === "true"
-                                  ? "Suitable"
-                                  : "Regular"
-                              }`}
-                              size="small"
-                              onDelete={() => handleFilterChange("weather", "")}
-                              color="primary"
-                              variant="outlined"
-                              sx={{ mr: 1, mb: 1 }}
-                            />
-                          )}
-                          {filters.rating && (
-                            <Chip
-                              label={`Rating: ${filters.rating}+ stars`}
-                              size="small"
-                              onDelete={() => handleFilterChange("rating", "")}
-                              color="primary"
-                              variant="outlined"
-                            />
-                          )}
+                          <Typography
+                            variant="subtitle2"
+                            gutterBottom
+                            sx={{ 
+                              fontWeight: "bold", 
+                              color: "#4a5d3a",
+                              mb: 1.5,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            🏷️ Active Filters ({getActiveFiltersCount()}):
+                          </Typography>
+                          <Box display="flex" flexWrap="wrap" gap={1}>
+                            {filters.priceMin && (
+                              <Chip
+                                label={`Min: ₱${filters.priceMin}`}
+                                size="small"
+                                onDelete={() =>
+                                  handleFilterChange("priceMin", "")
+                                }
+                                sx={{
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  color: "#4a5d3a",
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                  fontWeight: 600,
+                                  "&:hover": {
+                                    backgroundColor: "rgba(74, 93, 58, 0.2)",
+                                    transform: "scale(1.05)",
+                                  },
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "#4a5d3a",
+                                    "&:hover": {
+                                      color: "#d32f2f",
+                                    },
+                                  },
+                                  transition: "all 0.2s ease",
+                                }}
+                                variant="outlined"
+                              />
+                            )}
+                            {filters.priceMax && (
+                              <Chip
+                                label={`Max: ₱${filters.priceMax}`}
+                                size="small"
+                                onDelete={() =>
+                                  handleFilterChange("priceMax", "")
+                                }
+                                sx={{
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  color: "#4a5d3a",
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                  fontWeight: 600,
+                                  "&:hover": {
+                                    backgroundColor: "rgba(74, 93, 58, 0.2)",
+                                    transform: "scale(1.05)",
+                                  },
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "#4a5d3a",
+                                    "&:hover": {
+                                      color: "#d32f2f",
+                                    },
+                                  },
+                                  transition: "all 0.2s ease",
+                                }}
+                                variant="outlined"
+                              />
+                            )}
+                            {filters.category && (
+                              <Chip
+                                label={`Category: ${filters.category}`}
+                                size="small"
+                                onDelete={() =>
+                                  handleFilterChange("category", "")
+                                }
+                                sx={{
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  color: "#4a5d3a",
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                  fontWeight: 600,
+                                  "&:hover": {
+                                    backgroundColor: "rgba(74, 93, 58, 0.2)",
+                                    transform: "scale(1.05)",
+                                  },
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "#4a5d3a",
+                                    "&:hover": {
+                                      color: "#d32f2f",
+                                    },
+                                  },
+                                  transition: "all 0.2s ease",
+                                }}
+                                variant="outlined"
+                              />
+                            )}
+                            {filters.weather && (
+                              <Chip
+                                label={`Weather: ${
+                                  filters.weather === "true"
+                                    ? "Suitable"
+                                    : "Regular"
+                                }`}
+                                size="small"
+                                onDelete={() => handleFilterChange("weather", "")}
+                                sx={{
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  color: "#4a5d3a",
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                  fontWeight: 600,
+                                  mr: 1, 
+                                  mb: 1,
+                                  "&:hover": {
+                                    backgroundColor: "rgba(74, 93, 58, 0.2)",
+                                    transform: "scale(1.05)",
+                                  },
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "#4a5d3a",
+                                    "&:hover": {
+                                      color: "#d32f2f",
+                                    },
+                                  },
+                                  transition: "all 0.2s ease",
+                                }}
+                                variant="outlined"
+                              />
+                            )}
+                            {filters.rating && (
+                              <Chip
+                                label={`Rating: ${filters.rating}+ stars`}
+                                size="small"
+                                onDelete={() => handleFilterChange("rating", "")}
+                                sx={{
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  color: "#4a5d3a",
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                  fontWeight: 600,
+                                  "&:hover": {
+                                    backgroundColor: "rgba(74, 93, 58, 0.2)",
+                                    transform: "scale(1.05)",
+                                  },
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "#4a5d3a",
+                                    "&:hover": {
+                                      color: "#d32f2f",
+                                    },
+                                  },
+                                  transition: "all 0.2s ease",
+                                }}
+                                variant="outlined"
+                              />
+                            )}
+                          </Box>
                         </Box>
-                      </Box>
-                    )}
-                  </Paper>
-                </motion.div>
-              )}
+                      )}
+                    </Paper>
+                  </motion.div>
+                )}
 
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  {loading ? (
-                    "Loading products..."
-                  ) : (
-                    <>
-                      Showing {pagination.loadedCount} of{" "}
-                      {pagination.totalCount} products
-                      {searchQuery && ` matching "${searchQuery}"`}
-                      {getActiveFiltersCount() > 0 &&
-                        ` with ${getActiveFiltersCount()} filter${
-                          getActiveFiltersCount() > 1 ? "s" : ""
-                        }`}
-                    </>
-                  )}
-                </Typography>
-              </Box>
-            </Paper>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.8)" }}>
+                    {loading ? (
+                      "Loading products..."
+                    ) : (
+                      <>
+                        Showing {pagination.loadedCount} of{" "}
+                        {pagination.totalCount} products
+                        {searchQuery && ` matching "${searchQuery}"`}
+                        {getActiveFiltersCount() > 0 &&
+                          ` with ${getActiveFiltersCount()} filter${
+                            getActiveFiltersCount() > 1 ? "s" : ""
+                          }`}
+                      </>
+                    )}
+                  </Typography>
+                </Box>
+              </Paper>
+            </Box>
           </Box>
         </motion.div>
 
@@ -1198,7 +1477,7 @@ const Products = () => {
                 letterSpacing: 1,
               }}
             >
-              🔥 Special Offers
+              Special Offers
             </Typography>
             <Button
               variant="outlined"
@@ -1655,7 +1934,7 @@ const Products = () => {
                 mb: 4,
               }}
             >
-              👗 Fashion Collection ({pagination.totalCount} items)
+             Fashion Collection ({pagination.totalCount} items)
             </Typography>
 
             <Box display="flex" justifyContent="center" width="100%">
