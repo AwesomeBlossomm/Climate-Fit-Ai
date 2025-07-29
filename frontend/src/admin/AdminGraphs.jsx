@@ -715,3 +715,5 @@ const AdminGraphs = () => {
 };
 
 export default AdminGraphs;
+
+// Add debugging logs to inspect data flow and ensure the bar graph receives correct data.

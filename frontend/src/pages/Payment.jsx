@@ -18,8 +18,8 @@ import {
   List,
   ListItem,
   ListItemText,
-  AppBar,
-  Toolbar,
+  // AppBar,
+  // Toolbar,
   IconButton,
   Chip,
   Stepper,
@@ -40,6 +40,9 @@ import {
   Payment,
   Security,
   CheckCircle,
+  ShoppingCart,
+  Dashboard,
+  Store,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -538,601 +541,1236 @@ const PaymentPage = () => {
 
   if (orderSuccess) {
     return (
-      <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-        <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Order Confirmation
-            </Typography>
-            <Button color="inherit" onClick={() => navigate("/products")}>
+      <>
+        {/* Header with Dashboard.jsx styling */}
+        <Box
+          component="header"
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          width="100%"
+          sx={{
+            px: 4,
+            py: 2,
+            backgroundColor: "#4a5d3a", // Dark green matching Dashboard.jsx
+            position: "fixed",
+            top: 0,
+            left: 0,
+            zIndex: 1100,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          }}
+        >
+          <Box display="flex" alignItems="center">
+            <Box
+              onClick={() => navigate("/dashboard")}
+              display="flex"
+              alignItems="center"
+              sx={{
+                textDecoration: "none",
+                cursor: "pointer",
+                "&:hover": {
+                  opacity: 0.9,
+                },
+                transition: "opacity 0.2s ease",
+              }}
+            >
+              <Box
+                component="img"
+                src="src/assets/ClimateFitLogo.png"
+                alt="Climate Fit Logo"
+                sx={{
+                  width: "50px",
+                  height: "30px",
+                  objectFit: "cover",
+                  mr: 2,
+                }}
+              />
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  letterSpacing: 1.5,
+                  color: "#ffffff",
+                  fontSize: "1.2rem",
+                }}
+              >
+                ORDER CONFIRMATION
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box display="flex" alignItems="center" gap={2}>
+            <Button
+              onClick={() => navigate("/products")}
+              startIcon={<Store />}
+              variant="outlined"
+              sx={{
+                backgroundColor: "transparent",
+                color: "#ffffff",
+                border: "2px solid #ffffff",
+                borderRadius: "25px",
+                px: 3,
+                py: 1,
+                fontWeight: 600,
+                textTransform: "none",
+                fontSize: "0.9rem",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderColor: "#ffffff",
+                },
+              }}
+            >
               Continue Shopping
             </Button>
             <Button
-              color="inherit"
-              onClick={() => navigate("/payment-history")}
+              onClick={() => navigate("/payment-manager")}
+              variant="contained"
+              sx={{
+                backgroundColor: "#8fa876",
+                color: "#ffffff",
+                borderRadius: "25px",
+                px: 3,
+                py: 1,
+                fontWeight: 600,
+                textTransform: "none",
+                fontSize: "0.9rem",
+                "&:hover": {
+                  backgroundColor: "#7a956a",
+                },
+              }}
             >
               Payment History
             </Button>
-            <Button color="inherit" onClick={handleLogout}>
-              Logout
-            </Button>
-          </Toolbar>
-        </AppBar>
+          </Box>
+        </Box>
 
-        <Container maxWidth="md" sx={{ py: 8 }}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Paper
-              elevation={3}
-              sx={{ p: 6, textAlign: "center", borderRadius: 3 }}
+        {/* Main Content with Dashboard.jsx background */}
+        <Box
+          sx={{
+            pt: 12,
+            mt: 10,
+            minHeight: "100vh",
+            backgroundColor: "#f0f8f0",
+            background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)",
+            px: { xs: 2, md: 4 },
+            py: 4,
+          }}
+        >
+          <Container maxWidth="md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
             >
-              <CheckCircle sx={{ fontSize: 80, color: "#4caf50", mb: 2 }} />
-              <Typography
-                variant="h4"
-                gutterBottom
-                color="success.main"
-                fontWeight="bold"
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 6,
+                  textAlign: "center",
+                  borderRadius: "20px",
+                  background: "#ffffff",
+                  boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
+                  border: "1px solid rgba(74, 93, 58, 0.1)",
+                }}
               >
-                Payment Successful!
-              </Typography>
-              <Typography variant="h6" gutterBottom>
-                Order Number: {orderNumber}
-              </Typography>
-              <Typography variant="h6" gutterBottom>
-                Payment ID: {paymentId}
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Thank you for your purchase! Your payment has been processed
-                successfully.
-              </Typography>
-
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" gutterBottom>
-                  Total Paid: ${total.toFixed(2)}
+                <CheckCircle sx={{ fontSize: 80, color: "#4a5d3a", mb: 2 }} />
+                <Typography
+                  variant="h4"
+                  gutterBottom
+                  sx={{ color: "#4a5d3a", fontWeight: 700 }}
+                >
+                  Payment Successful! 🎉
                 </Typography>
-                {appliedDiscount && (
-                  <Typography color="success.main">
-                    You saved ${discount.toFixed(2)} with discount code:
-                    {appliedDiscount.code}
-                  </Typography>
-                )}
-              </Box>
+                <Typography variant="h6" gutterBottom sx={{ color: "#6b8459" }}>
+                  Order Number: {orderNumber}
+                </Typography>
+                <Typography variant="h6" gutterBottom sx={{ color: "#6b8459" }}>
+                  Payment ID: {paymentId}
+                </Typography>
+                <Typography variant="body1" sx={{ color: "#6b8459", mb: 3 }}>
+                  Thank you for your purchase! Your payment has been processed
+                  successfully.
+                </Typography>
 
-              <Grid container spacing={2} justifyContent="center">
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate("/products")}
-                    sx={{
-                      bgcolor: "#2e7d32",
-                      "&:hover": { bgcolor: "#1b5e20" },
-                    }}
-                  >
-                    Continue Shopping
-                  </Button>
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom sx={{ color: "#4a5d3a" }}>
+                    Total Paid: ₱{total.toFixed(2)}
+                  </Typography>
+                  {appliedDiscount && (
+                    <Typography sx={{ color: "#4a5d3a" }}>
+                      You saved ₱{discount.toFixed(2)} with discount code:
+                      {appliedDiscount.code}
+                    </Typography>
+                  )}
+                </Box>
+
+                <Grid container spacing={2} justifyContent="center">
+                  <Grid item>
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate("/products")}
+                      sx={{
+                        backgroundColor: "#8fa876",
+                        color: "#ffffff",
+                        borderRadius: "12px",
+                        px: 4,
+                        py: 1.5,
+                        fontWeight: 600,
+                        "&:hover": {
+                          backgroundColor: "#7a956a",
+                        },
+                      }}
+                    >
+                      Continue Shopping
+                    </Button>
+                  </Grid>
+                  <Grid item>
+                    <Button
+                      variant="outlined"
+                      onClick={() => navigate("/payment-manager")}
+                      sx={{
+                        borderColor: "#4a5d3a",
+                        color: "#4a5d3a",
+                        borderRadius: "12px",
+                        px: 4,
+                        py: 1.5,
+                        fontWeight: 600,
+                        "&:hover": {
+                          backgroundColor: "rgba(74, 93, 58, 0.1)",
+                          borderColor: "#4a5d3a",
+                        },
+                      }}
+                    >
+                      View Payment History
+                    </Button>
+                  </Grid>
                 </Grid>
-                <Grid item>
-                  <Button
-                    variant="outlined"
-                    onClick={() => navigate("/payment-history")}
-                  >
-                    View Payment History
-                  </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </motion.div>
-        </Container>
-      </Box>
+              </Paper>
+            </motion.div>
+          </Container>
+        </Box>
+      </>
     );
   }
 
   return (
-    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-      <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={() => navigate("/cart")}>
+    <>
+      {/* Header with Dashboard.jsx styling */}
+      <Box
+        component="header"
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        width="100%"
+        sx={{
+          px: 4,
+          py: 2,
+          backgroundColor: "#4a5d3a", // Dark green matching Dashboard.jsx
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 1100,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+        }}
+      >
+        {/* Logo and Title */}
+        <Box display="flex" alignItems="center">
+          <Box
+            onClick={() => navigate("/dashboard")}
+            display="flex"
+            alignItems="center"
+            sx={{
+              textDecoration: "none",
+              cursor: "pointer",
+              "&:hover": {
+                opacity: 0.9,
+              },
+              transition: "opacity 0.2s ease",
+            }}
+          >
+            <Box
+              component="img"
+              src="src/assets/ClimateFitLogo.png"
+              alt="Climate Fit Logo"
+              sx={{
+                width: "50px",
+                height: "30px",
+                objectFit: "cover",
+                mr: 2,
+              }}
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: "#ffffff",
+                fontSize: "1.2rem",
+              }}
+            >
+              SECURE CHECKOUT
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Header Actions */}
+        <Box display="flex" alignItems="center" gap={2}>
+          <IconButton
+            color="inherit"
+            onClick={() => navigate("/cart")}
+            sx={{
+              backgroundColor: "rgba(255,255,255,0.1)",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.2)",
+              },
+            }}
+          >
             <ArrowBack />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Secure Checkout
-          </Typography>
-          <Security sx={{ mr: 1 }} />
-          <Typography variant="body2">SSL Secured</Typography>
-        </Toolbar>
-      </AppBar>
+          <Button
+            onClick={() => navigate("/cart")}
+            startIcon={<ShoppingCart />}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
+            Back to Cart
+          </Button>
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={1}
+            sx={{ color: "#ffffff" }}
+          >
+            <Security />
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              SSL Secured
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+      {/* Main Content with Dashboard.jsx background */}
+      <Box
+        sx={{
+          pt: 12, // Account for fixed header height
+          mt: 10, // Add top margin for extra spacing
+          minHeight: "100vh",
+          backgroundColor: "#f0f8f0", // Light green background matching Dashboard.jsx
+          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)", // Light green gradient matching Dashboard.jsx
+          px: { xs: 2, md: 4 },
+          py: 4,
+        }}
+      >
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {error && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 15px rgba(244, 67, 54, 0.2)",
+                }}
+              >
+                {error}
+              </Alert>
+            )}
 
-        {discountError && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {discountError}
-          </Alert>
-        )}
+            {discountError && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 15px rgba(244, 67, 54, 0.2)",
+                }}
+              >
+                {discountError}
+              </Alert>
+            )}
 
-        <Grid container spacing={4}>
-          {/* Checkout Form */}
-          <Grid item xs={12} md={8}>
-            <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-              <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                {steps.map((label) => (
-                  <Step key={label}>
-                    <StepLabel>{label}</StepLabel>
-                  </Step>
-                ))}
-              </Stepper>
-
-              {activeStep === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Billing Information
-                  </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Full Name"
-                        fullWidth
-                        value={billingInfo.fullName}
-                        onChange={(e) =>
-                          handleBillingChange("fullName", e.target.value)
-                        }
-                        required
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Email"
-                        type="email"
-                        fullWidth
-                        value={billingInfo.email}
-                        onChange={(e) =>
-                          handleBillingChange("email", e.target.value)
-                        }
-                        required
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <FormControl component="fieldset" fullWidth>
-                        <FormLabel component="legend">
-                          Select Delivery Address
-                        </FormLabel>
-                        {loadingAddresses ? (
-                          <CircularProgress size={24} />
-                        ) : savedAddresses.length === 0 ? (
-                          <Alert severity="info" sx={{ mt: 2 }}>
-                            No saved addresses found. Please add an address in
-                            your profile.
-                          </Alert>
-                        ) : (
-                          <RadioGroup
-                            value={selectedAddressId}
-                            onChange={(e) =>
-                              setSelectedAddressId(e.target.value)
-                            }
-                          >
-                            {savedAddresses.map((addr) => (
-                              <FormControlLabel
-                                key={addr._id}
-                                value={addr._id}
-                                control={<Radio />}
-                                label={
-                                  <Box
-                                    sx={{
-                                      border: "1px solid #e0e0e0",
-                                      borderRadius: 2,
-                                      p: 2,
-                                      mb: 1,
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="body2"
-                                      fontWeight="bold"
-                                    >
-                                      {addr.recipient_name || addr.full_name}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Street:</b>{" "}
-                                      {addr.street || addr.address_line1}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Barangay:</b> {addr.barangay}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>City:</b> {addr.city}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Province:</b> {addr.province}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Region:</b> {addr.region}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Postal Code:</b> {addr.postal_code}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Country:</b> {addr.country}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Contact Number:</b>{" "}
-                                      {addr.contact_number}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      <b>Address Type:</b> {addr.address_type}
-                                    </Typography>
-                                    {addr.is_default && (
-                                      <Chip
-                                        label="Default"
-                                        color="primary"
-                                        size="small"
-                                        sx={{ mt: 1 }}
-                                      />
-                                    )}
-                                  </Box>
-                                }
-                              />
-                            ))}
-                          </RadioGroup>
-                        )}
-                      </FormControl>
-                    </Grid>
-                  </Grid>
-                </motion.div>
-              )}
-
-              {activeStep === 1 && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Payment Method
-                  </Typography>
-
-                  <FormControl component="fieldset" sx={{ mb: 3 }}>
-                    <RadioGroup
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    >
-                      <FormControlLabel
-                        value="gcash"
-                        control={<Radio />}
-                        label={
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Payment />
-                            <Typography>GCash</Typography>
-                          </Box>
-                        }
-                      />
-                      <FormControlLabel
-                        value="paymaya"
-                        control={<Radio />}
-                        label={
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Payment />
-                            <Typography>PayMaya</Typography>
-                          </Box>
-                        }
-                      />
-                      <FormControlLabel
-                        value="cash_on_delivery"
-                        control={<Radio />}
-                        label={
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <AccountBalance />
-                            <Typography>Cash on Delivery</Typography>
-                          </Box>
-                        }
-                      />
-                    </RadioGroup>
-                  </FormControl>
-
-                  {paymentMethod === "cash_on_delivery" && (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      Please prepare exact payment amount for our delivery
-                      personnel.
-                    </Alert>
-                  )}
-                </motion.div>
-              )}
-
-              {activeStep === 2 && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Review Your Order
-                  </Typography>
-
-                  <Card sx={{ mb: 3 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Billing Address
-                      </Typography>
-                      <Typography variant="body2">
-                        {billingInfo.fullName}
-                        <br />
-                        {billingInfo.address}
-                        <br />
-                        {billingInfo.city}, {billingInfo.state}{" "}
-                        {billingInfo.zipCode}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-
-                  <Card sx={{ mb: 3 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Payment Method
-                      </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        {(paymentMethod === "paymaya" ||
-                          paymentMethod === "gcash") && <Payment />}
-                        {paymentMethod === "cash_on_delivery" && (
-                          <AccountBalance />
-                        )}
-                        <Typography>
-                          {paymentMethod === "paymaya" && "PayMaya"}
-                          {paymentMethod === "gcash" && "GCash"}
-                          {paymentMethod === "cash_on_delivery" &&
-                            "Cash on Delivery"}
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                  </Card>
-
-                  {/* --- Add buyer notes input --- */}
-                  <Card sx={{ mb: 3 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Notes for Seller
-                      </Typography>
-                      <TextField
-                        label="Add notes for the seller (optional)"
-                        multiline
-                        minRows={2}
-                        fullWidth
-                        value={buyerNotes}
-                        onChange={(e) => setBuyerNotes(e.target.value)}
-                        placeholder="E.g. Please deliver after 5pm, call before arrival, etc."
-                      />
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* Navigation Buttons */}
-              <Box display="flex" justifyContent="space-between" sx={{ mt: 4 }}>
-                <Button disabled={activeStep === 0} onClick={handleBack}>
-                  Back
-                </Button>
-
-                {activeStep === steps.length - 1 ? (
-                  <Button
-                    variant="contained"
-                    onClick={createPayment} // <-- call createPayment directly
-                    disabled={!validateStep() || processing}
-                    sx={{
-                      bgcolor: "#2e7d32",
-                      "&:hover": { bgcolor: "#1b5e20" },
-                    }}
-                  >
-                    {processing ? (
-                      <>
-                        <CircularProgress size={20} sx={{ mr: 1 }} />
-                        Processing Payment...
-                      </>
-                    ) : (
-                      "Complete Payment"
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="contained"
-                    onClick={handleNext}
-                    disabled={!validateStep()}
-                    sx={{
-                      bgcolor: "#2e7d32",
-                      "&:hover": { bgcolor: "#1b5e20" },
-                    }}
-                  >
-                    Next
-                  </Button>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* Order Summary */}
-          <Grid item xs={12} md={4}>
-            <Paper
-              elevation={3}
-              sx={{ p: 3, borderRadius: 3, position: "sticky", top: 20 }}
-            >
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Order Summary
-              </Typography>
-
-              {cartItems.map((item) => (
-                <Box
-                  key={item.id}
+            <Grid container spacing={4}>
+              {/* Checkout Form */}
+              <Grid item xs={12} md={8}>
+                <Paper
+                  elevation={3}
                   sx={{
-                    mb: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    borderBottom: "1px solid #e0e0e0",
-                    pb: 1,
+                    p: 4,
+                    borderRadius: "20px",
+                    background: "#ffffff",
+                    boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
+                    border: "1px solid rgba(74, 93, 58, 0.1)",
                   }}
                 >
-                  <CardMedia
-                    component="img"
+                  <Stepper
+                    activeStep={activeStep}
                     sx={{
-                      width: 60,
-                      height: 60,
-                      objectFit: "cover",
-                      mr: 2,
-                      borderRadius: 2,
+                      mb: 4,
+                      "& .MuiStepIcon-root": {
+                        color: "rgba(74, 93, 58, 0.3)",
+                        "&.Mui-active": {
+                          color: "#4a5d3a",
+                        },
+                        "&.Mui-completed": {
+                          color: "#8fa876",
+                        },
+                      },
                     }}
-                    image={
-                      item.image ||
-                      "https://via.placeholder.com/300x400?text=Fashion+Item"
-                    }
-                    alt={item.name}
-                  />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="body2">
-                      {item.name} × {item.quantity}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2">
-                    ₱{(item.price * item.quantity).toFixed(2)}
-                  </Typography>
-                </Box>
-              ))}
-
-              <Divider sx={{ my: 2 }} />
-
-              <List dense>
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemText primary="Subtotal" />
-                  <Typography>₱{subtotal.toFixed(2)}</Typography>
-                </ListItem>
-
-                {/* Clothes Voucher Select */}
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemText primary="Clothes Voucher" />
-                  <Box sx={{ minWidth: 120 }}>
-                    <select
-                      value={
-                        selectedClothesVoucher?.discount_code ||
-                        selectedClothesVoucher?.code ||
-                        ""
-                      }
-                      onChange={(e) => handleClothesDiscount(e.target.value)}
-                      style={{ padding: "6px", borderRadius: "4px" }}
-                    >
-                      <option value="">Select voucher</option>
-                      {clothesVouchers.map((voucher) => (
-                        <option
-                          key={voucher.discount_code || voucher.code}
-                          value={voucher.discount_code || voucher.code}
-                        >
-                          {voucher.discount_code || voucher.code} (
-                          {voucher.percentage}% OFF) - {voucher.description}
-                        </option>
-                      ))}
-                    </select>
-                  </Box>
-                </ListItem>
-                {clothesDiscountInfo && (
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemText
-                      primary={`Clothes Discount (${clothesDiscountInfo.discount_code})`}
-                      sx={{ color: "success.main" }}
-                    />
-                    <Typography color="success.main">
-                      -₱{clothesDiscountInfo.discount_amount.toFixed(2)}
-                    </Typography>
-                  </ListItem>
-                )}
-
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemText primary="Shipping Fee" />
-                  <Typography>₱{shippingFee.toFixed(2)}</Typography>
-                </ListItem>
-
-                {/* Shipping Voucher Select */}
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemText primary="Shipping Voucher" />
-                  <Box sx={{ minWidth: 120 }}>
-                    <select
-                      value={
-                        selectedShippingVoucher?.discount_code ||
-                        selectedShippingVoucher?.code ||
-                        ""
-                      }
-                      onChange={(e) => handleShippingDiscount(e.target.value)}
-                      style={{ padding: "6px", borderRadius: "4px" }}
-                    >
-                      <option value="">Select voucher</option>
-                      {shippingVouchers.map((voucher) => (
-                        <option
-                          key={voucher.discount_code || voucher.code}
-                          value={voucher.discount_code || voucher.code}
-                        >
-                          {voucher.discount_code || voucher.code} (
-                          {voucher.percentage}% OFF) - {voucher.description}
-                        </option>
-                      ))}
-                    </select>
-                  </Box>
-                </ListItem>
-                {shippingDiscountInfo && (
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemText
-                      primary={`Shipping Discount (${shippingDiscountInfo.discount_code})`}
-                      sx={{ color: "success.main" }}
-                    />
-                    <Typography color="success.main">
-                      -₱{shippingDiscountInfo.discount_amount.toFixed(2)}
-                    </Typography>
-                  </ListItem>
-                )}
-              </List>
-
-              <Divider sx={{ my: 2 }} />
-
-              <ListItem sx={{ px: 0 }}>
-                <ListItemText
-                  primary={
-                    <Typography variant="h6" fontWeight="bold">
-                      Total
-                    </Typography>
-                  }
-                />
-                <Typography variant="h6" fontWeight="bold" color="primary">
-                  ₱{calculatedTotal.toFixed(2)}
-                </Typography>
-              </ListItem>
-
-              {appliedDiscountInfo && (
-                <Box sx={{ mt: 2 }}>
-                  <Chip
-                    label={`${appliedDiscountInfo.code} - ${appliedDiscountInfo.percentage}% OFF`}
-                    color="success"
-                    size="small"
-                  />
-                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                    {appliedDiscountInfo.description}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="success.main"
-                    display="block"
                   >
-                    You saved ${appliedDiscountInfo.discountAmount.toFixed(2)}!
+                    {steps.map((label) => (
+                      <Step key={label}>
+                        <StepLabel
+                          sx={{
+                            "& .MuiStepLabel-label": {
+                              color: "#4a5d3a",
+                              fontWeight: 600,
+                            },
+                          }}
+                        >
+                          {label}
+                        </StepLabel>
+                      </Step>
+                    ))}
+                  </Stepper>
+
+                  {activeStep === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Typography
+                        variant="h5"
+                        gutterBottom
+                        sx={{
+                          fontWeight: 700,
+                          color: "#4a5d3a",
+                          mb: 3,
+                        }}
+                      >
+                        Billing Information
+                      </Typography>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Full Name"
+                            fullWidth
+                            value={billingInfo.fullName}
+                            onChange={(e) =>
+                              handleBillingChange("fullName", e.target.value)
+                            }
+                            required
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "12px",
+                                "& fieldset": {
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                },
+                                "&:hover fieldset": {
+                                  borderColor: "#4a5d3a",
+                                },
+                                "&.Mui-focused fieldset": {
+                                  borderColor: "#4a5d3a",
+                                },
+                              },
+                              "& .MuiInputLabel-root.Mui-focused": {
+                                color: "#4a5d3a",
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Email"
+                            type="email"
+                            fullWidth
+                            value={billingInfo.email}
+                            onChange={(e) =>
+                              handleBillingChange("email", e.target.value)
+                            }
+                            required
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "12px",
+                                "& fieldset": {
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                },
+                                "&:hover fieldset": {
+                                  borderColor: "#4a5d3a",
+                                },
+                                "&.Mui-focused fieldset": {
+                                  borderColor: "#4a5d3a",
+                                },
+                              },
+                              "& .MuiInputLabel-root.Mui-focused": {
+                                color: "#4a5d3a",
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <FormControl component="fieldset" fullWidth>
+                            <FormLabel
+                              component="legend"
+                              sx={{
+                                color: "#4a5d3a",
+                                fontWeight: 600,
+                                "&.Mui-focused": {
+                                  color: "#4a5d3a",
+                                },
+                              }}
+                            >
+                              Select Delivery Address
+                            </FormLabel>
+                            {loadingAddresses ? (
+                              <CircularProgress size={24} sx={{ color: "#4a5d3a" }} />
+                            ) : savedAddresses.length === 0 ? (
+                              <Alert
+                                severity="info"
+                                sx={{
+                                  mt: 2,
+                                  borderRadius: "12px",
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                }}
+                              >
+                                No saved addresses found. Please add an address in
+                                your profile.
+                              </Alert>
+                            ) : (
+                              <RadioGroup
+                                value={selectedAddressId}
+                                onChange={(e) =>
+                                  setSelectedAddressId(e.target.value)
+                                }
+                                sx={{ mt: 2 }}
+                              >
+                                {savedAddresses.map((addr) => (
+                                  <FormControlLabel
+                                    key={addr._id}
+                                    value={addr._id}
+                                    control={
+                                      <Radio
+                                        sx={{
+                                          color: "rgba(74, 93, 58, 0.6)",
+                                          "&.Mui-checked": {
+                                            color: "#4a5d3a",
+                                          },
+                                        }}
+                                      />
+                                    }
+                                    label={
+                                      <Box
+                                        sx={{
+                                          border: "1px solid rgba(74, 93, 58, 0.2)",
+                                          borderRadius: "12px",
+                                          p: 2,
+                                          mb: 1,
+                                          backgroundColor: "rgba(74, 93, 58, 0.02)",
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            fontWeight: 600,
+                                            color: "#4a5d3a",
+                                          }}
+                                        >
+                                          {addr.recipient_name || addr.full_name}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Street:</b>{" "}
+                                          {addr.street || addr.address_line1}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Barangay:</b> {addr.barangay}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>City:</b> {addr.city}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Province:</b> {addr.province}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Region:</b> {addr.region}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Postal Code:</b> {addr.postal_code}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Country:</b> {addr.country}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Contact Number:</b>{" "}
+                                          {addr.contact_number}
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          <b>Address Type:</b> {addr.address_type}
+                                        </Typography>
+                                        {addr.is_default && (
+                                          <Chip
+                                            label="Default"
+                                            size="small"
+                                            sx={{
+                                              mt: 1,
+                                              backgroundColor: "#8fa876",
+                                              color: "#ffffff",
+                                            }}
+                                          />
+                                        )}
+                                      </Box>
+                                    }
+                                  />
+                                ))}
+                              </RadioGroup>
+                            )}
+                          </FormControl>
+                        </Grid>
+                      </Grid>
+                    </motion.div>
+                  )}
+
+                  {activeStep === 1 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Typography
+                        variant="h5"
+                        gutterBottom
+                        sx={{
+                          fontWeight: 700,
+                          color: "#4a5d3a",
+                          mb: 3,
+                        }}
+                      >
+                        Payment Method
+                      </Typography>
+
+                      <FormControl component="fieldset" sx={{ mb: 3 }}>
+                        <RadioGroup
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                        >
+                          <FormControlLabel
+                            value="gcash"
+                            control={
+                              <Radio
+                                sx={{
+                                  color: "rgba(74, 93, 58, 0.6)",
+                                  "&.Mui-checked": {
+                                    color: "#4a5d3a",
+                                  },
+                                }}
+                              />
+                            }
+                            label={
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                                sx={{
+                                  p: 2,
+                                  border: "1px solid rgba(74, 93, 58, 0.2)",
+                                  borderRadius: "12px",
+                                  backgroundColor: "rgba(74, 93, 58, 0.02)",
+                                  width: "200px",
+                                }}
+                              >
+                                <Payment sx={{ color: "#4a5d3a" }} />
+                                <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                                  GCash
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          <FormControlLabel
+                            value="paymaya"
+                            control={
+                              <Radio
+                                sx={{
+                                  color: "rgba(74, 93, 58, 0.6)",
+                                  "&.Mui-checked": {
+                                    color: "#4a5d3a",
+                                  },
+                                }}
+                              />
+                            }
+                            label={
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                                sx={{
+                                  p: 2,
+                                  border: "1px solid rgba(74, 93, 58, 0.2)",
+                                  borderRadius: "12px",
+                                  backgroundColor: "rgba(74, 93, 58, 0.02)",
+                                  width: "200px",
+                                }}
+                              >
+                                <Payment sx={{ color: "#4a5d3a" }} />
+                                <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                                  PayMaya
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          <FormControlLabel
+                            value="cash_on_delivery"
+                            control={
+                              <Radio
+                                sx={{
+                                  color: "rgba(74, 93, 58, 0.6)",
+                                  "&.Mui-checked": {
+                                    color: "#4a5d3a",
+                                  },
+                                }}
+                              />
+                            }
+                            label={
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                                sx={{
+                                  p: 2,
+                                  border: "1px solid rgba(74, 93, 58, 0.2)",
+                                  borderRadius: "12px",
+                                  backgroundColor: "rgba(74, 93, 58, 0.02)",
+                                  width: "200px",
+                                }}
+                              >
+                                <AccountBalance sx={{ color: "#4a5d3a" }} />
+                                <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                                  Cash on Delivery
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        </RadioGroup>
+                      </FormControl>
+
+                      {paymentMethod === "cash_on_delivery" && (
+                        <Alert
+                          severity="info"
+                          sx={{
+                            mt: 2,
+                            borderRadius: "12px",
+                            backgroundColor: "rgba(74, 93, 58, 0.1)",
+                          }}
+                        >
+                          Please prepare exact payment amount for our delivery
+                          personnel.
+                        </Alert>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {activeStep === 2 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Typography
+                        variant="h5"
+                        gutterBottom
+                        sx={{
+                          fontWeight: 700,
+                          color: "#4a5d3a",
+                          mb: 3,
+                        }}
+                      >
+                        Review Your Order
+                      </Typography>
+
+                      <Card
+                        sx={{
+                          mb: 3,
+                          borderRadius: "12px",
+                          border: "1px solid rgba(74, 93, 58, 0.1)",
+                        }}
+                      >
+                        <CardContent>
+                          <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                          >
+                            Billing Address
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: "#6b8459" }}>
+                            {billingInfo.fullName}
+                            <br />
+                            {billingInfo.address}
+                            <br />
+                            {billingInfo.city}, {billingInfo.state}{" "}
+                            {billingInfo.zipCode}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+
+                      <Card
+                        sx={{
+                          mb: 3,
+                          borderRadius: "12px",
+                          border: "1px solid rgba(74, 93, 58, 0.1)",
+                        }}
+                      >
+                        <CardContent>
+                          <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                          >
+                            Payment Method
+                          </Typography>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            {(paymentMethod === "paymaya" ||
+                              paymentMethod === "gcash") && <Payment sx={{ color: "#4a5d3a" }} />}
+                            {paymentMethod === "cash_on_delivery" && (
+                              <AccountBalance sx={{ color: "#4a5d3a" }} />
+                            )}
+                            <Typography sx={{ color: "#6b8459" }}>
+                              {paymentMethod === "paymaya" && "PayMaya"}
+                              {paymentMethod === "gcash" && "GCash"}
+                              {paymentMethod === "cash_on_delivery" &&
+                                "Cash on Delivery"}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+
+                      {/* Notes for Seller */}
+                      <Card
+                        sx={{
+                          mb: 3,
+                          borderRadius: "12px",
+                          border: "1px solid rgba(74, 93, 58, 0.1)",
+                        }}
+                      >
+                        <CardContent>
+                          <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                          >
+                            Notes for Seller
+                          </Typography>
+                          <TextField
+                            label="Add notes for the seller (optional)"
+                            multiline
+                            minRows={2}
+                            fullWidth
+                            value={buyerNotes}
+                            onChange={(e) => setBuyerNotes(e.target.value)}
+                            placeholder="E.g. Please deliver after 5pm, call before arrival, etc."
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "12px",
+                                "& fieldset": {
+                                  borderColor: "rgba(74, 93, 58, 0.3)",
+                                },
+                                "&:hover fieldset": {
+                                  borderColor: "#4a5d3a",
+                                },
+                                "&.Mui-focused fieldset": {
+                                  borderColor: "#4a5d3a",
+                                },
+                              },
+                              "& .MuiInputLabel-root.Mui-focused": {
+                                color: "#4a5d3a",
+                              },
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
+
+                  {/* Navigation Buttons */}
+                  <Box display="flex" justifyContent="space-between" sx={{ mt: 4 }}>
+                    <Button
+                      disabled={activeStep === 0}
+                      onClick={handleBack}
+                    sx={{
+                      borderRadius: "12px",
+                      px: 3,
+                      py: 1,
+                      color: "#4a5d3a",
+                      "&:hover": {
+                        backgroundColor: "rgba(74, 93, 58, 0.1)",
+                      },
+                    }}
+                    >
+                      Back
+                    </Button>
+
+                    {activeStep === steps.length - 1 ? (
+                      <Button
+                        variant="contained"
+                        onClick={createPayment}
+                        disabled={!validateStep() || processing}
+                        sx={{
+                          backgroundColor: "#8fa876",
+                          color: "#ffffff",
+                          borderRadius: "12px",
+                          px: 4,
+                          py: 1.5,
+                          fontWeight: 600,
+                          "&:hover": {
+                            backgroundColor: "#7a956a",
+                          },
+                          "&:disabled": {
+                            backgroundColor: "rgba(74, 93, 58, 0.3)",
+                          },
+                        }}
+                      >
+                        {processing ? (
+                          <>
+                            <CircularProgress
+                              size={20}
+                              sx={{ mr: 1, color: "#ffffff" }}
+                            />
+                            Processing Payment...
+                          </>
+                        ) : (
+                          "Complete Payment"
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        onClick={handleNext}
+                        disabled={!validateStep()}
+                        sx={{
+                          backgroundColor: "#8fa876",
+                          color: "#ffffff",
+                          borderRadius: "12px",
+                          px: 4,
+                          py: 1.5,
+                          fontWeight: 600,
+                          "&:hover": {
+                            backgroundColor: "#7a956a",
+                          },
+                          "&:disabled": {
+                            backgroundColor: "rgba(74, 93, 58, 0.3)",
+                          },
+                        }}
+                      >
+                        Next
+                      </Button>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
+
+              {/* Order Summary */}
+              <Grid item xs={12} md={4}>
+                <Paper
+                  elevation={3}
+                  sx={{
+                    p: 3,
+                    borderRadius: "20px",
+                    position: "sticky",
+                    top: 20,
+                    background: "#ffffff",
+                    boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
+                    border: "1px solid rgba(74, 93, 58, 0.1)",
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{
+                      fontWeight: 700,
+                      color: "#4a5d3a",
+                      mb: 3,
+                    }}
+                  >
+                    Order Summary
                   </Typography>
-                </Box>
-              )}
-            </Paper>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+
+                  {cartItems.map((item) => (
+                    <Box
+                      key={item.id}
+                      sx={{
+                        mb: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        borderBottom: "1px solid rgba(74, 93, 58, 0.1)",
+                        pb: 1,
+                      }}
+                    >
+                      <CardMedia
+                        component="img"
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          objectFit: "cover",
+                          mr: 2,
+                          borderRadius: "8px",
+                          border: "1px solid rgba(74, 93, 58, 0.1)",
+                        }}
+                        image={
+                          item.image ||
+                          "https://via.placeholder.com/300x400?text=Fashion+Item"
+                        }
+                        alt={item.name}
+                      />
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                        >
+                          {item.name} × {item.quantity}
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "#6b8459", fontWeight: 600 }}
+                      >
+                        ₱{(item.price * item.quantity).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  ))}
+
+                  <Divider sx={{ my: 2, borderColor: "rgba(74, 93, 58, 0.2)" }} />
+
+                  <List dense>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary="Subtotal"
+                        primaryTypographyProps={{
+                          color: "#4a5d3a",
+                          fontWeight: 600,
+                        }}
+                      />
+                      <Typography sx={{ color: "#6b8459", fontWeight: 600 }}>
+                        ₱{subtotal.toFixed(2)}
+                      </Typography>
+                    </ListItem>
+
+                    {/* Clothes Voucher Select */}
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary="Clothes Voucher"
+                        primaryTypographyProps={{
+                          color: "#4a5d3a",
+                          fontWeight: 600,
+                        }}
+                      />
+                      <Box sx={{ minWidth: 120 }}>
+                        <select
+                          value={
+                            selectedClothesVoucher?.discount_code ||
+                            selectedClothesVoucher?.code ||
+                            ""
+                          }
+                          onChange={(e) => handleClothesDiscount(e.target.value)}
+                          style={{
+                            padding: "8px",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(74, 93, 58, 0.3)",
+                            backgroundColor: "#ffffff",
+                            color: "#4a5d3a",
+                          }}
+                        >
+                          <option value="">Select voucher</option>
+                          {clothesVouchers.map((voucher) => (
+                            <option
+                              key={voucher.discount_code || voucher.code}
+                              value={voucher.discount_code || voucher.code}
+                            >
+                              {voucher.discount_code || voucher.code} (
+                              {voucher.percentage}% OFF) - {voucher.description}
+                            </option>
+                          ))}
+                        </select>
+                      </Box>
+                    </ListItem>
+                    {clothesDiscountInfo && (
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText
+                          primary={`Clothes Discount (${clothesDiscountInfo.discount_code})`}
+                          primaryTypographyProps={{
+                            color: "#4a5d3a",
+                            fontSize: "0.9rem",
+                          }}
+                        />
+                        <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                          -₱{clothesDiscountInfo.discount_amount.toFixed(2)}
+                        </Typography>
+                      </ListItem>
+                    )}
+
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary="Shipping Fee"
+                        primaryTypographyProps={{
+                          color: "#4a5d3a",
+                          fontWeight: 600,
+                        }}
+                      />
+                      <Typography sx={{ color: "#6b8459", fontWeight: 600 }}>
+                        ₱{shippingFee.toFixed(2)}
+                      </Typography>
+                    </ListItem>
+
+                    {/* Shipping Voucher Select */}
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary="Shipping Voucher"
+                        primaryTypographyProps={{
+                          color: "#4a5d3a",
+                          fontWeight: 600,
+                        }}
+                      />
+                      <Box sx={{ minWidth: 120 }}>
+                        <select
+                          value={
+                            selectedShippingVoucher?.discount_code ||
+                            selectedShippingVoucher?.code ||
+                            ""
+                          }
+                          onChange={(e) => handleShippingDiscount(e.target.value)}
+                          style={{
+                            padding: "8px",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(74, 93, 58, 0.3)",
+                            backgroundColor: "#ffffff",
+                            color: "#4a5d3a",
+                          }}
+                        >
+                          <option value="">Select voucher</option>
+                          {shippingVouchers.map((voucher) => (
+                            <option
+                              key={voucher.discount_code || voucher.code}
+                              value={voucher.discount_code || voucher.code}
+                            >
+                              {voucher.discount_code || voucher.code} (
+                              {voucher.percentage}% OFF) - {voucher.description}
+                            </option>
+                          ))}
+                        </select>
+                      </Box>
+                    </ListItem>
+                    {shippingDiscountInfo && (
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText
+                          primary={`Shipping Discount (${shippingDiscountInfo.discount_code})`}
+                          primaryTypographyProps={{
+                            color: "#4a5d3a",
+                            fontSize: "0.9rem",
+                          }}
+                        />
+                        <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                          -₱{shippingDiscountInfo.discount_amount.toFixed(2)}
+                        </Typography>
+                      </ListItem>
+                    )}
+                  </List>
+
+                  <Divider sx={{ my: 2, borderColor: "rgba(74, 93, 58, 0.2)" }} />
+
+                  <ListItem sx={{ px: 0 }}>
+                    <ListItemText
+                      primary={
+                        <Typography
+                          variant="h6"
+                          sx={{ fontWeight: 700, color: "#4a5d3a" }}
+                        >
+                          Total
+                        </Typography>
+                      }
+                    />
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 700, color: "#4a5d3a" }}
+                    >
+                      ₱{calculatedTotal.toFixed(2)}
+                    </Typography>
+                  </ListItem>
+
+                  {appliedDiscountInfo && (
+                    <Box sx={{ mt: 2 }}>
+                      <Chip
+                        label={`${appliedDiscountInfo.code} - ${appliedDiscountInfo.percentage}% OFF`}
+                        sx={{
+                          backgroundColor: "#8fa876",
+                          color: "#ffffff",
+                        }}
+                        size="small"
+                      />
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        sx={{ mt: 1, color: "#6b8459" }}
+                      >
+                        {appliedDiscountInfo.description}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                      >
+                        You saved ₱{appliedDiscountInfo.discountAmount.toFixed(2)}!
+                      </Typography>
+                    </Box>
+                  )}
+                </Paper>
+              </Grid>
+            </Grid>
+          </motion.div>
+        </Container>
+      </Box>
+    </>
   );
 };
 

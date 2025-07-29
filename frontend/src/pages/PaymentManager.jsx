@@ -16,9 +16,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  AppBar,
-  Toolbar,
-  IconButton,
+  // AppBar,
+  // Toolbar,
+  // IconButton,
   Card,
   CardContent,
   Grid,
@@ -27,7 +27,15 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { ArrowBack, Refresh } from "@mui/icons-material";
+import {
+  ArrowBack,
+  Refresh,
+  Dashboard,
+  ShoppingCart,
+  Store,
+  Receipt,
+  LocalShipping,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
@@ -459,332 +467,748 @@ const PaymentManager = () => {
 
   if (loading) {
     return (
-      <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-        <Container maxWidth="lg" sx={{ py: 8, textAlign: "center" }}>
-          <CircularProgress size={60} sx={{ color: "#2e7d32" }} />
-          <Typography variant="h6" sx={{ mt: 2 }}>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          backgroundColor: "#f0f8f0",
+          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box textAlign="center">
+          <CircularProgress size={60} sx={{ color: "#4a5d3a" }} />
+          <Typography variant="h6" sx={{ mt: 2, color: "#4a5d3a" }}>
             Loading payments...
           </Typography>
-        </Container>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f5f5f5" }}>
-      <AppBar position="static" sx={{ bgcolor: "#2e7d32" }}>
-        <Toolbar>
-          <IconButton color="inherit" onClick={() => navigate("/dashboard")}>
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Order Manager
-          </Typography>
-          <IconButton color="inherit" onClick={fetchPayments}>
-            <Refresh />
-          </IconButton>
-          <Button color="inherit" onClick={() => navigate("/products")}>
+    <>
+      {/* Header with Dashboard.jsx styling */}
+      <Box
+        component="header"
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        width="100%"
+        sx={{
+          px: 4,
+          py: 2,
+          backgroundColor: "#4a5d3a", // Dark green matching Dashboard.jsx
+          position: "fixed",
+          top: 0,
+          left: 0,
+          zIndex: 1100,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+        }}
+      >
+        {/* Logo and Title */}
+        <Box display="flex" alignItems="center">
+          <Box
+            onClick={() => navigate("/dashboard")}
+            display="flex"
+            alignItems="center"
+            sx={{
+              textDecoration: "none",
+              cursor: "pointer",
+              "&:hover": {
+                opacity: 0.9,
+              },
+              transition: "opacity 0.2s ease",
+            }}
+          >
+            <Box
+              component="img"
+              src="src/assets/ClimateFitLogo.png"
+              alt="Climate Fit Logo"
+              sx={{
+                width: "50px",
+                height: "30px",
+                objectFit: "cover",
+                mr: 2,
+              }}
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                color: "#ffffff",
+                fontSize: "1.2rem",
+              }}
+            >
+              ORDER MANAGER
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Header Actions */}
+        <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            onClick={() => navigate("/dashboard")}
+            startIcon={<ArrowBack />}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
+            Back
+          </Button>
+          <Button
+            onClick={fetchPayments}
+            startIcon={<Refresh />}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
+            Refresh
+          </Button>
+          <Button
+            onClick={() => navigate("/products")}
+            startIcon={<Store />}
+            variant="outlined"
+            sx={{
+              backgroundColor: "transparent",
+              color: "#ffffff",
+              border: "2px solid #ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderColor: "#ffffff",
+              },
+            }}
+          >
             Products
           </Button>
-          <Button color="inherit" onClick={() => navigate("/cart")}>
+          <Button
+            onClick={() => navigate("/cart")}
+            startIcon={<ShoppingCart />}
+            variant="contained"
+            sx={{
+              backgroundColor: "#8fa876", // Light green matching Dashboard.jsx
+              color: "#ffffff",
+              borderRadius: "25px",
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              "&:hover": {
+                backgroundColor: "#7a956a",
+              },
+            }}
+          >
             Cart
           </Button>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
+        </Box>
+      </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-            {error.includes("Authentication expired") && (
-              <Button
-                color="inherit"
-                onClick={() => navigate("/login")}
-                sx={{ ml: 2 }}
-              >
-                Go to Login
-              </Button>
-            )}
-          </Alert>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          {/* Payment Status Section */}
-          {activeMainTab === 0 && (
-            <Paper
-              elevation={3}
-              sx={{ borderRadius: 3, overflow: "hidden", mb: 4 }}
+      {/* Main Content with Dashboard.jsx background */}
+      <Box
+        sx={{
+          pt: 12, // Account for fixed header height
+          mt: 10, // Add top margin for extra spacing
+          minHeight: "100vh",
+          backgroundColor: "#f0f8f0", // Light green background matching Dashboard.jsx
+          background: "linear-gradient(135deg, #e8f5e8 0%, #d4e9d4 100%)", // Light green gradient matching Dashboard.jsx
+          px: { xs: 2, md: 4 },
+          py: 4,
+        }}
+      >
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {/* Page Header with Dashboard.jsx styling */}
+            <Box
+              component={motion.div}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              sx={{
+                background: "#4a5d3a", // Dark green background matching Dashboard.jsx
+                borderRadius: "24px",
+                p: 4,
+                mb: 4,
+                boxShadow: "0 10px 30px rgba(74, 93, 58, 0.3)",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
             >
-              <Tabs
-                value={activeTab}
-                onChange={handleTabChange}
-                variant="fullWidth"
+              <Box display="flex" alignItems="center" gap={3}>
+                <Box
+                  sx={{
+                    backgroundColor: "rgba(255, 255, 255, 0.1)",
+                    borderRadius: "16px",
+                    p: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Receipt sx={{ fontSize: 40, color: "#ffffff" }} />
+                </Box>
+                <Box>
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: "2rem",
+                      mb: 1,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Order Manager 📋
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.9)",
+                      fontSize: "1rem",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Track your orders, payments, and shipping status
+                  </Typography>
+                </Box>
+              </Box>
+              <Box
                 sx={{
-                  bgcolor: "#1976d2",
-                  "& .MuiTab-root": {
-                    color: "white",
-                    fontWeight: "bold",
-                  },
-                  "& .Mui-selected": {
-                    bgcolor: "rgba(255,255,255,0.1)",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  borderRadius: "12px",
+                  px: 3,
+                  py: 1,
+                  backdropFilter: "blur(10px)",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    fontSize: "1.5rem",
+                  }}
+                >
+                  {getAllPayments().length}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.7)",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  Total Orders
+                </Typography>
+              </Box>
+            </Box>
+
+            {error && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 15px rgba(244, 67, 54, 0.2)",
+                }}
+              >
+                {error}
+                {error.includes("Authentication expired") && (
+                  <Button
+                    color="inherit"
+                    onClick={() => navigate("/login")}
+                    sx={{ ml: 2 }}
+                  >
+                    Go to Login
+                  </Button>
+                )}
+              </Alert>
+            )}
+
+            {/* Payment Status Section */}
+            {activeMainTab === 0 && (
+              <Box
+                component={motion.div}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <Paper
+                  elevation={3}
+                  sx={{
+                    borderRadius: "20px",
+                    overflow: "hidden",
+                    mb: 4,
+                    background: "#ffffff",
+                    boxShadow: "0 10px 30px rgba(74, 93, 58, 0.15)",
+                    border: "1px solid rgba(74, 93, 58, 0.1)",
+                  }}
+                >
+                  <Tabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    variant="fullWidth"
+                    sx={{
+                      background: "linear-gradient(135deg, #4a5d3a 0%, #5c7349 100%)",
+                      "& .MuiTab-root": {
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        py: 2,
+                      },
+                      "& .Mui-selected": {
+                        backgroundColor: "rgba(255,255,255,0.1)",
+                      },
+                      "& .MuiTabs-indicator": {
+                        backgroundColor: "#ffffff",
+                        height: 3,
+                      },
+                    }}
+                  >
+                    {paymentStatuses.map((status, index) => (
+                      <Tab
+                        key={status.value}
+                        label={`${status.label} (${
+                          Array.isArray(payments[status.value])
+                            ? payments[status.value].length
+                            : 0
+                        })`}
+                      />
+                    ))}
+                  </Tabs>
+
+                  <Box sx={{ p: 3 }}>
+                    {getFilteredPayments().length === 0 ? (
+                      <Box sx={{ textAlign: "center", py: 8 }}>
+                        <Receipt sx={{ fontSize: 64, color: "#8fa876", mb: 2 }} />
+                        <Typography
+                          variant="h6"
+                          sx={{ color: "#4a5d3a", fontWeight: 600, mb: 1 }}
+                        >
+                          No {paymentStatuses[activeTab].label.toLowerCase()} payments found
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          onClick={fetchPayments}
+                          sx={{
+                            mt: 2,
+                            backgroundColor: "#8fa876",
+                            color: "#ffffff",
+                            borderRadius: "12px",
+                            px: 3,
+                            py: 1,
+                            "&:hover": {
+                              backgroundColor: "#7a956a",
+                            },
+                          }}
+                          startIcon={<Refresh />}
+                        >
+                          Refresh
+                        </Button>
+                      </Box>
+                    ) : (
+                      <TableContainer>
+                        <Table>
+                          <TableHead>
+                            <TableRow
+                              sx={{
+                                "& .MuiTableCell-head": {
+                                  backgroundColor: "rgba(74, 93, 58, 0.1)",
+                                  color: "#4a5d3a",
+                                  fontWeight: 700,
+                                  borderBottom: "2px solid rgba(74, 93, 58, 0.2)",
+                                },
+                              }}
+                            >
+                              <TableCell>Payment ID</TableCell>
+                              <TableCell>Amount</TableCell>
+                              <TableCell>Payment Method</TableCell>
+                              <TableCell>Status</TableCell>
+                              <TableCell>Shipping Status</TableCell>
+                              <TableCell>Date</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {getFilteredPayments().map((payment, index) => (
+                              <TableRow
+                                key={payment.payment_id}
+                                component={motion.tr}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                                sx={{
+                                  "&:hover": {
+                                    backgroundColor: "rgba(74, 93, 58, 0.05)",
+                                    transform: "scale(1.01)",
+                                  },
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease",
+                                  "& .MuiTableCell-root": {
+                                    borderBottom: "1px solid rgba(74, 93, 58, 0.1)",
+                                  },
+                                }}
+                                onClick={() => handleRowClick(payment)}
+                              >
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontFamily: "monospace",
+                                      color: "#4a5d3a",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {payment.payment_id}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: 700,
+                                      color: "#4a5d3a",
+                                    }}
+                                  >
+                                    {formatCurrency(payment.total_amount)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={
+                                      payment.payment_method?.toUpperCase() || "N/A"
+                                    }
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{
+                                      borderColor: "#8fa876",
+                                      color: "#4a5d3a",
+                                      fontWeight: 600,
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  {getStatusChip(payment.payment_status)}
+                                </TableCell>
+                                <TableCell>
+                                  {getShippingStatusChip(
+                                    payment.shipping_status || "not_shipped"
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: "#6b8459" }}
+                                  >
+                                    {formatDate(payment.created_at)}
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </Box>
+                </Paper>
+              </Box>
+            )}
+
+            {/* Payment Summary Cards - Show only on Payment Status tab */}
+            {activeMainTab === 0 && (
+              <Box
+                component={motion.div}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                  {paymentStatuses.map((status) => {
+                    const statusPayments = Array.isArray(payments[status.value])
+                      ? payments[status.value]
+                      : [];
+                    const totalAmount = statusPayments.reduce(
+                      (sum, payment) => sum + Number(payment.total_amount || 0),
+                      0
+                    );
+
+                    return (
+                      <Grid item xs={12} sm={6} md={2.4} key={status.value}>
+                        <Card
+                          sx={{
+                            borderTop: `4px solid ${status.color}`,
+                            cursor: "pointer",
+                            borderRadius: "16px",
+                            background: "#ffffff",
+                            boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)",
+                            border: "1px solid rgba(74, 93, 58, 0.1)",
+                            "&:hover": {
+                              boxShadow: "0 8px 25px rgba(74, 93, 58, 0.2)",
+                              transform: "translateY(-4px)",
+                            },
+                            transition: "all 0.3s ease",
+                          }}
+                          onClick={() => {
+                            const tabIndex = paymentStatuses.findIndex(
+                              (s) => s.value === status.value
+                            );
+                            setActiveTab(tabIndex);
+                          }}
+                        >
+                          <CardContent sx={{ textAlign: "center" }}>
+                            <Typography
+                              variant="h4"
+                              sx={{
+                                fontWeight: 700,
+                                color: "#4a5d3a",
+                              }}
+                            >
+                              {statusPayments.length}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "#6b8459", fontWeight: 600 }}
+                            >
+                              {status.label}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                mt: 1,
+                                fontWeight: 700,
+                                color: "#4a5d3a",
+                              }}
+                            >
+                              {formatCurrency(totalAmount)}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
+
+            {/* Shipping Summary Cards - Show only on Shipping Status tab */}
+            {activeMainTab === 1 && shippingDataLoaded && (
+              <Box
+                component={motion.div}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <Grid container spacing={3}>
+                  {shippingStatuses.map((status) => {
+                    const statusPayments = Array.isArray(
+                      shippingPayments[status.value]
+                    )
+                      ? shippingPayments[status.value]
+                      : [];
+                    const totalAmount = statusPayments.reduce(
+                      (sum, payment) => sum + Number(payment.total_amount || 0),
+                      0
+                    );
+
+                    return (
+                      <Grid item xs={12} sm={6} md={1.7} key={status.value}>
+                        <Card
+                          sx={{
+                            borderTop: `4px solid ${status.color}`,
+                            cursor: "pointer",
+                            borderRadius: "16px",
+                            background: "#ffffff",
+                            boxShadow: "0 4px 15px rgba(74, 93, 58, 0.1)",
+                            border: "1px solid rgba(74, 93, 58, 0.1)",
+                            "&:hover": {
+                              boxShadow: "0 8px 25px rgba(74, 93, 58, 0.2)",
+                              transform: "translateY(-4px)",
+                            },
+                            transition: "all 0.3s ease",
+                          }}
+                          onClick={() => {
+                            const tabIndex = shippingStatuses.findIndex(
+                              (s) => s.value === status.value
+                            );
+                            setActiveShippingTab(tabIndex);
+                          }}
+                        >
+                          <CardContent sx={{ textAlign: "center", py: 2 }}>
+                            <LocalShipping sx={{ fontSize: 24, color: "#4a5d3a", mb: 1 }} />
+                            <Typography
+                              variant="h5"
+                              sx={{
+                                fontWeight: 700,
+                                color: "#4a5d3a",
+                              }}
+                            >
+                              {statusPayments.length}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{ color: "#6b8459", fontWeight: 600 }}
+                            >
+                              {status.label}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                mt: 0.5,
+                                display: "block",
+                                fontWeight: 700,
+                                color: "#4a5d3a",
+                              }}
+                            >
+                              {formatCurrency(totalAmount)}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
+
+            {/* Payment Details Dialog with improved styling */}
+            {selectedPayment && (
+              <Dialog
+                open={true}
+                onClose={closePaymentDetails}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    borderRadius: "20px",
+                    background: "#ffffff",
+                    boxShadow: "0 20px 60px rgba(74, 93, 58, 0.3)",
                   },
                 }}
               >
-                {paymentStatuses.map((status, index) => (
-                  <Tab
-                    key={status.value}
-                    label={`${status.label} (${
-                      Array.isArray(payments[status.value])
-                        ? payments[status.value].length
-                        : 0
-                    })`}
-                  />
-                ))}
-              </Tabs>
-
-              <Box sx={{ p: 3 }}>
-                {getFilteredPayments().length === 0 ? (
-                  <Box sx={{ textAlign: "center", py: 8 }}>
-                    <Typography variant="h6" color="text.secondary">
-                      No {paymentStatuses[activeTab].label.toLowerCase()}{" "}
-                      payments found
+                <DialogTitle
+                  sx={{
+                    backgroundColor: "#4a5d3a",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    fontSize: "1.3rem",
+                  }}
+                >
+                  Payment Details
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                  <Box sx={{ color: "#4a5d3a" }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                      Payment ID: {selectedPayment.payment_id}
                     </Typography>
-                    <Button
-                      variant="outlined"
-                      onClick={fetchPayments}
-                      sx={{ mt: 2 }}
-                      startIcon={<Refresh />}
-                    >
-                      Refresh
-                    </Button>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Typography sx={{ color: "#6b8459" }}>
+                          <strong>User ID:</strong> {selectedPayment.user_id}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography sx={{ color: "#6b8459" }}>
+                          <strong>Username:</strong> {selectedPayment.username}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography sx={{ color: "#6b8459" }}>
+                          <strong>Subtotal:</strong> {formatCurrency(selectedPayment.subtotal)}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography sx={{ color: "#6b8459" }}>
+                          <strong>Total Amount:</strong> {formatCurrency(selectedPayment.total_amount)}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography sx={{ color: "#6b8459" }}>
+                          <strong>Payment Method:</strong> {selectedPayment.payment_method}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography sx={{ color: "#6b8459" }}>
+                          <strong>Status:</strong> {selectedPayment.payment_status}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Typography sx={{ color: "#6b8459" }}>
+                          <strong>Created At:</strong> {formatDate(selectedPayment.created_at)}
+                        </Typography>
+                      </Grid>
+                      {selectedPayment.notes && (
+                        <Grid item xs={12}>
+                          <Typography sx={{ color: "#6b8459" }}>
+                            <strong>Notes:</strong> {selectedPayment.notes}
+                          </Typography>
+                        </Grid>
+                      )}
+                    </Grid>
                   </Box>
-                ) : (
-                  <TableContainer>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>
-                            <strong>Payment ID</strong>
-                          </TableCell>
-                          <TableCell>
-                            <strong>Amount</strong>
-                          </TableCell>
-                          <TableCell>
-                            <strong>Payment Method</strong>
-                          </TableCell>
-                          <TableCell>
-                            <strong>Status</strong>
-                          </TableCell>
-                          <TableCell>
-                            <strong>Shipping Status</strong>
-                          </TableCell>
-                          <TableCell>
-                            <strong>Date</strong>
-                          </TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {getFilteredPayments().map((payment) => (
-                          <TableRow
-                            key={payment.payment_id}
-                            sx={{
-                              "&:hover": { bgcolor: "#f5f5f5" },
-                              cursor: "pointer",
-                            }}
-                            onClick={() => handleRowClick(payment)}
-                          >
-                            <TableCell>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontFamily: "monospace" }}
-                              >
-                                {payment.payment_id}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight="bold">
-                                {formatCurrency(payment.total_amount)}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={
-                                  payment.payment_method?.toUpperCase() || "N/A"
-                                }
-                                variant="outlined"
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              {getStatusChip(payment.payment_status)}
-                            </TableCell>
-                            <TableCell>
-                              {getShippingStatusChip(
-                                payment.shipping_status || "not_shipped"
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">
-                                {formatDate(payment.created_at)}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </Box>
-            </Paper>
-          )}
-
-          {/* Payment Summary Cards - Show only on Payment Status tab */}
-          {activeMainTab === 0 && (
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              {paymentStatuses.map((status) => {
-                const statusPayments = Array.isArray(payments[status.value])
-                  ? payments[status.value]
-                  : [];
-                const totalAmount = statusPayments.reduce(
-                  (sum, payment) => sum + Number(payment.total_amount || 0),
-                  0
-                );
-
-                return (
-                  <Grid item xs={12} sm={6} md={2.4} key={status.value}>
-                    <Card
-                      sx={{
-                        borderTop: `4px solid ${status.color}`,
-                        cursor: "pointer",
-                        "&:hover": { boxShadow: 4 },
-                      }}
-                      onClick={() => {
-                        const tabIndex = paymentStatuses.findIndex(
-                          (s) => s.value === status.value
-                        );
-                        setActiveTab(tabIndex);
-                      }}
-                    >
-                      <CardContent sx={{ textAlign: "center" }}>
-                        <Typography variant="h4" fontWeight="bold">
-                          {statusPayments.length}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {status.label}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontWeight="bold"
-                          sx={{ mt: 1 }}
-                        >
-                          {formatCurrency(totalAmount)}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          )}
-
-          {/* Shipping Summary Cards - Show only on Shipping Status tab */}
-          {activeMainTab === 1 && shippingDataLoaded && (
-            <Grid container spacing={3}>
-              {shippingStatuses.map((status) => {
-                const statusPayments = Array.isArray(
-                  shippingPayments[status.value]
-                )
-                  ? shippingPayments[status.value]
-                  : [];
-                const totalAmount = statusPayments.reduce(
-                  (sum, payment) => sum + Number(payment.total_amount || 0),
-                  0
-                );
-
-                return (
-                  <Grid item xs={12} sm={6} md={1.7} key={status.value}>
-                    <Card
-                      sx={{
-                        borderTop: `4px solid ${status.color}`,
-                        cursor: "pointer",
-                        "&:hover": { boxShadow: 4 },
-                      }}
-                      onClick={() => {
-                        const tabIndex = shippingStatuses.findIndex(
-                          (s) => s.value === status.value
-                        );
-                        setActiveShippingTab(tabIndex);
-                      }}
-                    >
-                      <CardContent sx={{ textAlign: "center", py: 2 }}>
-                        <Typography variant="h5" fontWeight="bold">
-                          {statusPayments.length}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {status.label}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          fontWeight="bold"
-                          sx={{ mt: 0.5, display: "block" }}
-                        >
-                          {formatCurrency(totalAmount)}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          )}
-
-          {/* Payment Details Dialog */}
-          {selectedPayment && (
-            <Dialog open={true} onClose={closePaymentDetails} maxWidth="md" fullWidth>
-              <DialogTitle>Payment Details</DialogTitle>
-              <DialogContent>
-                <Typography variant="h6">Payment ID: {selectedPayment.payment_id}</Typography>
-                <Typography>User ID: {selectedPayment.user_id}</Typography>
-                <Typography>Username: {selectedPayment.username}</Typography>
-                <Typography>Subtotal: {formatCurrency(selectedPayment.subtotal)}</Typography>
-                <Typography>Discount Amount: {formatCurrency(selectedPayment.discount_amount)}</Typography>
-                <Typography>Tax Amount: {formatCurrency(selectedPayment.tax_amount)}</Typography>
-                <Typography>Shipping Amount: {formatCurrency(selectedPayment.shipping_amount)}</Typography>
-                <Typography>Total Amount: {formatCurrency(selectedPayment.total_amount)}</Typography>
-                <Typography>Currency: {selectedPayment.currency}</Typography>
-                <Typography>Payment Method: {selectedPayment.payment_method}</Typography>
-                <Typography>Payment Status: {selectedPayment.payment_status}</Typography>
-                <Typography>Shipping Status: {selectedPayment.shipping_status}</Typography>
-                <Typography>Billing Address: {JSON.stringify(selectedPayment.billing_address)}</Typography>
-                <Typography>Transaction ID: {selectedPayment.transaction_id}</Typography>
-                <Typography>Discount Codes: {selectedPayment.discount_code?.join(", ")}</Typography>
-                <Typography>Created At: {formatDate(selectedPayment.created_at)}</Typography>
-                <Typography>Updated At: {selectedPayment.updated_at ? formatDate(selectedPayment.updated_at) : "N/A"}</Typography>
-                <Typography>Completed At: {selectedPayment.completed_at ? formatDate(selectedPayment.completed_at) : "N/A"}</Typography>
-                <Typography>Notes: {selectedPayment.notes || "N/A"}</Typography>
-                <Typography>Payment Details: {JSON.stringify(selectedPayment.payment_details)}</Typography>
-                <Typography>Items:</Typography>
-                <ul>
-                  {selectedPayment.items.map((item, index) => (
-                    <li key={index}>{JSON.stringify(item)}</li>
-                  ))}
-                </ul>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={closePaymentDetails} color="primary">Close</Button>
-              </DialogActions>
-            </Dialog>
-          )}
-        </motion.div>
-      </Container>
-    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 3 }}>
+                  <Button
+                    onClick={closePaymentDetails}
+                    variant="contained"
+                    sx={{
+                      backgroundColor: "#8fa876",
+                      color: "#ffffff",
+                      borderRadius: "12px",
+                      px: 3,
+                      py: 1,
+                      fontWeight: 600,
+                      "&:hover": {
+                        backgroundColor: "#7a956a",
+                      },
+                    }}
+                  >
+                    Close
+                  </Button>
+                </DialogActions>
+              </Dialog>
+            )}
+          </motion.div>
+        </Container>
+      </Box>
+    </>
   );
 };
 
