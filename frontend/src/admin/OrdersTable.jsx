@@ -48,7 +48,11 @@ const OrdersTable = () => {
     const fetchOrders = async () => {
       try {
         const response = await axios.get("http://localhost:8000/api/v1/admin/orders");
-        setOrders(response.data.orders);
+        const updatedOrders = response.data.orders.map((order) => ({
+          ...order,
+          payment_details: order.payment_details || {}, // Ensure payment_details exists
+        }));
+        setOrders(updatedOrders);
         setLoading(false);
       } catch (err) {
         setError("Failed to fetch orders.");
@@ -63,7 +67,18 @@ const OrdersTable = () => {
     const newStatus = event.target.value;
     setOrders((prevOrders) =>
       prevOrders.map((order) =>
-        order.payment_id === paymentId ? { ...order, payment_status: newStatus } : order
+        order.payment_id === paymentId
+          ? { ...order, payment_status: newStatus, reason: newStatus === "failed" ? "" : order.reason }
+          : order
+      )
+    );
+  };
+
+  const handleReasonChange = (event, paymentId) => {
+    const reason = event.target.value;
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.payment_id === paymentId ? { ...order, reason } : order
       )
     );
   };
@@ -73,6 +88,7 @@ const OrdersTable = () => {
     try {
       await axios.put(`http://localhost:8000/api/v1/admin/update-payment-status/${paymentId}`, {
         status: updatedOrder.payment_status,
+        reason: updatedOrder.reason,
       });
       alert("Status updated successfully.");
     } catch (err) {
@@ -637,6 +653,37 @@ const OrdersTable = () => {
                           <MenuItem value="failed">Failed</MenuItem>
                           <MenuItem value="cancelled">Cancelled</MenuItem>
                         </Select>
+                        {order.payment_status === "failed" && (
+                          <Box mt={2}>
+                            <Typography variant="body2" sx={{ color: "#4a5d3a", mb: 1 }}>
+                              Reason for Failure:
+                            </Typography>
+                            <textarea
+                              value={order.reason || ""}
+                              onChange={(event) => handleReasonChange(event, order.payment_id)}
+                              placeholder="Enter reason for failure"
+                              style={{
+                                width: "100%",
+                                minHeight: "50px",
+                                borderRadius: "8px",
+                                border: "1px solid rgba(74, 93, 58, 0.3)",
+                                padding: "8px",
+                                fontSize: "0.9rem",
+                                color: "#4a5d3a",
+                              }}
+                            />
+                          </Box>
+                        )}
+                        {order.payment_status === "failed" && order.payment_details?.failure_reason && (
+                          <Box mt={1}>
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "#d32f2f", fontWeight: 600 }}
+                            >
+                              Failure Reason: {order.payment_details.failure_reason}
+                            </Typography>
+                          </Box>
+                        )}
                       </TableCell>
                       <TableCell sx={{ py: 3, borderBottom: "1px solid rgba(74, 93, 58, 0.1)" }}>
                         <Select

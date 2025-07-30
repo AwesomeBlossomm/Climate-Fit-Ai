@@ -12,13 +12,22 @@ def generate_date_range(start_date, end_date):
         current_date += timedelta(days=1)
 
 @router.get("/analytics/user-seller-growth")
-async def user_seller_growth():
+async def user_seller_growth(filter: str = None, value: str = None):
     db = client.climateFitAi
     users_collection = db["users"]
     sellers_collection = db["sellers"]
 
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=30)
+    # Determine the date range based on the filter
+    if filter == "month" and value:
+        start_date = datetime.strptime(value, "%B")
+        start_date = start_date.replace(year=datetime.now().year)
+        end_date = start_date + timedelta(days=31)
+    elif filter == "year" and value:
+        start_date = datetime.strptime(value, "%Y")
+        end_date = start_date.replace(month=12, day=31)
+    else:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=30)  # Default to last 30 days
 
     user_growth = []
     seller_growth = []
@@ -40,12 +49,21 @@ async def user_seller_growth():
     return {"user_growth": user_growth, "seller_growth": seller_growth}
 
 @router.get("/analytics/monthly-sales")
-async def monthly_sales():
+async def monthly_sales(filter: str = None, value: str = None):
     db = client.climateFitAi
     payments_collection = db["payments"]
 
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=180)  # Last 6 months
+    # Determine the date range based on the filter
+    if filter == "month" and value:
+        start_date = datetime.strptime(value, "%B")
+        start_date = start_date.replace(year=datetime.now().year)
+        end_date = start_date + timedelta(days=31)
+    elif filter == "year" and value:
+        start_date = datetime.strptime(value, "%Y")
+        end_date = start_date.replace(month=12, day=31)
+    else:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=180)  # Default to last 6 months
 
     monthly_sales = {}
 

@@ -41,13 +41,8 @@ def calculate_shipping(subtotal: float, shipping_rate: float = 0.05) -> float:
 def serialize_payment(payment_doc):
     """Convert MongoDB document to JSON serializable format"""
     if payment_doc:
-        payment_doc["_id"] = str(payment_doc["_id"])
-        if "created_at" in payment_doc:
-            payment_doc["created_at"] = payment_doc["created_at"].isoformat()
-        if "updated_at" in payment_doc and payment_doc["updated_at"]:
-            payment_doc["updated_at"] = payment_doc["updated_at"].isoformat()
-        if "completed_at" in payment_doc and payment_doc["completed_at"]:
-            payment_doc["completed_at"] = payment_doc["completed_at"].isoformat()
+        payment_doc["failure_reason"] = payment_doc.get("failure_reason", None)
+        payment_doc["payment_details"] = payment_doc.get("payment_details", {})
     return payment_doc
 
 async def apply_discount_to_payment(discount_code: str, subtotal: float, username: str) -> tuple[float, str, dict]:
@@ -424,24 +419,30 @@ async def refund_payment(payment_id: str, admin_user: str = Depends(verify_admin
         raise HTTPException(status_code=500, detail=f"Failed to refund payment: {str(e)}")
 
 @router.put("/admin/update-payment-status/{payment_id}")
-async def update_payment_status(payment_id: str, payload: PaymentUpdate):
+async def update_payment_status(payment_id: str, payload: dict):
     """
     Update the payment status of a specific payment.
     Admins can update the status, transaction ID, and payment details.
     """
     try:
         # Validate the status field if provided
-        if payload.status and payload.status not in [s.value for s in PaymentStatus]:
+        if payload.get("status") and payload["status"] not in ["pending", "completed", "failed", "cancelled"]:
             raise HTTPException(status_code=400, detail="Invalid payment status.")
+
+        # If the status is 'failed', ensure a reason is provided
+        if payload.get("status") == "failed" and not payload.get("reason"):
+            raise HTTPException(status_code=400, detail="Reason is required for failed status.")
 
         # Prepare the update data
         update_data = {"updated_at": datetime.utcnow()}
-        if payload.status:
-            update_data["payment_status"] = payload.status
-        if payload.transaction_id:
-            update_data["transaction_id"] = payload.transaction_id
-        if payload.payment_details:
-            update_data["payment_details"] = payload.payment_details
+        if payload.get("status"):
+            update_data["payment_status"] = payload["status"]
+        if payload.get("transaction_id"):
+            update_data["transaction_id"] = payload["transaction_id"]
+        if payload.get("payment_details"):
+            update_data["payment_details"] = payload["payment_details"]
+        if payload.get("reason"):
+            update_data["failure_reason"] = payload["reason"]
 
         # Update the payment in the database
         result = payments_collection.update_one(
@@ -453,7 +454,11 @@ async def update_payment_status(payment_id: str, payload: PaymentUpdate):
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Payment not found.")
 
-        return {"success": True, "message": "Payment updated successfully.", "payment_id": payment_id}
+        # Ensure failure_reason is included in the response
+        updated_payment = payments_collection.find_one({"payment_id": payment_id})
+        if updated_payment:
+            updated_payment["failure_reason"] = updated_payment.get("failure_reason", None)
+        return {"success": True, "message": "Payment updated successfully.", "payment_id": payment_id, "failure_reason": updated_payment.get("failure_reason")}
     except HTTPException:
         raise
     except Exception as e:

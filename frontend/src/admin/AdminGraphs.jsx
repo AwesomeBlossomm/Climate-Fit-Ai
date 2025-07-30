@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Box, Typography, Button, Paper, Grid, Card, CardContent } from "@mui/material";
+import { Box, Typography, Button, Paper, Grid, Card, CardContent, Select, MenuItem } from "@mui/material";
 import { Bar, Line } from "react-chartjs-2";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -44,6 +47,8 @@ const AdminGraphs = () => {
   const navigate = useNavigate();
   const [userSellerData, setUserSellerData] = useState({ users: [], sellers: [] });
   const [salesData, setSalesData] = useState({ labels: [], datasets: [] });
+  const [filter, setFilter] = useState("month");
+  const [selectedValue, setSelectedValue] = useState("");
 
   const handleLogout = () => {
     logout();
@@ -121,6 +126,98 @@ const AdminGraphs = () => {
 
     fetchMonthlySales();
   }, []);
+
+  useEffect(() => {
+    const fetchFilteredSales = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/api/v1/analytics/monthly-sales`,
+          {
+            params: {
+              filter,
+              value: selectedValue,
+            },
+          }
+        );
+        const filteredData = response.data.sales_data;
+
+        if (filteredData && Array.isArray(filteredData)) {
+          setSalesData({
+            labels: filteredData.map((item) => item.month),
+            datasets: [
+              {
+                label: "Sales (in ₱)",
+                data: filteredData.map((item) => item.profit),
+                backgroundColor: "rgba(143, 168, 118, 0.8)",
+                borderColor: "#8fa876",
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+              },
+            ],
+          });
+        } else {
+          throw new Error("Invalid filtered sales data format");
+        }
+      } catch (error) {
+        console.error("Error fetching filtered sales data:", error);
+        // Fallback to mock data if API fails
+        setSalesData({
+          labels: ["January", "February", "March", "April", "May", "June"],
+          datasets: [
+            {
+              label: "Sales (in ₱)",
+              data: [500, 700, 400, 800, 600, 900],
+              backgroundColor: "rgba(143, 168, 118, 0.8)",
+              borderColor: "#8fa876",
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false,
+            },
+          ],
+        });
+      }
+    };
+
+    if (filter && selectedValue) {
+      fetchFilteredSales();
+    }
+  }, [filter, selectedValue]);
+
+  useEffect(() => {
+    const fetchFilteredUserSellerGrowth = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/api/v1/analytics/user-seller-growth`,
+          {
+            params: {
+              filter,
+              value: selectedValue,
+            },
+          }
+        );
+        const { user_growth, seller_growth } = response.data;
+
+        setUserSellerData({
+          users: user_growth.map((item) => item.count),
+          sellers: seller_growth.map((item) => item.count),
+          labels: user_growth.map((item) => item.date),
+        });
+      } catch (error) {
+        console.error("Error fetching filtered user and seller growth data:", error);
+        // Fallback to empty data if API fails
+        setUserSellerData({
+          users: [],
+          sellers: [],
+          labels: [],
+        });
+      }
+    };
+
+    if (filter && selectedValue) {
+      fetchFilteredUserSellerGrowth();
+    }
+  }, [filter, selectedValue]);
 
   const chartData = {
     labels: userSellerData.labels,
@@ -224,6 +321,57 @@ const AdminGraphs = () => {
       return salesData.datasets[0].data.reduce((sum, amount) => sum + amount, 0);
     }
     return 0;
+  };
+
+  const handleFilterChange = (event) => {
+    setFilter(event.target.value);
+    setSelectedValue(""); // Reset selected value when filter changes
+  };
+
+  const handleValueChange = (event) => {
+    setSelectedValue(event.target.value);
+  };
+
+  const downloadReport = async () => {
+    const doc = new jsPDF();
+
+    // Add Climate Fit logo
+    const logo = new Image();
+    logo.src = "/src/assets/ClimateFitLogo.png";
+    await new Promise((resolve) => {
+      logo.onload = resolve;
+    });
+    doc.addImage(logo, "PNG", 10, 10, 30, 15);
+
+    // Add site title
+    doc.setFontSize(18);
+    doc.text("Climate Fit Analytics Report", 50, 20);
+
+    // Add some spacing
+    doc.setFontSize(12);
+    doc.text("Generated on: " + new Date().toLocaleDateString(), 10, 35);
+
+    // Capture User & Seller Growth Chart
+    const userSellerChart = document.querySelector(".user-seller-chart");
+    if (userSellerChart) {
+      const canvas = await html2canvas(userSellerChart);
+      const imgData = canvas.toDataURL("image/png");
+      doc.addImage(imgData, "PNG", 10, 40, 190, 80);
+    }
+
+    // Add some spacing
+    doc.addPage();
+
+    // Capture Monthly Sales Chart
+    const salesChart = document.querySelector(".sales-chart");
+    if (salesChart) {
+      const canvas = await html2canvas(salesChart);
+      const imgData = canvas.toDataURL("image/png");
+      doc.addImage(imgData, "PNG", 10, 20, 190, 80);
+    }
+
+    // Save the PDF
+    doc.save("analytics_report.pdf");
   };
 
   return (
@@ -590,6 +738,146 @@ const AdminGraphs = () => {
           </Grid>
         </Box>
 
+        {/* Filter Section */}
+        <Box
+          component={motion.div}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          sx={{
+            maxWidth: 1400,
+            mx: "auto",
+            mb: 4,
+          }}
+        >
+          <Paper
+            sx={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fdf8 100%)",
+              borderRadius: "20px",
+              boxShadow: "0 10px 30px rgba(74, 93, 58, 0.1)",
+              p: 3,
+              border: "1px solid rgba(143, 168, 118, 0.2)",
+            }}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" gap={3} alignItems="center">
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: "#4a5d3a",
+                    fontWeight: 600,
+                    fontSize: "1.1rem",
+                    mr: 2,
+                  }}
+                >
+                  Filter Data:
+                </Typography>
+                <Select
+                  value={filter}
+                  onChange={handleFilterChange}
+                  sx={{
+                    minWidth: 120,
+                    backgroundColor: "#ffffff",
+                    borderRadius: "12px",
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      "& fieldset": {
+                        borderColor: "rgba(143, 168, 118, 0.3)",
+                        borderWidth: "2px",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "#8fa876",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#4a5d3a",
+                      },
+                    },
+                    "& .MuiSelect-select": {
+                      color: "#4a5d3a",
+                      fontWeight: 500,
+                      py: 1.5,
+                    },
+                  }}
+                >
+                  <MenuItem value="month">Month</MenuItem>
+                  <MenuItem value="year">Year</MenuItem>
+                </Select>
+                <Select
+                  value={selectedValue}
+                  onChange={handleValueChange}
+                  displayEmpty
+                  sx={{
+                    minWidth: 150,
+                    backgroundColor: "#ffffff",
+                    borderRadius: "12px",
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      "& fieldset": {
+                        borderColor: "rgba(143, 168, 118, 0.3)",
+                        borderWidth: "2px",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "#8fa876",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#4a5d3a",
+                      },
+                    },
+                    "& .MuiSelect-select": {
+                      color: "#4a5d3a",
+                      fontWeight: 500,
+                      py: 1.5,
+                    },
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    Select {filter}
+                  </MenuItem>
+                  {filter === "month" &&
+                    ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((month) => (
+                      <MenuItem key={month} value={month}>
+                        {month}
+                      </MenuItem>
+                    ))}
+                  {filter === "year" &&
+                    ["2023", "2024", "2025"].map((year) => (
+                      <MenuItem key={year} value={year}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </Box>
+              <Button
+                variant="contained"
+                onClick={downloadReport}
+                sx={{
+                  background: "linear-gradient(135deg, #4a5d3a 0%, #5c7349 100%)",
+                  borderRadius: "16px",
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  textTransform: "none",
+                  boxShadow: "0 8px 25px rgba(74, 93, 58, 0.3)",
+                  border: "2px solid transparent",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #5c7349 0%, #6b8459 100%)",
+                    boxShadow: "0 12px 35px rgba(74, 93, 58, 0.4)",
+                    transform: "translateY(-2px)",
+                    border: "2px solid rgba(255, 255, 255, 0.2)",
+                  },
+                  "&:active": {
+                    transform: "translateY(0px)",
+                  },
+                }}
+              >
+                📄 Download Report
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+
         {/* Charts Section */}
         <Box
           sx={{
@@ -647,7 +935,7 @@ const AdminGraphs = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ p: 3, height: 400 }}>
+                <Box sx={{ p: 3, height: 400 }} className="user-seller-chart">
                   <Line data={chartData} options={chartOptions} />
                 </Box>
               </Paper>
@@ -702,7 +990,7 @@ const AdminGraphs = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ p: 3, height: 400 }}>
+                <Box sx={{ p: 3, height: 400 }} className="sales-chart">
                   <Bar data={salesData} options={chartOptions} />
                 </Box>
               </Paper>
