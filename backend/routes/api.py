@@ -741,7 +741,7 @@ async def get_clothes_infinite_scroll(
     price_max: Optional[float] = Query(default=None),
     category: Optional[str] = Query(default=None),
     weather_suitable: Optional[str] = Query(default=None),
-    weather_suggestions: Optional[str] = Query(default=None),  # New parameter
+    weather_suggestions: Optional[str] = Query(default=None, description="Comma-separated list of weather conditions"),
     min_rating: Optional[float] = Query(default=None),
     get_all: Optional[bool] = Query(default=False),
     current_user: str = Depends(verify_token)
@@ -808,9 +808,42 @@ async def get_clothes_infinite_scroll(
                 "filters": filters
             }
         
-        # Rest of your existing implementation...
-        # ... (keep the original code for non-weather filtered cases)
-
+        # Regular clothing product retrieval without weather filters
+        if get_all:
+            if query.strip():
+                products = await product_model.search_products_unlimited(query=query.strip())
+            else:
+                products = await product_model.get_all_products_with_sellers_unlimited()
+        else:
+            offset = page * limit
+            if query.strip():
+                products = await product_model.search_products_unlimited(query=query.strip())
+                products = products[offset:offset + limit]
+                total_count = len(products)
+            else:
+                all_products = await product_model.get_all_products_with_sellers_unlimited()
+                total_count = len(all_products)
+                products = all_products[offset:offset + limit]
+        
+        # Process image URLs
+        products = process_image_urls(products, request)
+        
+        has_more = (offset + len(products)) < total_count
+        
+        return {
+            "success": True,
+            "data": products,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total_count": total_count,
+                "has_more": has_more,
+                "current_count": len(products),
+                "loaded_count": offset + len(products)
+            },
+            "query": query,
+            "filters": filters
+        }
     except Exception as e:
         logger.error(f"Error in infinite scroll endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch products: {str(e)}")
@@ -1076,3 +1109,138 @@ async def get_products():
     except Exception as e:
         logger.error(f"Error fetching products: {str(e)}")
         return {"success": False, "error": str(e)}
+    
+@router.post("/payment-sellers-info")
+async def get_payment_sellers_info(
+    payment_data: dict = Body(...),
+    current_user: str = Depends(verify_token)
+):
+    """
+    Get seller phone numbers for payment items to generate QR codes
+    """
+    try:
+        items = payment_data.get('items', [])
+        if not items:
+            raise HTTPException(status_code=400, detail="No items provided")
+        
+        logger.info(f"Processing payment info for {len(items)} items")
+        
+        # Initialize database connection and product model
+        db_connection = MongoDBConnection()
+        product_model_instance = ProductModel(db_connection)
+        
+        # Get unique product IDs
+        product_ids = list(set([item['product_id'] for item in items]))
+        logger.info(f"Unique product IDs: {product_ids}")
+        
+        # Group products by seller to avoid duplicates
+        sellers_info = {}
+        
+        for product_id in product_ids:
+            try:
+                logger.info(f"Fetching product and seller info for product ID: {product_id}")
+                
+                # Get product with seller info
+                product = await product_model_instance.get_product_with_seller(product_id)
+                
+                if not product:
+                    logger.warning(f"Product not found: {product_id}")
+                    continue
+                
+                logger.info(f"Product found: {product.get('name', 'Unknown')}")
+                
+                # Check if seller info exists
+                seller = product.get('seller')
+                if not seller:
+                    logger.warning(f"No seller info found for product {product_id}")
+                    # Try to get seller_id from product and fetch separately
+                    seller_id = product.get('seller_id')
+                    if seller_id:
+                        logger.info(f"Trying to fetch seller separately with ID: {seller_id}")
+                        seller_model_instance = SellerModel(db_connection)
+                        seller = await seller_model_instance.get_seller_by_id(str(seller_id))
+                        if seller:
+                            logger.info(f"Found seller separately: {seller.get('store_name', 'Unknown')}")
+                    
+                    if not seller:
+                        logger.warning(f"Still no seller found for product {product_id}")
+                        continue
+                
+                # Convert ObjectId to string if needed
+                seller_id = str(seller.get('_id')) if seller.get('_id') else seller.get('id')
+                if not seller_id:
+                    logger.warning(f"No seller ID found for product {product_id}")
+                    continue
+                
+                logger.info(f"Processing seller: {seller.get('store_name', 'Unknown')} (ID: {seller_id})")
+                
+                # Get contact number from seller data with multiple fallbacks
+                contact_number = (
+                    seller.get('contact_number') or 
+                    seller.get('phone_number') or 
+                    seller.get('phone') or
+                    seller.get('mobile') or
+                    seller.get('contact_info', {}).get('phone') or
+                    seller.get('owner_contact')
+                )
+                
+                if not contact_number:
+                    logger.warning(f"No contact number found for seller {seller_id}. Available fields: {list(seller.keys())}")
+                    continue
+                
+                logger.info(f"Found contact number for seller {seller_id}: {contact_number}")
+                
+                # Get all items for this product
+                product_items = [item for item in items if item['product_id'] == product_id]
+                
+                # If seller already exists, add products to existing seller
+                if seller_id in sellers_info:
+                    sellers_info[seller_id]['products'].extend(product_items)
+                    # Recalculate total amount
+                    sellers_info[seller_id]['total_amount'] = sum(
+                        float(item['total_price']) for item in sellers_info[seller_id]['products']
+                    )
+                    logger.info(f"Added products to existing seller {seller_id}, new total: {sellers_info[seller_id]['total_amount']}")
+                else:
+                    # Create new seller entry
+                    total_amount = sum(float(item['total_price']) for item in product_items)
+                    sellers_info[seller_id] = {
+                        'seller_id': seller_id,
+                        'seller_name': seller.get('store_name') or seller.get('name') or seller.get('owner_full_name') or 'Unknown Seller',
+                        'contact_number': contact_number,
+                        'phone_number': contact_number,  # Alias for frontend compatibility
+                        'total_amount': total_amount,
+                        'products': product_items.copy()
+                    }
+                    logger.info(f"Created new seller entry for {seller_id} with total: {total_amount}")
+                        
+            except Exception as e:
+                logger.error(f"Error fetching seller info for product {product_id}: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        # Convert dict to list
+        sellers_list = list(sellers_info.values())
+        
+        # Close database connection
+        try:
+            db_connection.close()
+        except:
+            pass  # Ignore close errors
+        
+        logger.info(f"Final result: Found {len(sellers_list)} unique sellers for payment")
+        for seller in sellers_list:
+            logger.info(f"Seller: {seller['seller_name']} - Contact: {seller['contact_number']} - Total: {seller['total_amount']}")
+        
+        return {
+            "success": True,
+            "sellers": sellers_list,
+            "total_sellers": len(sellers_list)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting payment sellers info: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to get seller information: {str(e)}")

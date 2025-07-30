@@ -20,7 +20,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
+db_connection = MongoDBConnection()
 def generate_payment_id() -> str:
     """Generate a unique payment ID"""
     return f"PAY_{uuid.uuid4().hex[:12].upper()}"
@@ -497,8 +497,6 @@ async def get_payment_status_overview(
 ):
     """Get overview of all payment statuses with product details and shipping status"""
     try:
-        # Initialize MongoDB connection for product lookups
-        db_connection = MongoDBConnection()
         
         # Get all payments for the user
         payments = list(payments_collection.find({"username": current_user}))
@@ -862,7 +860,7 @@ async def get_orders():
     Fetch all orders for the admin, including associated product details.
     """
     try:
-        db_connection = MongoDBConnection()
+        
         payments_collection = db_connection.db.payments
         products_collection = db_connection.db.products
 
@@ -931,3 +929,56 @@ async def update_payment_status(payment_id: str, payload: PaymentUpdate):
     except Exception as e:
         logger.error(f"Error updating payment status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to update payment status: {str(e)}")
+
+@router.get("/admin/revenue")
+async def get_admin_revenue(admin_user: str = Depends(verify_admin)):
+    """
+    Admin function to get revenue from delivered orders.
+    Calculates total revenue and 7% admin share from delivered payments.
+    """
+    try:
+        # Fetch all payments with 'delivered' shipping status
+        delivered_payments = list(payments_collection.find({
+            "shipping_status": ShippingStatus.DELIVERED.value,
+            "payment_status": PaymentStatus.COMPLETED.value  # Only count completed payments
+        }))
+        
+        # Calculate totals
+        total_revenue = 0.0
+        admin_share_rate = 0.07  # 7%
+        payment_details = []
+        
+        for payment in delivered_payments:
+            payment_amount = payment.get("total_amount", 0.0)
+            admin_share = payment_amount * admin_share_rate
+            total_revenue += payment_amount
+            
+            payment_details.append({
+                "payment_id": payment["payment_id"],
+                "username": payment["username"],
+                "total_amount": payment_amount,
+                "admin_share": round(admin_share, 2),
+                "delivered_date": payment.get("updated_at", payment["created_at"]).isoformat(),
+                "items_count": len(payment.get("items", [])),
+                "payment_method": payment["payment_method"]
+            })
+        
+        total_admin_share = total_revenue * admin_share_rate
+        
+        return {
+            "success": True,
+            "summary": {
+                "total_delivered_orders": len(delivered_payments),
+                "total_revenue": round(total_revenue, 2),
+                "admin_share_percentage": admin_share_rate * 100,
+                "total_admin_share": round(total_admin_share, 2),
+                "seller_share": round(total_revenue - total_admin_share, 2)
+            },
+            "delivered_payments": payment_details,
+            "calculated_by": admin_user,
+            "calculation_date": datetime.utcnow().isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Error calculating admin revenue: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate admin revenue: {str(e)}")

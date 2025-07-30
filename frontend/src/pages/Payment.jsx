@@ -30,6 +30,9 @@ import {
   CircularProgress,
   Alert,
   CardMedia,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   Payment,
@@ -44,6 +47,9 @@ import {
   Security,
   ShoppingCart,
   Dashboard,
+  ExpandMore,
+  QrCode,
+  Phone,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
@@ -59,10 +65,7 @@ const PaymentPage = () => {
   debugger;
   const navigate = useNavigate();
   const location = useLocation();
-  const { enqueueSnackbar } = useSnackbar
-    ? useSnackbar()
-    : { enqueueSnackbar: () => {} };
-
+  const { enqueueSnackbar } = useSnackbar();
   // Get cart data from navigation state
   const {
     cartItems = [],
@@ -108,13 +111,20 @@ const PaymentPage = () => {
   // Notes state
   const [buyerNotes, setBuyerNotes] = useState(""); // Add state for notes
 
+  // Add seller QR code state
+  const [sellersInfo, setSellersInfo] = useState([]);
+  const [loadingSellers, setLoadingSellers] = useState(false);
+  const [showQRCodes, setShowQRCodes] = useState(false);
+
   const steps = ["Billing Information", "Payment Method", "Review Order"];
 
   // Helper function to format address like in Dashboard
   const formatAddress = (address) => {
     const parts = [
       address.street,
-      address.barangay?.match(/^\d+$/) ? `Barangay ${address.barangay}` : address.barangay,
+      address.barangay?.match(/^\d+$/)
+        ? `Barangay ${address.barangay}`
+        : address.barangay,
       address.city,
       address.province,
       address.region,
@@ -196,7 +206,7 @@ const PaymentPage = () => {
     }
   };
 
-  // Modified createPayment to delete items after payment
+  // Modified createPayment to include seller information
   const createPayment = async () => {
     setProcessing(true);
     try {
@@ -220,7 +230,7 @@ const PaymentPage = () => {
           selectedShippingVoucher.discount_code || selectedShippingVoucher.code
         );
       }
-      debugger;
+
       const paymentData = {
         items: paymentItems,
         payment_method: paymentMethod,
@@ -235,9 +245,13 @@ const PaymentPage = () => {
         discount_code: discount_codes,
         currency: "PHP",
         notes: buyerNotes,
+        // Include seller information with discount calculations for GCash/PayMaya payments
+        sellers_info:
+          paymentMethod === "gcash" || paymentMethod === "paymaya"
+            ? calculateDiscountedSellerAmounts()
+            : undefined,
       };
-      debugger;
-      // FIX: Use API_BASE_URL for correct endpoint
+
       const response = await fetch(
         `http://localhost:8000/api/v1/create-payment`,
         {
@@ -249,7 +263,7 @@ const PaymentPage = () => {
           body: JSON.stringify(paymentData),
         }
       );
-      debugger;
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to create payment");
@@ -259,12 +273,22 @@ const PaymentPage = () => {
       // After successful payment, delete purchased items from cart
       await deletePurchasedCartItems();
 
+      // For GCash/PayMaya payments, show success message with QR code reminder
+      if (paymentMethod === "gcash" || paymentMethod === "paymaya") {
+        enqueueSnackbar(
+          `Payment created! Please complete payments to ${sellersInfo.length} seller(s) using the QR codes.`,
+          { variant: "success", autoHideDuration: 5000 }
+        );
+      }
+
       // Redirect to payment pending page
       navigate("/payment-manager", {
         state: {
           orderNumber: result.order_number || "",
           paymentId: result.payment_id || "",
           total: calculatedTotal,
+          paymentMethod: paymentMethod,
+          sellersInfo: calculateDiscountedSellerAmounts(),
         },
       });
 
@@ -554,6 +578,151 @@ const PaymentPage = () => {
     }
   };
 
+  // Function to calculate discounted amounts per seller
+  const calculateDiscountedSellerAmounts = () => {
+    if (!sellersInfo.length) return [];
+
+    // Calculate clothes discount per seller based on their proportion of subtotal
+    const clothesTotalDiscount = clothesDiscount || 0;
+
+    // Calculate shipping discount per seller (split equally)
+    const shippingDiscountPerSeller =
+      sellersInfo.length > 0 ? (shippingDiscount || 0) / sellersInfo.length : 0;
+    const shippingFeePerSeller =
+      sellersInfo.length > 0 ? shippingFee / sellersInfo.length : 0;
+
+    return sellersInfo.map((seller) => {
+      // Calculate this seller's proportion of the subtotal
+      const sellerSubtotal = seller.products.reduce(
+        (sum, product) => sum + product.total_price,
+        0
+      );
+      const sellerProportion = subtotal > 0 ? sellerSubtotal / subtotal : 0;
+
+      // Apply clothes discount proportionally
+      const sellerClothesDiscount = clothesTotalDiscount * sellerProportion;
+
+      // Calculate final amount: subtotal - clothes discount + shipping - shipping discount
+      const finalAmount =
+        sellerSubtotal -
+        sellerClothesDiscount +
+        shippingFeePerSeller -
+        shippingDiscountPerSeller;
+
+      // Update products with discount applied proportionally
+      const discountedProducts = seller.products.map((product) => {
+        const productProportion =
+          sellerSubtotal > 0 ? product.total_price / sellerSubtotal : 0;
+        const productClothesDiscount =
+          sellerClothesDiscount * productProportion;
+        const discountedPrice = product.total_price - productClothesDiscount;
+
+        return {
+          ...product,
+          original_price: product.total_price,
+          discounted_price: discountedPrice,
+          clothes_discount_applied: productClothesDiscount,
+        };
+      });
+
+      return {
+        ...seller,
+        original_amount: sellerSubtotal + shippingFeePerSeller,
+        clothes_discount_applied: sellerClothesDiscount,
+        shipping_discount_applied: shippingDiscountPerSeller,
+        total_amount: Math.max(0, finalAmount), // Ensure non-negative
+        products: discountedProducts,
+      };
+    });
+  };
+
+  // Function to fetch seller phone numbers
+  const fetchSellersInfo = async () => {
+    if (!cartItems.length) return;
+
+    try {
+      setLoadingSellers(true);
+
+      const paymentItems = cartItems.map((item) => ({
+        product_id: item.id.toString(),
+        product_name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: item.price * item.quantity,
+      }));
+
+      console.log("Fetching seller info for items:", paymentItems);
+
+      const response = await fetch(
+        `http://localhost:8000/api/v1/payment-sellers-info`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ items: paymentItems }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ detail: "Unknown error" }));
+        throw new Error(
+          errorData.detail || "Failed to fetch seller information"
+        );
+      }
+
+      const result = await response.json();
+      console.log("Seller info response:", result);
+
+      if (result.success && result.sellers && result.sellers.length > 0) {
+        setSellersInfo(result.sellers);
+        console.log(`Successfully loaded ${result.sellers.length} sellers`);
+      } else {
+        console.warn("No sellers found in response:", result);
+        setSellersInfo([]);
+        enqueueSnackbar("No seller contact information available", {
+          variant: "warning",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching sellers info:", error);
+      enqueueSnackbar(`Failed to load seller information: ${error.message}`, {
+        variant: "error",
+      });
+      setSellersInfo([]);
+    } finally {
+      setLoadingSellers(false);
+    }
+  };
+
+  // Fetch seller info when payment method changes to GCash/PayMaya
+  useEffect(() => {
+    if (
+      (paymentMethod === "gcash" || paymentMethod === "paymaya") &&
+      activeStep === 1
+    ) {
+      fetchSellersInfo();
+    }
+  }, [paymentMethod, activeStep]);
+
+  // Generate QR code URL
+  const generateQRCode = (phoneNumber, amount, sellerName) => {
+    const data = `${phoneNumber}\nAmount: ₱${amount.toFixed(
+      2
+    )}\nSeller: ${sellerName}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+      data
+    )}`;
+  };
+
+  // Add missing formatCurrency helper function
+  const formatCurrency = (amount) => {
+    return `₱${amount.toFixed(2)}`;
+  };
+
   if (orderSuccess) {
     return (
       <>
@@ -708,7 +877,11 @@ const PaymentPage = () => {
                 </Typography>
 
                 <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom sx={{ color: "#4a5d3a" }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ color: "#4a5d3a" }}
+                  >
                     Total Paid: ₱{total.toFixed(2)}
                   </Typography>
                   {appliedDiscount && (
@@ -983,7 +1156,7 @@ const PaymentPage = () => {
                       >
                         Billing Information
                       </Typography>
-                      
+
                       {/* User Info Section */}
                       <Grid container spacing={3} sx={{ mb: 4 }}>
                         <Grid item xs={12} sm={6}>
@@ -1023,7 +1196,8 @@ const PaymentPage = () => {
                                   fontWeight: 600,
                                 },
                                 "&.MuiInputLabel-shrink": {
-                                  transform: "translate(14px, -9px) scale(0.75)",
+                                  transform:
+                                    "translate(14px, -9px) scale(0.75)",
                                   backgroundColor: "#ffffff",
                                   padding: "0 8px",
                                 },
@@ -1075,7 +1249,8 @@ const PaymentPage = () => {
                                   fontWeight: 600,
                                 },
                                 "&.MuiInputLabel-shrink": {
-                                  transform: "translate(14px, -9px) scale(0.75)",
+                                  transform:
+                                    "translate(14px, -9px) scale(0.75)",
                                   backgroundColor: "#ffffff",
                                   padding: "0 8px",
                                 },
@@ -1093,7 +1268,14 @@ const PaymentPage = () => {
 
                       {/* Delivery Address Section */}
                       <Box sx={{ mb: 3 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            mb: 2,
+                          }}
+                        >
                           <Typography
                             variant="h6"
                             sx={{
@@ -1123,7 +1305,7 @@ const PaymentPage = () => {
                                 textTransform: "none",
                                 "&:hover": {
                                   backgroundColor: "rgba(74, 93, 58, 0.05)",
-                                  borderColor: "#3a4d2a"
+                                  borderColor: "#3a4d2a",
                                 },
                               }}
                             >
@@ -1133,8 +1315,17 @@ const PaymentPage = () => {
                         </Box>
 
                         {loadingAddresses ? (
-                          <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
-                            <CircularProgress size={24} sx={{ color: "#4a5d3a" }} />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                              py: 3,
+                            }}
+                          >
+                            <CircularProgress
+                              size={24}
+                              sx={{ color: "#4a5d3a" }}
+                            />
                           </Box>
                         ) : savedAddresses.length === 0 ? (
                           <Alert
@@ -1145,26 +1336,39 @@ const PaymentPage = () => {
                               border: "1px solid rgba(74, 93, 58, 0.2)",
                             }}
                           >
-                            No saved addresses found. Please add an address in your profile.
+                            No saved addresses found. Please add an address in
+                            your profile.
                           </Alert>
                         ) : (
                           <RadioGroup
                             value={selectedAddressId}
-                            onChange={(e) => setSelectedAddressId(e.target.value)}
+                            onChange={(e) =>
+                              setSelectedAddressId(e.target.value)
+                            }
                             sx={{ gap: 1.5 }}
                           >
                             {/* Show first 2 addresses, ensuring selected is visible */}
                             {(() => {
                               const firstTwo = savedAddresses.slice(0, 2);
-                              const selectedAddress = savedAddresses.find(addr => addr._id === selectedAddressId);
-                              
+                              const selectedAddress = savedAddresses.find(
+                                (addr) => addr._id === selectedAddressId
+                              );
+
                               let addressesToShow;
-                              if (selectedAddress && !firstTwo.some(addr => addr._id === selectedAddressId)) {
-                                addressesToShow = [firstTwo[0], selectedAddress].filter(Boolean);
+                              if (
+                                selectedAddress &&
+                                !firstTwo.some(
+                                  (addr) => addr._id === selectedAddressId
+                                )
+                              ) {
+                                addressesToShow = [
+                                  firstTwo[0],
+                                  selectedAddress,
+                                ].filter(Boolean);
                               } else {
                                 addressesToShow = firstTwo;
                               }
-                              
+
                               return addressesToShow.map((addr) => (
                                 <FormControlLabel
                                   key={addr._id}
@@ -1176,7 +1380,7 @@ const PaymentPage = () => {
                                         "&.Mui-checked": {
                                           color: "#4a5d3a",
                                         },
-                                        mr: 1
+                                        mr: 1,
                                       }}
                                     />
                                   }
@@ -1184,31 +1388,53 @@ const PaymentPage = () => {
                                     <Card
                                       variant="outlined"
                                       sx={{
-                                        border: selectedAddressId === addr._id
-                                          ? "2px solid #4a5d3a"
-                                          : "1px solid rgba(74, 93, 58, 0.2)",
+                                        border:
+                                          selectedAddressId === addr._id
+                                            ? "2px solid #4a5d3a"
+                                            : "1px solid rgba(74, 93, 58, 0.2)",
                                         borderRadius: "12px",
-                                        background: selectedAddressId === addr._id
-                                          ? "rgba(74, 93, 58, 0.05)"
-                                          : "#ffffff",
+                                        background:
+                                          selectedAddressId === addr._id
+                                            ? "rgba(74, 93, 58, 0.05)"
+                                            : "#ffffff",
                                         transition: "all 0.2s ease",
                                         "&:hover": {
-                                          boxShadow: "0 4px 12px rgba(74, 93, 58, 0.15)",
-                                          borderColor: "#4a5d3a"
+                                          boxShadow:
+                                            "0 4px 12px rgba(74, 93, 58, 0.15)",
+                                          borderColor: "#4a5d3a",
                                         },
                                         width: "100%",
-                                        cursor: "pointer"
+                                        cursor: "pointer",
                                       }}
                                     >
-                                      <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                      <CardContent
+                                        sx={{ p: 2, "&:last-child": { pb: 2 } }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "flex-start",
+                                          }}
+                                        >
                                           <Box sx={{ flex: 1 }}>
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                            <Box
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                                mb: 1,
+                                              }}
+                                            >
                                               <Typography
                                                 variant="subtitle2"
-                                                sx={{ fontWeight: 600, color: "#4a5d3a" }}
+                                                sx={{
+                                                  fontWeight: 600,
+                                                  color: "#4a5d3a",
+                                                }}
                                               >
-                                                {addr.recipient_name || addr.full_name}
+                                                {addr.recipient_name ||
+                                                  addr.full_name}
                                               </Typography>
                                               {addr.is_default && (
                                                 <Chip
@@ -1218,19 +1444,21 @@ const PaymentPage = () => {
                                                     height: 20,
                                                     backgroundColor: "#4a5d3a",
                                                     color: "#ffffff",
-                                                    fontSize: "0.7rem"
+                                                    fontSize: "0.7rem",
                                                   }}
                                                 />
                                               )}
                                               <Chip
-                                                label={addr.address_type || "Home"}
+                                                label={
+                                                  addr.address_type || "Home"
+                                                }
                                                 variant="outlined"
                                                 size="small"
                                                 sx={{
                                                   height: 20,
                                                   fontSize: "0.7rem",
                                                   borderColor: "#4a5d3a",
-                                                  color: "#4a5d3a"
+                                                  color: "#4a5d3a",
                                                 }}
                                               />
                                             </Box>
@@ -1243,13 +1471,20 @@ const PaymentPage = () => {
                                                 WebkitLineClamp: 2,
                                                 WebkitBoxOrient: "vertical",
                                                 overflow: "hidden",
-                                                lineHeight: 1.4
+                                                lineHeight: 1.4,
                                               }}
                                             >
                                               {formatAddress(addr)}
                                             </Typography>
-                                            <Typography variant="body2" sx={{ color: "#8fa876", fontSize: "0.8rem" }}>
-                                              📞 {addr.contact_number} • 📮 {addr.postal_code}
+                                            <Typography
+                                              variant="body2"
+                                              sx={{
+                                                color: "#8fa876",
+                                                fontSize: "0.8rem",
+                                              }}
+                                            >
+                                              📞 {addr.contact_number} • 📮{" "}
+                                              {addr.postal_code}
                                             </Typography>
                                           </Box>
                                         </Box>
@@ -1274,7 +1509,7 @@ const PaymentPage = () => {
                           sx: {
                             borderRadius: "16px",
                             boxShadow: "0 8px 25px rgba(74, 93, 58, 0.2)",
-                          }
+                          },
                         }}
                       >
                         <DialogTitle
@@ -1285,10 +1520,17 @@ const PaymentPage = () => {
                             py: 2,
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "space-between"
+                            justifyContent: "space-between",
                           }}
                         >
-                          <Typography variant="h6" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <LocationOn />
                             Select Delivery Address ({savedAddresses.length})
                           </Typography>
@@ -1299,7 +1541,14 @@ const PaymentPage = () => {
                             ✕
                           </IconButton>
                         </DialogTitle>
-                        <DialogContent sx={{ px: 3, py: 2, maxHeight: "60vh", overflowY: "auto" }}>
+                        <DialogContent
+                          sx={{
+                            px: 3,
+                            py: 2,
+                            maxHeight: "60vh",
+                            overflowY: "auto",
+                          }}
+                        >
                           <RadioGroup
                             value={selectedAddressId}
                             onChange={(e) => {
@@ -1313,19 +1562,22 @@ const PaymentPage = () => {
                                 key={addr._id}
                                 variant="outlined"
                                 sx={{
-                                  border: selectedAddressId === addr._id
-                                    ? "2px solid #4a5d3a"
-                                    : "1px solid #e0e0e0",
+                                  border:
+                                    selectedAddressId === addr._id
+                                      ? "2px solid #4a5d3a"
+                                      : "1px solid #e0e0e0",
                                   borderRadius: "12px",
-                                  background: selectedAddressId === addr._id
-                                    ? "rgba(74, 93, 58, 0.05)"
-                                    : "#ffffff",
+                                  background:
+                                    selectedAddressId === addr._id
+                                      ? "rgba(74, 93, 58, 0.05)"
+                                      : "#ffffff",
                                   transition: "all 0.2s ease",
                                   "&:hover": {
-                                    boxShadow: "0 4px 12px rgba(74, 93, 58, 0.15)",
-                                    borderColor: "#4a5d3a"
+                                    boxShadow:
+                                      "0 4px 12px rgba(74, 93, 58, 0.15)",
+                                    borderColor: "#4a5d3a",
                                   },
-                                  cursor: "pointer"
+                                  cursor: "pointer",
                                 }}
                                 onClick={() => {
                                   setSelectedAddressId(addr._id);
@@ -1333,28 +1585,46 @@ const PaymentPage = () => {
                                 }}
                               >
                                 <CardContent sx={{ p: 2 }}>
-                                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "flex-start",
+                                      gap: 2,
+                                    }}
+                                  >
                                     <Radio
                                       value={addr._id}
-                                      sx={{ 
+                                      sx={{
                                         mt: -0.5,
                                         color: "#4a5d3a",
-                                        "&.Mui-checked": { color: "#4a5d3a" }
+                                        "&.Mui-checked": { color: "#4a5d3a" },
                                       }}
                                     />
                                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                                        <Typography variant="h6" fontWeight="600" sx={{ color: "#4a5d3a" }}>
-                                          {addr.recipient_name || addr.full_name}
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 1,
+                                          mb: 1,
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="h6"
+                                          fontWeight="600"
+                                          sx={{ color: "#4a5d3a" }}
+                                        >
+                                          {addr.recipient_name ||
+                                            addr.full_name}
                                         </Typography>
                                         {addr.is_default && (
                                           <Chip
                                             label="Default"
                                             size="small"
-                                            sx={{ 
+                                            sx={{
                                               backgroundColor: "#4a5d3a",
                                               color: "#ffffff",
-                                              fontWeight: 600
+                                              fontWeight: 600,
                                             }}
                                           />
                                         )}
@@ -1364,7 +1634,7 @@ const PaymentPage = () => {
                                           size="small"
                                           sx={{
                                             borderColor: "#4a5d3a",
-                                            color: "#4a5d3a"
+                                            color: "#4a5d3a",
                                           }}
                                         />
                                       </Box>
@@ -1375,11 +1645,19 @@ const PaymentPage = () => {
                                       >
                                         {formatAddress(addr)}
                                       </Typography>
-                                      <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
-                                        <Typography variant="body2" color="textSecondary">
+                                      <Box
+                                        sx={{ display: "flex", gap: 2, mb: 1 }}
+                                      >
+                                        <Typography
+                                          variant="body2"
+                                          color="textSecondary"
+                                        >
                                           📞 {addr.contact_number}
                                         </Typography>
-                                        <Typography variant="body2" color="textSecondary">
+                                        <Typography
+                                          variant="body2"
+                                          color="textSecondary"
+                                        >
                                           📮 {addr.postal_code}
                                         </Typography>
                                       </Box>
@@ -1403,8 +1681,8 @@ const PaymentPage = () => {
                               fontWeight: 500,
                               textTransform: "none",
                               "&:hover": {
-                                backgroundColor: "#3a4d2a"
-                              }
+                                backgroundColor: "#3a4d2a",
+                              },
                             }}
                           >
                             Done
@@ -1463,7 +1741,9 @@ const PaymentPage = () => {
                                 }}
                               >
                                 <Payment sx={{ color: "#4a5d3a" }} />
-                                <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                                <Typography
+                                  sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                                >
                                   GCash
                                 </Typography>
                               </Box>
@@ -1495,7 +1775,9 @@ const PaymentPage = () => {
                                 }}
                               >
                                 <Payment sx={{ color: "#4a5d3a" }} />
-                                <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                                <Typography
+                                  sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                                >
                                   PayMaya
                                 </Typography>
                               </Box>
@@ -1527,7 +1809,9 @@ const PaymentPage = () => {
                                 }}
                               >
                                 <AccountBalance sx={{ color: "#4a5d3a" }} />
-                                <Typography sx={{ color: "#4a5d3a", fontWeight: 600 }}>
+                                <Typography
+                                  sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                                >
                                   Cash on Delivery
                                 </Typography>
                               </Box>
@@ -1535,6 +1819,456 @@ const PaymentPage = () => {
                           />
                         </RadioGroup>
                       </FormControl>
+
+                      {/* QR Codes Section for GCash/PayMaya */}
+                      {(paymentMethod === "gcash" ||
+                        paymentMethod === "paymaya") && (
+                        <Box sx={{ mt: 3 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              mb: 2,
+                            }}
+                          >
+                            <QrCode sx={{ color: "#4a5d3a" }} />
+                            <Typography
+                              variant="h6"
+                              sx={{ color: "#4a5d3a", fontWeight: 300 }}
+                            >
+                              Seller Payment QR Codes
+                            </Typography>
+                            {loadingSellers && (
+                              <CircularProgress
+                                size={20}
+                                sx={{ color: "#4a5d3a" }}
+                              />
+                            )}
+                          </Box>
+
+                          {sellersInfo.length === 0 && !loadingSellers ? (
+                            <Alert
+                              severity="warning"
+                              sx={{ borderRadius: "12px" }}
+                            >
+                              No seller contact information available for QR
+                              code generation.
+                            </Alert>
+                          ) : (
+                            <Grid container spacing={2}>
+                              {(() => {
+                                const discountedSellers =
+                                  calculateDiscountedSellerAmounts();
+                                return discountedSellers.map(
+                                  (seller, index) => (
+                                    <Grid
+                                      item
+                                      xs={12}
+                                      md={6}
+                                      key={seller.seller_id}
+                                    >
+                                      <Card
+                                        sx={{
+                                          borderRadius: "16px",
+                                          border: "2px solid #4a5d3a",
+                                          background: "rgba(74, 93, 58, 0.05)",
+                                        }}
+                                      >
+                                        <CardContent
+                                          sx={{ textAlign: "center", p: 3 }}
+                                        >
+                                          <Typography
+                                            variant="h6"
+                                            sx={{
+                                              color: "#4a5d3a",
+                                              fontWeight: 600,
+                                              mb: 1,
+                                            }}
+                                          >
+                                            {seller.seller_name}
+                                          </Typography>
+
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              gap: 1,
+                                              mb: 2,
+                                            }}
+                                          >
+                                            <Phone
+                                              sx={{
+                                                fontSize: 16,
+                                                color: "#6b8459",
+                                              }}
+                                            />
+                                            <Typography
+                                              variant="body2"
+                                              sx={{ color: "#6b8459" }}
+                                            >
+                                              {seller.phone_number}
+                                            </Typography>
+                                          </Box>
+
+                                          {/* Show discount information if applied */}
+                                          {(seller.clothes_discount_applied >
+                                            0 ||
+                                            seller.shipping_discount_applied >
+                                              0) && (
+                                            <Box
+                                              sx={{
+                                                mb: 2,
+                                                p: 1,
+                                                backgroundColor:
+                                                  "rgba(76, 175, 80, 0.1)",
+                                                borderRadius: "8px",
+                                              }}
+                                            >
+                                              {seller.clothes_discount_applied >
+                                                0 && (
+                                                <Typography
+                                                  variant="caption"
+                                                  display="block"
+                                                  sx={{ color: "#4a5d3a" }}
+                                                >
+                                                  Clothes Discount: -
+                                                  {formatCurrency(
+                                                    seller.clothes_discount_applied
+                                                  )}
+                                                </Typography>
+                                              )}
+                                              {seller.shipping_discount_applied >
+                                                0 && (
+                                                <Typography
+                                                  variant="caption"
+                                                  display="block"
+                                                  sx={{ color: "#4a5d3a" }}
+                                                >
+                                                  Shipping Discount: -
+                                                  {formatCurrency(
+                                                    seller.shipping_discount_applied
+                                                  )}
+                                                </Typography>
+                                              )}
+                                              <Typography
+                                                variant="caption"
+                                                display="block"
+                                                sx={{ color: "#666", mt: 0.5 }}
+                                              >
+                                                Original:{" "}
+                                                {formatCurrency(
+                                                  seller.original_amount
+                                                )}
+                                              </Typography>
+                                            </Box>
+                                          )}
+
+                                          <Typography
+                                            variant="h5"
+                                            sx={{
+                                              color: "#4a5d3a",
+                                              fontWeight: 700,
+                                              mb: 2,
+                                            }}
+                                          >
+                                            {formatCurrency(
+                                              seller.total_amount
+                                            )}
+                                          </Typography>
+
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              justifyContent: "center",
+                                              mb: 2,
+                                              p: 1,
+                                              backgroundColor: "#ffffff",
+                                              borderRadius: "12px",
+                                              border:
+                                                "1px solid rgba(74, 93, 58, 0.2)",
+                                            }}
+                                          >
+                                            <img
+                                              src={generateQRCode(
+                                                seller.phone_number,
+                                                seller.total_amount,
+                                                seller.seller_name
+                                              )}
+                                              alt={`QR Code for ${seller.seller_name}`}
+                                              style={{
+                                                width: "150px",
+                                                height: "150px",
+                                                objectFit: "contain",
+                                              }}
+                                            />
+                                          </Box>
+
+                                          <Accordion
+                                            sx={{
+                                              boxShadow: "none",
+                                              border:
+                                                "1px solid rgba(74, 93, 58, 0.2)",
+                                              borderRadius: "8px",
+                                              "&:before": { display: "none" },
+                                            }}
+                                          >
+                                            <AccordionSummary
+                                              expandIcon={
+                                                <ExpandMore
+                                                  sx={{ color: "#4a5d3a" }}
+                                                />
+                                              }
+                                              sx={{
+                                                backgroundColor:
+                                                  "rgba(74, 93, 58, 0.05)",
+                                              }}
+                                            >
+                                              <Typography
+                                                variant="body2"
+                                                sx={{
+                                                  color: "#4a5d3a",
+                                                  fontWeight: 600,
+                                                }}
+                                              >
+                                                View Products (
+                                                {seller.products.length})
+                                              </Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                              {seller.products.map(
+                                                (product, idx) => (
+                                                  <Box
+                                                    key={idx}
+                                                    sx={{
+                                                      py: 1,
+                                                      borderBottom:
+                                                        idx <
+                                                        seller.products.length -
+                                                          1
+                                                          ? "1px solid rgba(74, 93, 58, 0.1)"
+                                                          : "none",
+                                                    }}
+                                                  >
+                                                    <Box
+                                                      sx={{
+                                                        display: "flex",
+                                                        justifyContent:
+                                                          "space-between",
+                                                        alignItems: "center",
+                                                        mb: 0.5,
+                                                      }}
+                                                    >
+                                                      <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                          color: "#6b8459",
+                                                          fontWeight: 500,
+                                                        }}
+                                                      >
+                                                        {product.product_name} ×{" "}
+                                                        {product.quantity}
+                                                      </Typography>
+                                                      <Box
+                                                        sx={{
+                                                          textAlign: "right",
+                                                        }}
+                                                      >
+                                                        {product.clothes_discount_applied >
+                                                        0 ? (
+                                                          <>
+                                                            <Typography
+                                                              variant="body2"
+                                                              sx={{
+                                                                color: "#999",
+                                                                textDecoration:
+                                                                  "line-through",
+                                                                fontSize:
+                                                                  "0.75rem",
+                                                              }}
+                                                            >
+                                                              {formatCurrency(
+                                                                product.original_price
+                                                              )}
+                                                            </Typography>
+                                                            <Typography
+                                                              variant="body2"
+                                                              sx={{
+                                                                color:
+                                                                  "#4a5d3a",
+                                                                fontWeight: 600,
+                                                              }}
+                                                            >
+                                                              {formatCurrency(
+                                                                product.discounted_price
+                                                              )}
+                                                            </Typography>
+                                                          </>
+                                                        ) : (
+                                                          <Typography
+                                                            variant="body2"
+                                                            sx={{
+                                                              color: "#4a5d3a",
+                                                              fontWeight: 600,
+                                                            }}
+                                                          >
+                                                            {formatCurrency(
+                                                              product.total_price
+                                                            )}
+                                                          </Typography>
+                                                        )}
+                                                      </Box>
+                                                    </Box>
+                                                    {product.clothes_discount_applied >
+                                                      0 && (
+                                                      <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                          color: "#4caf50",
+                                                          fontSize: "0.7rem",
+                                                        }}
+                                                      >
+                                                        Saved:{" "}
+                                                        {formatCurrency(
+                                                          product.clothes_discount_applied
+                                                        )}
+                                                      </Typography>
+                                                    )}
+                                                  </Box>
+                                                )
+                                              )}
+                                              {/* Show shipping fee breakdown */}
+                                              <Box
+                                                sx={{
+                                                  mt: 2,
+                                                  pt: 2,
+                                                  borderTop:
+                                                    "1px solid rgba(74, 93, 58, 0.2)",
+                                                  backgroundColor:
+                                                    "rgba(74, 93, 58, 0.05)",
+                                                  borderRadius: "4px",
+                                                  p: 1,
+                                                }}
+                                              >
+                                                <Typography
+                                                  variant="caption"
+                                                  sx={{
+                                                    color: "#4a5d3a",
+                                                    fontWeight: 600,
+                                                    display: "block",
+                                                  }}
+                                                >
+                                                  Shipping & Fees:
+                                                </Typography>
+                                                <Box
+                                                  sx={{
+                                                    display: "flex",
+                                                    justifyContent:
+                                                      "space-between",
+                                                    mt: 0.5,
+                                                  }}
+                                                >
+                                                  <Typography
+                                                    variant="caption"
+                                                    sx={{ color: "#6b8459" }}
+                                                  >
+                                                    Shipping Fee
+                                                  </Typography>
+                                                  <Typography
+                                                    variant="caption"
+                                                    sx={{ color: "#6b8459" }}
+                                                  >
+                                                    {formatCurrency(
+                                                      shippingFee /
+                                                        sellersInfo.length
+                                                    )}
+                                                  </Typography>
+                                                </Box>
+                                                {seller.shipping_discount_applied >
+                                                  0 && (
+                                                  <Box
+                                                    sx={{
+                                                      display: "flex",
+                                                      justifyContent:
+                                                        "space-between",
+                                                    }}
+                                                  >
+                                                    <Typography
+                                                      variant="caption"
+                                                      sx={{ color: "#4caf50" }}
+                                                    >
+                                                      Shipping Discount
+                                                    </Typography>
+                                                    <Typography
+                                                      variant="caption"
+                                                      sx={{ color: "#4caf50" }}
+                                                    >
+                                                      -
+                                                      {formatCurrency(
+                                                        seller.shipping_discount_applied
+                                                      )}
+                                                    </Typography>
+                                                  </Box>
+                                                )}
+                                              </Box>
+                                            </AccordionDetails>
+                                          </Accordion>
+
+                                          <Typography
+                                            variant="caption"
+                                            sx={{
+                                              color: "#6b8459",
+                                              mt: 2,
+                                              display: "block",
+                                              lineHeight: 1.4,
+                                            }}
+                                          >
+                                            Scan this QR code with your{" "}
+                                            {paymentMethod === "gcash"
+                                              ? "GCash"
+                                              : "PayMaya"}{" "}
+                                            app to pay {seller.seller_name}{" "}
+                                            directly
+                                          </Typography>
+                                        </CardContent>
+                                      </Card>
+                                    </Grid>
+                                  )
+                                );
+                              })()}
+                            </Grid>
+                          )}
+
+                          <Alert
+                            severity="info"
+                            sx={{
+                              mt: 3,
+                              borderRadius: "12px",
+                              backgroundColor: "rgba(74, 93, 58, 0.1)",
+                              border: "1px solid rgba(74, 93, 58, 0.2)",
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600, mb: 1 }}
+                            >
+                              Payment Instructions:
+                            </Typography>
+                            <Typography variant="body2" component="div">
+                              • Scan each QR code with your{" "}
+                              {paymentMethod === "gcash" ? "GCash" : "PayMaya"}{" "}
+                              app
+                              <br />
+                              • Pay the exact amount shown to each seller
+                              <br />
+                              • Keep your payment receipts for reference
+                              <br />• Your order will be processed once all
+                              payments are confirmed
+                            </Typography>
+                          </Alert>
+                        </Box>
+                      )}
 
                       {paymentMethod === "cash_on_delivery" && (
                         <Alert
@@ -1567,127 +2301,71 @@ const PaymentPage = () => {
                           mb: 3,
                         }}
                       >
-                        Review Your Order
+                        Review Order
                       </Typography>
 
-                      <Card
-                        sx={{
-                          mb: 3,
-                          borderRadius: "12px",
-                          border: "1px solid rgba(74, 93, 58, 0.1)",
-                        }}
-                      >
-                        <CardContent>
-                          <Typography
-                            variant="h6"
-                            gutterBottom
-                            sx={{ color: "#4a5d3a", fontWeight: 600 }}
-                          >
-                            Billing Address
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: "#6b8459" }}>
-                            {billingInfo.fullName}
-                            <br />
-                            {billingInfo.address}
-                            <br />
-                            {billingInfo.city}, {billingInfo.state}{" "}
-                            {billingInfo.zipCode}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-
-                      <Card
-                        sx={{
-                          mb: 3,
-                          borderRadius: "12px",
-                          border: "1px solid rgba(74, 93, 58, 0.1)",
-                        }}
-                      >
-                        <CardContent>
-                          <Typography
-                            variant="h6"
-                            gutterBottom
-                            sx={{ color: "#4a5d3a", fontWeight: 600 }}
-                          >
-                            Payment Method
-                          </Typography>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            {(paymentMethod === "paymaya" ||
-                              paymentMethod === "gcash") && <Payment sx={{ color: "#4a5d3a" }} />}
-                            {paymentMethod === "cash_on_delivery" && (
-                              <AccountBalance sx={{ color: "#4a5d3a" }} />
-                            )}
-                            <Typography sx={{ color: "#6b8459" }}>
-                              {paymentMethod === "paymaya" && "PayMaya"}
-                              {paymentMethod === "gcash" && "GCash"}
-                              {paymentMethod === "cash_on_delivery" &&
-                                "Cash on Delivery"}
-                            </Typography>
-                          </Box>
-                        </CardContent>
-                      </Card>
-
-                      {/* Notes for Seller */}
-                      <Card
-                        sx={{
-                          mb: 3,
-                          borderRadius: "12px",
-                          border: "1px solid rgba(74, 93, 58, 0.1)",
-                        }}
-                      >
-                        <CardContent>
-                          <Typography
-                            variant="h6"
-                            gutterBottom
-                            sx={{ color: "#4a5d3a", fontWeight: 600 }}
-                          >
-                            Notes for Seller
-                          </Typography>
-                          <TextField
-                            label="Add notes for the seller (optional)"
-                            multiline
-                            minRows={2}
-                            fullWidth
-                            value={buyerNotes}
-                            onChange={(e) => setBuyerNotes(e.target.value)}
-                            placeholder="E.g. Please deliver after 5pm, call before arrival, etc."
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                borderRadius: "12px",
-                                "& fieldset": {
-                                  borderColor: "rgba(74, 93, 58, 0.3)",
-                                },
-                                "&:hover fieldset": {
-                                  borderColor: "#4a5d3a",
-                                },
-                                "&.Mui-focused fieldset": {
-                                  borderColor: "#4a5d3a",
-                                },
+                      {/* Order Notes Section */}
+                      <Box sx={{ mb: 3 }}>
+                        <TextField
+                          label="Order Notes (Optional)"
+                          multiline
+                          rows={3}
+                          fullWidth
+                          value={buyerNotes}
+                          onChange={(e) => setBuyerNotes(e.target.value)}
+                          placeholder="Any special instructions for your order..."
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "12px",
+                              backgroundColor: "#ffffff",
+                              "& fieldset": {
+                                borderColor: "rgba(74, 93, 58, 0.3)",
                               },
-                              "& .MuiInputLabel-root.Mui-focused": {
+                              "&:hover fieldset": {
+                                borderColor: "#4a5d3a",
+                              },
+                              "&.Mui-focused fieldset": {
+                                borderColor: "#4a5d3a",
+                                borderWidth: "2px",
+                              },
+                            },
+                            "& .MuiInputLabel-root": {
+                              color: "#6b8459",
+                              fontWeight: 500,
+                              "&.Mui-focused": {
                                 color: "#4a5d3a",
+                                fontWeight: 600,
                               },
-                            }}
-                          />
-                        </CardContent>
-                      </Card>
+                            },
+                          }}
+                        />
+                      </Box>
+
+                      <Typography variant="body1" sx={{ color: "#6b8459" }}>
+                        Please review your order details and payment information
+                        before completing your purchase.
+                      </Typography>
                     </motion.div>
                   )}
 
                   {/* Navigation Buttons */}
-                  <Box display="flex" justifyContent="space-between" sx={{ mt: 4 }}>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    sx={{ mt: 4 }}
+                  >
                     <Button
                       disabled={activeStep === 0}
                       onClick={handleBack}
-                    sx={{
-                      borderRadius: "12px",
-                      px: 3,
-                      py: 1,
-                      color: "#4a5d3a",
-                      "&:hover": {
-                        backgroundColor: "rgba(74, 93, 58, 0.1)",
-                      },
-                    }}
+                      sx={{
+                        borderRadius: "12px",
+                        px: 3,
+                        py: 1,
+                        color: "#4a5d3a",
+                        "&:hover": {
+                          backgroundColor: "rgba(74, 93, 58, 0.1)",
+                        },
+                      }}
                     >
                       Back
                     </Button>
@@ -1821,7 +2499,9 @@ const PaymentPage = () => {
                     </Box>
                   ))}
 
-                  <Divider sx={{ my: 2, borderColor: "rgba(74, 93, 58, 0.2)" }} />
+                  <Divider
+                    sx={{ my: 2, borderColor: "rgba(74, 93, 58, 0.2)" }}
+                  />
 
                   <List dense>
                     <ListItem sx={{ px: 0 }}>
@@ -1853,7 +2533,9 @@ const PaymentPage = () => {
                             selectedClothesVoucher?.code ||
                             ""
                           }
-                          onChange={(e) => handleClothesDiscount(e.target.value)}
+                          onChange={(e) =>
+                            handleClothesDiscount(e.target.value)
+                          }
                           style={{
                             padding: "8px",
                             borderRadius: "8px",
@@ -1919,7 +2601,9 @@ const PaymentPage = () => {
                             selectedShippingVoucher?.code ||
                             ""
                           }
-                          onChange={(e) => handleShippingDiscount(e.target.value)}
+                          onChange={(e) =>
+                            handleShippingDiscount(e.target.value)
+                          }
                           style={{
                             padding: "8px",
                             borderRadius: "8px",
@@ -1957,7 +2641,9 @@ const PaymentPage = () => {
                     )}
                   </List>
 
-                  <Divider sx={{ my: 2, borderColor: "rgba(74, 93, 58, 0.2)" }} />
+                  <Divider
+                    sx={{ my: 2, borderColor: "rgba(74, 93, 58, 0.2)" }}
+                  />
 
                   <ListItem sx={{ px: 0 }}>
                     <ListItemText
@@ -1988,20 +2674,7 @@ const PaymentPage = () => {
                         }}
                         size="small"
                       />
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        sx={{ mt: 1, color: "#6b8459" }}
-                      >
-                        {appliedDiscountInfo.description}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        sx={{ color: "#4a5d3a", fontWeight: 600 }}
-                      >
-                        You saved ₱{appliedDiscountInfo.discountAmount.toFixed(2)}!
-                      </Typography>
+                      {/* You can add more info here if needed */}
                     </Box>
                   )}
                 </Paper>

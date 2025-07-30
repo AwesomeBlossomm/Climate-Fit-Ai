@@ -26,6 +26,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -35,6 +38,9 @@ import {
   Store,
   Receipt,
   LocalShipping,
+  QrCode,
+  Phone,
+  ExpandMore,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -465,6 +471,16 @@ const PaymentManager = () => {
     );
   };
 
+  // Generate QR code URL
+  const generateQRCode = (phoneNumber, amount, sellerName) => {
+    const data = `${phoneNumber}\nAmount: ₱${amount.toFixed(
+      2
+    )}\nSeller: ${sellerName}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+      data
+    )}`;
+  };
+
   if (loading) {
     return (
       <>
@@ -703,9 +719,9 @@ const PaymentManager = () => {
                 }}
               >
                 <CircularProgress size={80} sx={{ color: "#4a5d3a" }} />
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
+                <Typography
+                  variant="h5"
+                  sx={{
                     fontWeight: 600,
                     color: "#4a5d3a",
                   }}
@@ -1022,7 +1038,8 @@ const PaymentManager = () => {
                     onChange={handleTabChange}
                     variant="fullWidth"
                     sx={{
-                      background: "linear-gradient(135deg, #4a5d3a 0%, #5c7349 100%)",
+                      background:
+                        "linear-gradient(135deg, #4a5d3a 0%, #5c7349 100%)",
                       "& .MuiTab-root": {
                         color: "#ffffff",
                         fontWeight: 600,
@@ -1052,12 +1069,15 @@ const PaymentManager = () => {
                   <Box sx={{ p: 3 }}>
                     {getFilteredPayments().length === 0 ? (
                       <Box sx={{ textAlign: "center", py: 8 }}>
-                        <Receipt sx={{ fontSize: 64, color: "#8fa876", mb: 2 }} />
+                        <Receipt
+                          sx={{ fontSize: 64, color: "#8fa876", mb: 2 }}
+                        />
                         <Typography
                           variant="h6"
                           sx={{ color: "#4a5d3a", fontWeight: 600, mb: 1 }}
                         >
-                          No {paymentStatuses[activeTab].label.toLowerCase()} payments found
+                          No {paymentStatuses[activeTab].label.toLowerCase()}{" "}
+                          payments found
                         </Typography>
                         <Button
                           variant="contained"
@@ -1088,7 +1108,8 @@ const PaymentManager = () => {
                                   backgroundColor: "rgba(74, 93, 58, 0.1)",
                                   color: "#4a5d3a",
                                   fontWeight: 700,
-                                  borderBottom: "2px solid rgba(74, 93, 58, 0.2)",
+                                  borderBottom:
+                                    "2px solid rgba(74, 93, 58, 0.2)",
                                 },
                               }}
                             >
@@ -1107,7 +1128,10 @@ const PaymentManager = () => {
                                 component={motion.tr}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                                transition={{
+                                  duration: 0.5,
+                                  delay: index * 0.1,
+                                }}
                                 sx={{
                                   "&:hover": {
                                     backgroundColor: "rgba(74, 93, 58, 0.05)",
@@ -1116,7 +1140,8 @@ const PaymentManager = () => {
                                   cursor: "pointer",
                                   transition: "all 0.2s ease",
                                   "& .MuiTableCell-root": {
-                                    borderBottom: "1px solid rgba(74, 93, 58, 0.1)",
+                                    borderBottom:
+                                      "1px solid rgba(74, 93, 58, 0.1)",
                                   },
                                 }}
                                 onClick={() => handleRowClick(payment)}
@@ -1147,7 +1172,8 @@ const PaymentManager = () => {
                                 <TableCell>
                                   <Chip
                                     label={
-                                      payment.payment_method?.toUpperCase() || "N/A"
+                                      payment.payment_method?.toUpperCase() ||
+                                      "N/A"
                                     }
                                     variant="outlined"
                                     size="small"
@@ -1229,7 +1255,9 @@ const PaymentManager = () => {
                           }}
                         >
                           <CardContent sx={{ textAlign: "center", py: 2 }}>
-                            <LocalShipping sx={{ fontSize: 24, color: "#4a5d3a", mb: 1 }} />
+                            <LocalShipping
+                              sx={{ fontSize: 24, color: "#4a5d3a", mb: 1 }}
+                            />
                             <Typography
                               variant="h5"
                               sx={{
@@ -1265,7 +1293,7 @@ const PaymentManager = () => {
               </Box>
             )}
 
-            {/* Payment Details Dialog with improved styling */}
+            {/* Payment Details Dialog with QR codes */}
             {selectedPayment && (
               <Dialog
                 open={true}
@@ -1308,27 +1336,32 @@ const PaymentManager = () => {
                       </Grid>
                       <Grid item xs={6}>
                         <Typography sx={{ color: "#6b8459" }}>
-                          <strong>Subtotal:</strong> {formatCurrency(selectedPayment.subtotal)}
+                          <strong>Subtotal:</strong>{" "}
+                          {formatCurrency(selectedPayment.subtotal)}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
                         <Typography sx={{ color: "#6b8459" }}>
-                          <strong>Total Amount:</strong> {formatCurrency(selectedPayment.total_amount)}
+                          <strong>Total Amount:</strong>{" "}
+                          {formatCurrency(selectedPayment.total_amount)}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
                         <Typography sx={{ color: "#6b8459" }}>
-                          <strong>Payment Method:</strong> {selectedPayment.payment_method}
+                          <strong>Payment Method:</strong>{" "}
+                          {selectedPayment.payment_method}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
                         <Typography sx={{ color: "#6b8459" }}>
-                          <strong>Status:</strong> {selectedPayment.payment_status}
+                          <strong>Status:</strong>{" "}
+                          {selectedPayment.payment_status}
                         </Typography>
                       </Grid>
                       <Grid item xs={12}>
                         <Typography sx={{ color: "#6b8459" }}>
-                          <strong>Created At:</strong> {formatDate(selectedPayment.created_at)}
+                          <strong>Created At:</strong>{" "}
+                          {formatDate(selectedPayment.created_at)}
                         </Typography>
                       </Grid>
                       {selectedPayment.notes && (
@@ -1339,6 +1372,142 @@ const PaymentManager = () => {
                         </Grid>
                       )}
                     </Grid>
+
+                    {/* Show QR codes for GCash/PayMaya payments */}
+                    {(selectedPayment.payment_method === "gcash" ||
+                      selectedPayment.payment_method === "paymaya") &&
+                      selectedPayment.sellers_info &&
+                      selectedPayment.sellers_info.length > 0 && (
+                        <Box sx={{ mt: 3 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              mb: 2,
+                            }}
+                          >
+                            <QrCode sx={{ color: "#4a5d3a" }} />
+                            <Typography
+                              variant="h6"
+                              sx={{ color: "#4a5d3a", fontWeight: 600 }}
+                            >
+                              Payment QR Codes
+                            </Typography>
+                          </Box>
+
+                          <Grid container spacing={2}>
+                            {selectedPayment.sellers_info.map(
+                              (seller, index) => (
+                                <Grid
+                                  item
+                                  xs={12}
+                                  md={6}
+                                  key={seller.seller_id}
+                                >
+                                  <Card
+                                    sx={{
+                                      borderRadius: "12px",
+                                      border: "1px solid rgba(74, 93, 58, 0.3)",
+                                      background: "rgba(74, 93, 58, 0.05)",
+                                    }}
+                                  >
+                                    <CardContent
+                                      sx={{ textAlign: "center", p: 2 }}
+                                    >
+                                      <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                          color: "#4a5d3a",
+                                          fontWeight: 600,
+                                          mb: 1,
+                                        }}
+                                      >
+                                        {seller.seller_name}
+                                      </Typography>
+
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          gap: 1,
+                                          mb: 1,
+                                        }}
+                                      >
+                                        <Phone
+                                          sx={{
+                                            fontSize: 14,
+                                            color: "#6b8459",
+                                          }}
+                                        />
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: "#6b8459" }}
+                                        >
+                                          {seller.phone_number}
+                                        </Typography>
+                                      </Box>
+
+                                      <Typography
+                                        variant="h6"
+                                        sx={{
+                                          color: "#4a5d3a",
+                                          fontWeight: 700,
+                                          mb: 2,
+                                        }}
+                                      >
+                                        {formatCurrency(seller.total_amount)}
+                                      </Typography>
+
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          justifyContent: "center",
+                                          mb: 1,
+                                          p: 1,
+                                          backgroundColor: "#ffffff",
+                                          borderRadius: "8px",
+                                          border:
+                                            "1px solid rgba(74, 93, 58, 0.2)",
+                                        }}
+                                      >
+                                        <img
+                                          src={generateQRCode(
+                                            seller.phone_number,
+                                            seller.total_amount,
+                                            seller.seller_name
+                                          )}
+                                          alt={`QR Code for ${seller.seller_name}`}
+                                          style={{
+                                            width: "120px",
+                                            height: "120px",
+                                            objectFit: "contain",
+                                          }}
+                                        />
+                                      </Box>
+
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          color: "#6b8459",
+                                          fontSize: "0.75rem",
+                                        }}
+                                      >
+                                        Scan with{" "}
+                                        {selectedPayment.payment_method ===
+                                        "gcash"
+                                          ? "GCash"
+                                          : "PayMaya"}
+                                      </Typography>
+                                    </CardContent>
+                                  </Card>
+                                </Grid>
+                              )
+                            )}
+                          </Grid>
+                        </Box>
+                      )}
                   </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 3 }}>

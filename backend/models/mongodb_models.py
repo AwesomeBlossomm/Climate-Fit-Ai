@@ -33,7 +33,6 @@ class MongoDBConnection:
             
             # Test connection
             self.client.admin.command('ismaster')
-            logger.info("MongoDB connection established successfully")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
             raise Exception(f"MongoDB connection failed: {str(e)}")
@@ -184,14 +183,60 @@ class ProductModel:
         """
         def _get_product_with_seller():
             try:
-                # Aggregation pipeline to join product with seller
+                logger.info(f"Looking up product with seller for product_id: {product_id}")
+                
+                # First, get the product to see what seller_id format we have
+                product = self.collection.find_one({"_id": ObjectId(product_id)})
+                if not product:
+                    logger.warning(f"Product not found: {product_id}")
+                    return None
+                
+                seller_id = product.get('seller_id')
+                logger.info(f"Product found. Seller ID: {seller_id} (type: {type(seller_id)})")
+                
+                # Try multiple approaches for seller lookup
+                seller_match_conditions = []
+                
+                # If seller_id is already an ObjectId
+                if isinstance(seller_id, ObjectId):
+                    seller_match_conditions.append({"_id": seller_id})
+                    seller_match_conditions.append({"_id": str(seller_id)})  # Also try as string
+                # If seller_id is a string
+                elif isinstance(seller_id, str):
+                    seller_match_conditions.append({"_id": seller_id})  # Try as string ID
+                    try:
+                        seller_match_conditions.append({"_id": ObjectId(seller_id)})  # Try as ObjectId
+                    except:
+                        pass
+                
+                # Also try matching by seller_id field in sellers collection
+                if seller_id:
+                    seller_match_conditions.append({"seller_id": seller_id})
+                    seller_match_conditions.append({"id": seller_id})
+                
+                logger.info(f"Trying seller lookup with conditions: {len(seller_match_conditions)} variations")
+                
+                # Use aggregation with flexible seller matching
                 pipeline = [
                     {"$match": {"_id": ObjectId(product_id)}},
                     {
                         "$lookup": {
                             "from": "sellers",
-                            "localField": "seller_id",
-                            "foreignField": "_id",
+                            "let": {"seller_id_var": "$seller_id"},
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$or": [
+                                                {"$eq": ["$_id", "$$seller_id_var"]},
+                                                {"$eq": [{"$toString": "$_id"}, {"$toString": "$$seller_id_var"}]},
+                                                {"$eq": ["$seller_id", "$$seller_id_var"]},
+                                                {"$eq": ["$id", "$$seller_id_var"]}
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
                             "as": "seller_info"
                         }
                     },
@@ -218,23 +263,53 @@ class ProductModel:
                 ]
                 
                 result = list(self.collection.aggregate(pipeline))
+                
                 if result:
-                    product = result[0]
-                    product["_id"] = str(product["_id"])
-                    if product.get("seller") and product["seller"].get("_id"):
-                        product["seller"]["_id"] = str(product["seller"]["_id"])
+                    product_with_seller = result[0]
+                    product_with_seller["_id"] = str(product_with_seller["_id"])
+                    
+                    # Check if seller was found
+                    if product_with_seller.get("seller"):
+                        if product_with_seller["seller"].get("_id"):
+                            product_with_seller["seller"]["_id"] = str(product_with_seller["seller"]["_id"])
+                        logger.info(f"Seller found via aggregation: {product_with_seller['seller'].get('store_name', 'Unknown')}")
+                    else:
+                        # Fallback: try direct seller lookup
+                        logger.warning("No seller found via aggregation, trying direct lookup")
+                        seller = None
+                        for condition in seller_match_conditions:
+                            try:
+                                seller = self.sellers_collection.find_one(condition)
+                                if seller:
+                                    logger.info(f"Found seller via direct lookup with condition: {condition}")
+                                    break
+                            except Exception as e:
+                                logger.debug(f"Direct lookup failed with condition {condition}: {str(e)}")
+                                continue
+                        
+                        if seller:
+                            seller["_id"] = str(seller["_id"])
+                            product_with_seller["seller"] = seller
+                        else:
+                            logger.warning(f"No seller found for seller_id: {seller_id}")
                     
                     # Convert comment ObjectIds to strings
-                    for comment in product.get("comments", []):
+                    for comment in product_with_seller.get("comments", []):
                         if comment.get("_id"):
                             comment["_id"] = str(comment["_id"])
                         if comment.get("product_id"):
                             comment["product_id"] = str(comment["product_id"])
                     
-                    return product
+                    logger.info(f"Returning product with seller info. Seller present: {bool(product_with_seller.get('seller'))}")
+                    return product_with_seller
+                
+                logger.warning(f"No result from aggregation for product {product_id}")
                 return None
+                
             except Exception as e:
                 logger.error(f"Error getting product with seller: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 return None
         
         return await asyncio.get_event_loop().run_in_executor(None, _get_product_with_seller)

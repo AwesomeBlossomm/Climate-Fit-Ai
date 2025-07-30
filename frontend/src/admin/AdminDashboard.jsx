@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, Button, Grid, Card, CardContent } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+} from "@mui/material";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -7,13 +14,26 @@ import UserTable from "./UserTable";
 import SellerTable from "./SellerTable";
 import ProductTable from "./ProductTable";
 import { motion } from "framer-motion";
-import { Person, Store, Inventory, Assessment, ShoppingCart, TrendingUp, Dashboard as DashboardIcon, People, ShoppingBag, BarChart } from "@mui/icons-material";
+import {
+  Person,
+  Store,
+  Inventory,
+  Assessment,
+  ShoppingCart,
+  TrendingUp,
+  Dashboard as DashboardIcon,
+  People,
+  ShoppingBag,
+  BarChart,
+  AttachMoney,
+} from "@mui/icons-material";
 
 const AdminDashboard = () => {
   const { user, logout, token } = useAuth();
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
-  const [sellers, setSellers] = useState([]); 
+  const [sellers, setSellers] = useState([]);
+  const [revenueData, setRevenueData] = useState(null);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -61,7 +81,9 @@ const AdminDashboard = () => {
     // Fetch users
     const fetchUsers = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/v1/admin/users");
+        const response = await axios.get(
+          "http://localhost:8000/api/v1/admin/users"
+        );
         console.log(response.data); // Debug log (optional)
         setUsers(response.data.users || []); // Extract the users array from the response
       } catch (error) {
@@ -72,7 +94,9 @@ const AdminDashboard = () => {
     // Fetch products
     const fetchProducts = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/v1/admin/products");
+        const response = await axios.get(
+          "http://localhost:8000/api/v1/admin/products"
+        );
         setProducts(response.data.products || []);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -82,17 +106,37 @@ const AdminDashboard = () => {
     // Fetch sellers
     const fetchSellers = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/v1/admin/sellers");
+        const response = await axios.get(
+          "http://localhost:8000/api/v1/admin/sellers"
+        );
         setSellers(response.data.sellers || []);
       } catch (error) {
         console.error("Error fetching sellers:", error);
       }
     };
 
+    // Fetch admin revenue data
+    const fetchRevenueData = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8000/api/v1/admin/revenue",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setRevenueData(response.data);
+      } catch (error) {
+        console.error("Error fetching revenue data:", error);
+      }
+    };
+
     fetchUsers();
     fetchProducts();
     fetchSellers();
-  }, []);
+    fetchRevenueData();
+  }, [token]);
 
   return (
     <>
@@ -235,7 +279,8 @@ const AdminDashboard = () => {
                 lineHeight: 1.5,
               }}
             >
-              Welcome, {user?.full_name || user?.username}! Manage your Climate Fit platform with comprehensive admin tools.
+              Welcome, {user?.full_name || user?.username}! Manage your Climate
+              Fit platform with comprehensive admin tools.
             </Typography>
 
             {/* Admin Stats Cards */}
@@ -262,7 +307,8 @@ const AdminDashboard = () => {
                   variant="body1"
                   sx={{ color: "#ffffff", fontWeight: 600, fontSize: "0.9rem" }}
                 >
-                  {users.length + sellers.length} Total Users • {products.length} Products
+                  {users.length + sellers.length} Total Users •{" "}
+                  {products.length} Products
                 </Typography>
               </Box>
               <Box
@@ -294,7 +340,9 @@ const AdminDashboard = () => {
           </Box>
 
           {/* Quick Actions Grid - Right Side */}
-          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+          <Box
+            sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}
+          >
             {/* Statistics Overview */}
             <Box
               component={motion.div}
@@ -317,7 +365,8 @@ const AdminDashboard = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Box
                     sx={{
-                      background: "linear-gradient(135deg, #8fa876 0%, #7a956a 100%)",
+                      background:
+                        "linear-gradient(135deg, #8fa876 0%, #7a956a 100%)",
                       borderRadius: "16px",
                       p: 3,
                       color: "#ffffff",
@@ -337,7 +386,8 @@ const AdminDashboard = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Box
                     sx={{
-                      background: "linear-gradient(135deg, #7a956a 0%, #6b8459 100%)",
+                      background:
+                        "linear-gradient(135deg, #7a956a 0%, #6b8459 100%)",
                       borderRadius: "16px",
                       p: 3,
                       color: "#ffffff",
@@ -357,7 +407,8 @@ const AdminDashboard = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Box
                     sx={{
-                      background: "linear-gradient(135deg, #6b8459 0%, #5c7349 100%)",
+                      background:
+                        "linear-gradient(135deg, #6b8459 0%, #5c7349 100%)",
                       borderRadius: "16px",
                       p: 3,
                       color: "#ffffff",
@@ -377,7 +428,8 @@ const AdminDashboard = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Box
                     sx={{
-                      background: "linear-gradient(135deg, #5c7349 0%, #4a5d3a 100%)",
+                      background:
+                        "linear-gradient(135deg, #5c7349 0%, #4a5d3a 100%)",
                       borderRadius: "16px",
                       p: 3,
                       color: "#ffffff",
@@ -385,16 +437,74 @@ const AdminDashboard = () => {
                       boxShadow: "0 8px 25px rgba(92, 115, 73, 0.3)",
                     }}
                   >
-                    <TrendingUp sx={{ fontSize: 32, mb: 1 }} />
+                    <AttachMoney sx={{ fontSize: 32, mb: 1 }} />
                     <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                      {((users.length + sellers.length + products.length) / 3).toFixed(0)}%
+                      ₱
+                      {revenueData?.summary?.total_admin_share?.toLocaleString() ||
+                        "0"}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Growth Rate
+                      Admin Revenue (7%)
                     </Typography>
                   </Box>
                 </Grid>
               </Grid>
+
+              {/* Revenue Summary Section */}
+              {revenueData && (
+                <Box
+                  sx={{
+                    background:
+                      "linear-gradient(135deg, #4a5d3a 0%, #3a4a2e 100%)",
+                    borderRadius: "16px",
+                    p: 3,
+                    mb: 4,
+                    color: "#ffffff",
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                    Revenue Summary from Delivered Orders
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={3}>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Delivered Orders
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                        {revenueData.summary.total_delivered_orders}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Total Revenue
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                        ₱{revenueData.summary.total_revenue.toLocaleString()}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Admin Share (7%)
+                      </Typography>
+                      <Typography
+                        variant="h5"
+                        sx={{ fontWeight: 600, color: "#90EE90" }}
+                      >
+                        ₱
+                        {revenueData.summary.total_admin_share.toLocaleString()}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Seller Share (93%)
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                        ₱{revenueData.summary.seller_share.toLocaleString()}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
             </Box>
 
             {/* Admin Actions */}
@@ -450,7 +560,7 @@ const AdminDashboard = () => {
                       transform: "translateY(0)",
                       transition: "all 0.3s ease",
                       "&:hover": {
-                        transform: "translateY(-8px)",  
+                        transform: "translateY(-8px)",
                         boxShadow: "0 15px 40px rgba(74, 93, 58, 0.35)",
                       },
                     }}
@@ -473,7 +583,9 @@ const AdminDashboard = () => {
                           fontWeight: 600,
                         }}
                       >
-                        {typeof action.count === 'number' ? action.count : action.count}
+                        {typeof action.count === "number"
+                          ? action.count
+                          : action.count}
                       </Typography>
                     </Box>
                     <Typography
