@@ -1,15 +1,10 @@
-**Developers**: 
-Justine Juliana Balla
-Raymond Lei Nogalo
-Kristine Mae Prado
-Angel Galapon
-
+---
 
 ````markdown
 # Climate-Fit-AI
 
 Climate-Fit-AI is a full-stack application that integrates climate data with AI-powered insights.  
-This documentation explains how to set up and run both the **backend** (FastAPI) and **frontend** (React + Vite) locally.
+This guide explains how to set up and run both the **backend** (FastAPI) and **frontend** (React + Vite) locally.
 
 ---
 
@@ -31,15 +26,14 @@ Make sure you have the following installed:
 - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 - npm or yarn package manager
 
-# Environment Variables Setup
-
-To run the project successfully, you need to create a `.env` file for both **backend** and **frontend** environments.
-Copy the variables below and replace them with your actual values where necessary.
-
 ---
 
-## 🖥️ Backend `.env`
+## ⚙️ Environment Variables Setup
 
+You need to create a `.env` file for both **backend** and **frontend**.  
+Copy the variables below and replace them with your actual values.
+
+### 🖥️ Backend `.env`
 ```env
 # MongoDB Configuration
 MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/<dbname>?retryWrites=true&w=majority&appName=Cluster0
@@ -53,11 +47,9 @@ BCRYPT_ROUNDS=12
 
 # API Keys
 GEMINI_API_KEY=<your-gemini-api-key>
-```
+````
 
----
-
-## 🌐 Frontend `.env`
+### 🌐 Frontend `.env`
 
 ```env
 # API Keys for Frontend
@@ -65,22 +57,15 @@ VITE_GEMINI_API_KEY=<your-gemini-api-key>
 VITE_WEATHER_API_KEY=<your-weather-api-key>
 ```
 
----
+### 📋 Notes
 
-## 📋 Notes
-
-* **MONGO\_URI** & **MONGODB\_CONNECTION\_STRING** → Connects backend to **MongoDB Atlas**.
-* **ACCESS\_TOKEN\_EXPIRE\_MINUTES** → Token expiry duration in minutes.
-* **SECRET\_KEY** → Secure random string for **JWT tokens**.
-* **ALGORITHM** → Hashing algorithm, default is **HS256**.
-* **BCRYPT\_ROUNDS** → Rounds of password hashing (**higher = stronger but slower**).
-* **GEMINI\_API\_KEY** → Key for integrating **Gemini AI** services.
-* **VITE\_WEATHER\_API\_KEY** → Key for fetching weather data on the **frontend** only.
-
-
-Got it, Jana—no virtual environment needed. That means we can keep the README clean and focus on the actual commands to run backend and frontend. I’ve revised it so it looks professional, minimal, and developer-friendly.
-
-Here’s the final version:
+* **MONGO\_URI** & **MONGODB\_CONNECTION\_STRING** → Connects backend to MongoDB Atlas.
+* **ACCESS\_TOKEN\_EXPIRE\_MINUTES** → Token expiry in minutes.
+* **SECRET\_KEY** → Secure string for JWT tokens.
+* **ALGORITHM** → Hashing algorithm (default: HS256).
+* **BCRYPT\_ROUNDS** → Rounds of password hashing. Higher = stronger but slower.
+* **GEMINI\_API\_KEY** → Gemini AI integration key.
+* **VITE\_WEATHER\_API\_KEY** → Weather data API key for frontend.
 
 ---
 
@@ -108,6 +93,12 @@ uvicorn main:app --reload
 
 ```
 http://127.0.0.1:8000
+```
+
+Access the auto-generated API docs:
+
+```
+http://127.0.0.1:8000/docs
 ```
 
 ---
@@ -138,5 +129,31 @@ npm run dev
 http://localhost:5173
 ```
 
+---
 
+## 📂 Project Structure
+
+```
+Climate-Fit-Ai/
+├── backend/          # FastAPI backend
+│   ├── main.py       # Entry point for FastAPI
+│   ├── requirements.txt
+│   └── ...
+├── frontend/         # React + Vite frontend
+│   ├── src/
+│   ├── package.json
+│   └── ...
+└── README.md
+```
+
+---
+
+## 👩‍💻 Developers
+
+* Justine Juliana Balla
+* Raymond Lei Nogalo
+* Kristine Mae Prado
+* Angel Galapon
+
+---
 
