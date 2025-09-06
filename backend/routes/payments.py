@@ -889,6 +889,10 @@ async def get_orders():
                 except Exception as e:
                     logger.error(f"Error fetching product with product_id {product_id}: {str(e)}")
 
+        # Ensure failure_reason is included in each order
+        for order in orders:
+            order["failure_reason"] = order.get("failure_reason", None)
+
         return {"success": True, "orders": orders}
     except Exception as e:
         logger.error(f"Error fetching orders: {str(e)}")
