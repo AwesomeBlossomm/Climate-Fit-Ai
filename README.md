@@ -1,6 +1,4 @@
----
 
-````markdown
 # Climate-Fit-AI
 
 Climate-Fit-AI is a full-stack application that integrates climate data with AI-powered insights.  
